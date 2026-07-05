@@ -61,22 +61,34 @@ create table if not exists public.appointments (
 
 -- ---------------------------------------------------------------------------
 -- Row-level security
+--
+-- `force row level security` ensures even a table owner / privileged connection
+-- is still filtered. Policies are scoped `to authenticated` so the anon role is
+-- never evaluated against them at all (defense-in-depth; auth.uid() is null for
+-- anon anyway, so no row would match).
 -- ---------------------------------------------------------------------------
 alter table public.clinics enable row level security;
 alter table public.calls enable row level security;
 alter table public.appointments enable row level security;
 
+alter table public.clinics force row level security;
+alter table public.calls force row level security;
+alter table public.appointments force row level security;
+
 create policy "Owners manage their clinics"
   on public.clinics for all
+  to authenticated
   using (owner_id = auth.uid())
   with check (owner_id = auth.uid());
 
 create policy "Owners access their clinic calls"
   on public.calls for all
+  to authenticated
   using (clinic_id in (select id from public.clinics where owner_id = auth.uid()))
   with check (clinic_id in (select id from public.clinics where owner_id = auth.uid()));
 
 create policy "Owners access their clinic appointments"
   on public.appointments for all
+  to authenticated
   using (clinic_id in (select id from public.clinics where owner_id = auth.uid()))
   with check (clinic_id in (select id from public.clinics where owner_id = auth.uid()));

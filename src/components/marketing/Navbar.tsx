@@ -44,19 +44,22 @@ export function Navbar() {
           className="grid size-10 place-items-center rounded-lg text-foreground md:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
+          aria-expanded={open}
+          aria-controls="mobile-menu"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile menu — `inert`/`hidden` when closed so its links aren't tabbable */}
       <div
+        id="mobile-menu"
         className={cn(
           "grid overflow-hidden border-t border-border transition-all duration-300 md:hidden",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr] border-transparent"
         )}
       >
-        <div className="min-h-0">
+        <div className={cn("min-h-0", !open && "invisible")}>
           <div className="container-page flex flex-col gap-1 py-4">
             {links.map((l) => (
               <a

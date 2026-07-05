@@ -4,6 +4,7 @@ import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { cn } from "@/lib/utils";
 
 interface Tier {
@@ -64,10 +65,16 @@ const tiers: Tier[] = [
 ];
 
 export default function Pricing() {
+  useDocumentMeta({
+    title: "Pricing — PracticeVoice AI",
+    description:
+      "Simple, transparent pricing for PracticeVoice AI. Basic, Professional, and Premium plans with a 14-day free trial, no credit card required.",
+    path: "/pricing",
+  });
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         <section className="bg-grid">
           <div className="container-page py-16 text-center lg:py-20">
             <Badge variant="primary" className="mb-4">
@@ -124,10 +131,16 @@ export default function Pricing() {
                     variant={tier.highlight ? "primary" : "outline"}
                     size="lg"
                   >
-                    <Link to={tier.name === "Premium" ? "/signup" : "/signup"}>
-                      {tier.cta}
-                      {tier.highlight && <ArrowRight />}
-                    </Link>
+                    {tier.name === "Premium" ? (
+                      <a href="mailto:sales@practicevoice-ai.com?subject=PracticeVoice%20AI%20Premium%20inquiry">
+                        {tier.cta}
+                      </a>
+                    ) : (
+                      <Link to="/signup">
+                        {tier.cta}
+                        {tier.highlight && <ArrowRight />}
+                      </Link>
+                    )}
                   </Button>
 
                   <ul className="mt-8 space-y-3.5">

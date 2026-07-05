@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 export default function Login() {
+  useDocumentMeta({ title: "Log in", noindex: true });
   const { signIn, demoMode } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -50,7 +52,10 @@ export default function Login() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <a href="#" className="text-xs font-medium text-primary hover:underline">
+            <a
+              href="mailto:support@practicevoice-ai.com?subject=Password%20reset"
+              className="text-xs font-medium text-primary hover:underline"
+            >
               Forgot password?
             </a>
           </div>

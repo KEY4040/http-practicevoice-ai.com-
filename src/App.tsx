@@ -4,12 +4,14 @@ import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Eager: marketing + auth are the first-paint entry points.
 import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
+import Legal from "@/pages/Legal";
 import NotFound from "@/pages/NotFound";
 
 // Lazy: the app shell (and its heavier chart deps) load only once signed in.
@@ -28,14 +30,20 @@ function PageFallback() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
             {/* Marketing */}
             <Route path="/" element={<Home />} />
             <Route path="/pricing" element={<Pricing />} />
+
+            {/* Legal */}
+            <Route path="/privacy" element={<Legal doc="privacy" />} />
+            <Route path="/terms" element={<Legal doc="terms" />} />
+            <Route path="/hipaa" element={<Legal doc="hipaa" />} />
 
             {/* Auth */}
             <Route path="/login" element={<Login />} />
@@ -75,10 +83,11 @@ export default function App() {
               }
             />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </AuthProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

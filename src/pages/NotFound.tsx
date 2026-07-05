@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/marketing/Logo";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 export default function NotFound() {
+  useDocumentMeta({ title: "Page not found", noindex: true });
   return (
     <div className="grid min-h-screen place-items-center bg-grid px-6">
       <div className="text-center">

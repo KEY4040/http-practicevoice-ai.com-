@@ -14,6 +14,7 @@ import { OutcomeBadge } from "@/components/OutcomeBadge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getCallById } from "@/data/mockData";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { formatCurrency, formatDateTime, initials, cn } from "@/lib/utils";
 
 function formatDuration(sec: number): string {
@@ -26,6 +27,10 @@ function formatDuration(sec: number): string {
 export default function CallDetail() {
   const { id } = useParams<{ id: string }>();
   const call = id ? getCallById(id) : undefined;
+  useDocumentMeta({
+    title: call ? `${call.caller} · Call detail` : "Call detail",
+    noindex: true,
+  });
 
   if (!call) {
     return (
@@ -62,7 +67,7 @@ export default function CallDetail() {
                 {call.caller === "Unknown Caller" ? "?" : initials(call.caller)}
               </span>
               <div>
-                <h2 className="text-xl font-bold tracking-tight">{call.caller}</h2>
+                <h1 className="text-xl font-bold tracking-tight">{call.caller}</h1>
                 <p className="text-sm text-muted-foreground">{call.phone}</p>
               </div>
             </div>

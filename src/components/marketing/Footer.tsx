@@ -44,25 +44,28 @@ export function Footer() {
           <div key={col.title}>
             <h4 className="text-sm font-semibold text-foreground">{col.title}</h4>
             <ul className="mt-4 space-y-3">
-              {col.links.map((l) => (
-                <li key={l.label}>
-                  {l.href.startsWith("/") ? (
-                    <Link
-                      to={l.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {l.label}
-                    </Link>
-                  ) : (
-                    <a
-                      href={l.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {l.label}
-                    </a>
-                  )}
-                </li>
-              ))}
+              {col.links.map((l) => {
+                // Plain in-app routes use <Link>; hash targets (/#how) and
+                // external/mailto links must be native <a> so the browser
+                // actually scrolls / navigates (React Router won't scroll to a
+                // hash on its own).
+                const isRoute = l.href.startsWith("/") && !l.href.includes("#");
+                const className =
+                  "inline-block py-0.5 text-sm text-muted-foreground transition-colors hover:text-foreground";
+                return (
+                  <li key={l.label}>
+                    {isRoute ? (
+                      <Link to={l.href} className={className}>
+                        {l.label}
+                      </Link>
+                    ) : (
+                      <a href={l.href} className={className}>
+                        {l.label}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
@@ -72,15 +75,15 @@ export function Footer() {
         <div className="container-page flex flex-col items-center justify-between gap-3 py-6 text-sm text-muted-foreground sm:flex-row">
           <p>© {new Date().getFullYear()} PracticeVoice AI. All rights reserved.</p>
           <div className="flex items-center gap-5">
-            <a href="#" className="hover:text-foreground">
+            <Link to="/privacy" className="hover:text-foreground">
               Privacy
-            </a>
-            <a href="#" className="hover:text-foreground">
+            </Link>
+            <Link to="/terms" className="hover:text-foreground">
               Terms
-            </a>
-            <a href="#" className="hover:text-foreground">
+            </Link>
+            <Link to="/hipaa" className="hover:text-foreground">
               HIPAA
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 const perks = [
   "14-day free trial",
@@ -14,6 +15,7 @@ const perks = [
 ];
 
 export default function Signup() {
+  useDocumentMeta({ title: "Start your free trial", noindex: true });
   const { signUp, demoMode } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -115,7 +117,15 @@ export default function Signup() {
       </p>
 
       <p className="mt-4 text-center text-xs text-muted-foreground">
-        By continuing you agree to our Terms and Privacy Policy.
+        By continuing you agree to our{" "}
+        <Link to="/terms" className="font-medium text-primary hover:underline">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link to="/privacy" className="font-medium text-primary hover:underline">
+          Privacy Policy
+        </Link>
+        .
       </p>
     </AuthLayout>
   );

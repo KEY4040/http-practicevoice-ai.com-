@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#ffffff" />
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC" />
+      <stop offset="1" stop-color="#EFF4FF" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logo mark -->
+  <g transform="translate(96 96)">
+    <rect width="72" height="72" rx="18" fill="#1E40AF" />
+    <path d="M24 24.5A4 4 0 0 1 28 21h3.2c1.76 0 3.3 1.15 3.82 2.83l1.65 5.4a4 4 0 0 1-1.06 4l-2.3 2.3a28 28 0 0 0 11.63 11.63l2.3-2.3a4 4 0 0 1 4-1.06l5.4 1.65A4 4 0 0 1 63.3 55v3.2A4 4 0 0 1 59.3 62 33.3 33.3 0 0 1 24 24.5Z" fill="#fff" />
+    <circle cx="47" cy="24" r="6" fill="#10B981" />
+  </g>
+  <text x="188" y="145" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="700" fill="#1E293B">PracticeVoice AI</text>
+
+  <!-- Headline -->
+  <text x="96" y="320" font-family="Inter, system-ui, sans-serif" font-size="82" font-weight="800" fill="#0F172A">Never miss another</text>
+  <text x="96" y="410" font-family="Inter, system-ui, sans-serif" font-size="82" font-weight="800" fill="#1E40AF">patient call.</text>
+
+  <!-- Subhead -->
+  <text x="96" y="480" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="500" fill="#475569">The AI voice receptionist that books appointments 24/7</text>
+  <text x="96" y="522" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="500" fill="#475569">— and shows you the revenue it generates.</text>
+
+  <!-- Pills -->
+  <g font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600">
+    <rect x="96" y="556" width="256" height="48" rx="24" fill="#1E40AF" />
+    <text x="128" y="587" fill="#ffffff">HIPAA-conscious</text>
+    <rect x="372" y="556" width="204" height="48" rx="24" fill="#10B981" />
+    <text x="404" y="587" fill="#ffffff">Live in 5 min</text>
+  </g>
+</svg>

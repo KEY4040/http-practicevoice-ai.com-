@@ -8,6 +8,9 @@ exactly how much revenue the AI generates.
 > Supabase, and structured to plug in Vapi/Retell (voice), Google Calendar,
 > Stripe, and Twilio when you're ready.
 
+> 📘 **New to the project? Read the plain-English [Owner's Guide](./docs/README.md)**
+> — how it works, how to market it, and how to launch it, no coding required.
+
 ## Tech stack
 
 | Layer        | Choice                                            |

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -109,10 +109,27 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const title =
     nav.find((n) =>
       n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)
     )?.label ?? "Dashboard";
+
+  // Drawer accessibility: close on Escape, move focus into the drawer on open,
+  // and restore focus to the trigger on close.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    closeButtonRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      menuButtonRef.current?.focus();
+    };
+  }, [mobileOpen]);
 
   return (
     <div className="min-h-screen bg-muted/30 lg:grid lg:grid-cols-[272px_1fr]">
@@ -125,9 +142,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-card/90 px-4 py-3 backdrop-blur lg:hidden">
         <Logo />
         <button
+          ref={menuButtonRef}
           onClick={() => setMobileOpen(true)}
           className="grid size-10 place-items-center rounded-lg text-foreground"
           aria-label="Open menu"
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-drawer"
         >
           <Menu className="size-5" />
         </button>
@@ -135,13 +155,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div
+          id="mobile-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
+          className="fixed inset-0 z-50 lg:hidden"
+        >
           <div
             className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
           <div className="absolute inset-y-0 left-0 w-[280px] animate-fade-in bg-card shadow-elevated">
             <button
+              ref={closeButtonRef}
               onClick={() => setMobileOpen(false)}
               className="absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted"
               aria-label="Close menu"
@@ -156,13 +183,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Main */}
       <div className="flex min-h-screen flex-col">
         <div className="hidden items-center justify-between border-b border-border bg-card/60 px-8 py-4 backdrop-blur lg:flex">
-          <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+          <p className="text-lg font-semibold tracking-tight">{title}</p>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="size-2 animate-pulse rounded-full bg-accent" />
             AI receptionist active
           </div>
         </div>
-        <main className="flex-1 px-5 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main id="main" className="flex-1 px-5 py-6 sm:px-8 sm:py-8">
+          {children}
+        </main>
       </div>
     </div>
   );

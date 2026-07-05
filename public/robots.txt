@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Keep the signed-in app out of search results
+Disallow: /dashboard
+Disallow: /login
+Disallow: /signup
+
+Sitemap: https://practicevoice-ai.com/sitemap.xml

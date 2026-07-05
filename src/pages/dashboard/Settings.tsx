@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SERVICES = [
@@ -29,6 +30,7 @@ const DEFAULT_SERVICES = [
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function Settings() {
+  useDocumentMeta({ title: "Clinic Setup", noindex: true });
   const [clinicName, setClinicName] = useState("Bayview Dental");
   const [phone, setPhone] = useState("(415) 555-0100");
   const [services, setServices] = useState<string[]>(DEFAULT_SERVICES);
@@ -36,6 +38,7 @@ export default function Settings() {
   const [openDays, setOpenDays] = useState<string[]>(["Mon", "Tue", "Wed", "Thu", "Fri"]);
   const [openTime, setOpenTime] = useState("08:00");
   const [closeTime, setCloseTime] = useState("17:00");
+  const [voice, setVoice] = useState("Ava");
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -65,7 +68,7 @@ export default function Settings() {
     <DashboardLayout>
       <form onSubmit={onSave} className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Clinic Setup</h2>
+          <h1 className="text-2xl font-bold tracking-tight">Clinic Setup</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Tell your AI receptionist about your practice. This takes under 5
             minutes.
@@ -186,6 +189,7 @@ export default function Settings() {
             </div>
             <div className="mt-4 flex gap-2">
               <Input
+                aria-label="Add a service"
                 value={newService}
                 onChange={(e) => setNewService(e.target.value)}
                 onKeyDown={(e) => {
@@ -223,6 +227,8 @@ export default function Settings() {
                   key={day}
                   type="button"
                   onClick={() => toggleDay(day)}
+                  aria-pressed={openDays.includes(day)}
+                  aria-label={day}
                   className={cn(
                     "size-11 rounded-xl text-sm font-semibold transition-colors",
                     openDays.includes(day)
@@ -268,30 +274,43 @@ export default function Settings() {
             </CardTitle>
             <CardDescription>Choose the tone that fits your practice.</CardDescription>
           </CardHeader>
-          <div className="grid gap-3 px-6 pb-6 sm:grid-cols-3">
-            {[
-              { name: "Ava", desc: "Warm & friendly", selected: true },
-              { name: "Grace", desc: "Calm & professional", selected: false },
-              { name: "Noah", desc: "Confident & clear", selected: false },
-            ].map((v) => (
-              <label
-                key={v.name}
-                className={cn(
-                  "cursor-pointer rounded-xl border p-4 transition-colors",
-                  v.selected
-                    ? "border-primary bg-primary/[0.04] ring-1 ring-primary/20"
-                    : "border-border hover:bg-muted/50"
-                )}
-              >
-                <input type="radio" name="voice" defaultChecked={v.selected} className="sr-only" />
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{v.name}</span>
-                  {v.selected && <Badge variant="primary">Selected</Badge>}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{v.desc}</p>
-              </label>
-            ))}
-          </div>
+          <fieldset className="px-6 pb-6">
+            <legend className="sr-only">Receptionist voice</legend>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { name: "Ava", desc: "Warm & friendly" },
+                { name: "Grace", desc: "Calm & professional" },
+                { name: "Noah", desc: "Confident & clear" },
+              ].map((v) => {
+                const selected = voice === v.name;
+                return (
+                  <label
+                    key={v.name}
+                    className={cn(
+                      "cursor-pointer rounded-xl border p-4 transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                      selected
+                        ? "border-primary bg-primary/[0.04] ring-1 ring-primary/20"
+                        : "border-border hover:bg-muted/50"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="voice"
+                      value={v.name}
+                      checked={selected}
+                      onChange={() => setVoice(v.name)}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">{v.name}</span>
+                      {selected && <Badge variant="primary">Selected</Badge>}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{v.desc}</p>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
         </Card>
 
         {/* Sticky save bar */}

@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Phone, ChevronRight } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { OutcomeBadge } from "@/components/OutcomeBadge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { calls, type CallOutcome } from "@/data/mockData";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { formatCurrency, formatDateTime, initials, cn } from "@/lib/utils";
 
 const FILTERS: { label: string; value: CallOutcome | "all" }[] = [
@@ -24,6 +25,8 @@ function formatDuration(sec: number): string {
 }
 
 export default function CallHistory() {
+  useDocumentMeta({ title: "Call History", noindex: true });
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CallOutcome | "all">("all");
 
@@ -44,7 +47,7 @@ export default function CallHistory() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Call History</h2>
+          <h1 className="text-2xl font-bold tracking-tight">Call History</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Every call your AI receptionist handled, with summaries and outcomes.
           </p>
@@ -55,6 +58,8 @@ export default function CallHistory() {
           <div className="relative sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              type="search"
+              aria-label="Search calls by caller, reason, or number"
               placeholder="Search caller, reason, number…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -66,8 +71,9 @@ export default function CallHistory() {
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value)}
+                aria-pressed={filter === f.value}
                 className={cn(
-                  "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  "min-h-[38px] rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
                   filter === f.value
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:text-foreground"
@@ -97,12 +103,16 @@ export default function CallHistory() {
               {filtered.map((call) => (
                 <tr
                   key={call.id}
+                  onClick={() => navigate(`/dashboard/calls/${call.id}`)}
                   className="group cursor-pointer transition-colors hover:bg-muted/40"
                 >
                   <td className="px-6 py-4">
+                    {/* The row itself navigates on click; this link is the
+                        keyboard-accessible focus target for the row. */}
                     <Link
                       to={`/dashboard/calls/${call.id}`}
-                      className="flex items-center gap-3"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                         {call.caller === "Unknown Caller" ? "?" : initials(call.caller)}
@@ -131,12 +141,9 @@ export default function CallHistory() {
                     <OutcomeBadge outcome={call.outcome} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link
-                      to={`/dashboard/calls/${call.id}`}
-                      className="inline-grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors group-hover:bg-background group-hover:text-foreground"
-                    >
+                    <span className="inline-grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors group-hover:bg-background group-hover:text-foreground">
                       <ChevronRight className="size-4" />
-                    </Link>
+                    </span>
                   </td>
                 </tr>
               ))}

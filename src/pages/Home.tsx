@@ -17,6 +17,7 @@ import { Footer } from "@/components/marketing/Footer";
 import { PhoneDemo } from "@/components/marketing/PhoneDemo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------- Hero ----------------------------------- */
@@ -251,7 +252,10 @@ function HowItWorks() {
         <div className="mt-14 grid gap-6 md:grid-cols-3">
           {steps.map((s, i) => (
             <div key={s.title} className="relative rounded-xl border border-border bg-card p-7 shadow-card">
-              <span className="absolute right-6 top-6 text-5xl font-extrabold text-muted/80">
+              <span
+                aria-hidden="true"
+                className="absolute right-6 top-6 text-5xl font-extrabold text-primary/15"
+              >
                 {i + 1}
               </span>
               <span className="grid size-12 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -303,10 +307,16 @@ function FinalCTA() {
 /* ------------------------------- Page ----------------------------------- */
 
 export default function Home() {
+  useDocumentMeta({
+    title: "PracticeVoice AI — Never miss another patient call",
+    description:
+      "The AI voice receptionist for medical, dental, and legal practices. Book appointments 24/7 and see the revenue your AI generates.",
+    path: "/",
+  });
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         <Hero />
         <TrustBar />
         <Benefits />

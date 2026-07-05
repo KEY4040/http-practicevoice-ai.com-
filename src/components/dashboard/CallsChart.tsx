@@ -37,8 +37,14 @@ function ChartTooltip({
 }
 
 export function CallsChart() {
+  const totalCalls = callsOverTime.reduce((s, d) => s + d.calls, 0);
+  const totalBooked = callsOverTime.reduce((s, d) => s + d.booked, 0);
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <div
+      role="img"
+      aria-label={`Calls over the last 14 days: ${totalCalls} answered and ${totalBooked} booked.`}
+    >
+      <ResponsiveContainer width="100%" height={280}>
       <AreaChart data={callsOverTime} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
         <defs>
           <linearGradient id="fillCalls" x1="0" y1="0" x2="0" y2="1">
@@ -83,6 +89,7 @@ export function CallsChart() {
           fill="url(#fillBooked)"
         />
       </AreaChart>
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+    </div>
   );
 }

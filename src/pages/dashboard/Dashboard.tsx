@@ -13,6 +13,7 @@ import { OutcomeBadge } from "@/components/OutcomeBadge";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import {
   metrics,
   calls,
@@ -24,6 +25,7 @@ import { formatCurrency, timeAgo, initials } from "@/lib/utils";
 const ICONS = [PhoneCall, CalendarCheck, TrendingUp, MoonStar];
 
 export default function Dashboard() {
+  useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] ?? "there";
   const recent = calls.slice(0, 5);
@@ -35,9 +37,9 @@ export default function Dashboard() {
         {/* Greeting */}
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               Good to see you, {firstName} 👋
-            </h2>
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Here's what your AI receptionist did this month.
             </p>
@@ -99,7 +101,14 @@ export default function Dashboard() {
                       <span className="text-muted-foreground">{r.type}</span>
                       <span className="font-semibold">{formatCurrency(r.value)}</span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-2 overflow-hidden rounded-full bg-muted"
+                      role="progressbar"
+                      aria-valuenow={pct}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`${r.type}: ${formatCurrency(r.value)}, ${pct}% of revenue`}
+                    >
                       <div
                         className="h-full rounded-full bg-primary"
                         style={{ width: `${pct}%` }}
