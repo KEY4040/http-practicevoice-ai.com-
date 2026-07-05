@@ -1,9 +1,9 @@
 /**
  * Single source of truth for pricing plans.
  *
- * Used by the Pricing page and the checkout helper. When you connect Stripe,
- * you only touch two things: set the `VITE_STRIPE_PRICE_*` env vars, and swap
- * the body of `startCheckout` in `src/lib/checkout.ts`. Nothing else changes.
+ * `paymentLink` is a Stripe Payment Link — clicking a plan's button sends the
+ * customer straight to Stripe's hosted checkout (14-day free trial, then the
+ * monthly price). To change a price or link, update it here and in Stripe.
  */
 
 export type PlanId = "basic" | "professional" | "premium";
@@ -14,9 +14,9 @@ export interface Plan {
   price: number;
   period: string;
   tagline: string;
-  /** CTA behavior: "trial" starts the free-trial/checkout flow; "sales" emails sales. */
-  action: "trial" | "sales";
   cta: string;
+  /** Stripe Payment Link the CTA opens. */
+  paymentLink: string;
   highlighted?: boolean;
   badge?: string;
   features: string[];
@@ -29,8 +29,8 @@ export const PLANS: Plan[] = [
     price: 99,
     period: "/month",
     tagline: "For a single practice that's done missing calls.",
-    action: "trial",
     cta: "Start free trial",
+    paymentLink: "https://buy.stripe.com/4gMfZh8WF8Ya3812hJcjS0i",
     features: [
       "Up to 300 calls answered / mo",
       "24/7 call answering & booking",
@@ -46,8 +46,8 @@ export const PLANS: Plan[] = [
     price: 199,
     period: "/month",
     tagline: "Everything a busy front desk needs — plus proof of the payoff.",
-    action: "trial",
     cta: "Start 14-day free trial",
+    paymentLink: "https://buy.stripe.com/14A3cva0J0rE5g97C3cjS0h",
     highlighted: true,
     badge: "Most popular",
     features: [
@@ -66,8 +66,8 @@ export const PLANS: Plan[] = [
     price: 399,
     period: "/month",
     tagline: "For groups and multi-location practices.",
-    action: "sales",
-    cta: "Talk to sales",
+    cta: "Start free trial",
+    paymentLink: "https://buy.stripe.com/14A3cvb4N3DQ7oh7C3cjS0g",
     features: [
       "Unlimited calls answered",
       "Everything in Professional, plus:",

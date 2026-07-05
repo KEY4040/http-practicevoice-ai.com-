@@ -9,25 +9,18 @@ import { PLANS, type Plan } from "@/data/plans";
 import { startCheckout } from "@/lib/checkout";
 import { cn } from "@/lib/utils";
 
-const SALES_EMAIL =
-  "mailto:sales@practicevoice-ai.com?subject=PracticeVoice%20AI%20Premium%20inquiry";
-
 export default function Pricing() {
   const navigate = useNavigate();
   useDocumentMeta({
     title: "Pricing — PracticeVoice AI",
     description:
-      "Straightforward pricing for PracticeVoice AI. Plans from $99/mo with a 14-day free trial and no credit card required.",
+      "Straightforward pricing for PracticeVoice AI. Plans from $99/mo with a 14-day free trial.",
     path: "/pricing",
   });
 
   function handleCta(plan: Plan) {
-    if (plan.action === "sales") {
-      window.location.href = SALES_EMAIL;
-    } else {
-      // Routes to the free-trial signup today; ready to swap for Stripe Checkout.
-      startCheckout(plan, navigate);
-    }
+    // Opens the plan's Stripe Payment Link (14-day free trial, then billed).
+    startCheckout(plan, navigate);
   }
 
   return (
@@ -44,8 +37,8 @@ export default function Pricing() {
               One booked patient covers the month
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-              Pick a plan, go live in 5 minutes. 14-day free trial, no credit
-              card, cancel anytime.
+              Pick a plan and go live in 5 minutes. 14-day free trial, cancel
+              anytime.
             </p>
           </div>
         </section>

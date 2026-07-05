@@ -44,7 +44,7 @@ function Hero() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link to="/signup?plan=professional">
+              <Link to="/pricing">
                 Start 14-day free trial
                 <ArrowRight />
               </Link>
@@ -284,12 +284,12 @@ function FinalCTA() {
             Stop sending patients to voicemail
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-            Join 200+ practices that never miss a call. Free for 14 days, no
-            credit card, live in 5 minutes.
+            Join 200+ practices that never miss a call. 14-day free trial, live
+            in 5 minutes, cancel anytime.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link to="/signup?plan=professional">
+              <Link to="/pricing">
                 Start free trial
                 <ArrowRight />
               </Link>
