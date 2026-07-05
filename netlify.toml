@@ -5,6 +5,13 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Serverless functions (Twilio SMS, Retell webhook, scheduled reminders).
+# These deploy automatically with the site; add the TWILIO_* / SUPABASE_* env
+# vars in the Netlify UI to turn them on.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # SPA fallback so client-side routes (React Router) resolve on refresh / deep links.
 [[redirects]]
   from = "/*"

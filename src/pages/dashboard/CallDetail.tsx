@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,13 +9,18 @@ import {
   StickyNote,
   User,
   DollarSign,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { OutcomeBadge } from "@/components/OutcomeBadge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getCallById } from "@/data/mockData";
+import { getCallById, type Call } from "@/data/mockData";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { loadClinicSettings } from "@/lib/clinicSettings";
+import { renderTemplate } from "@/lib/smsTemplates";
+import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { formatCurrency, formatDateTime, initials, cn } from "@/lib/utils";
 
 function formatDuration(sec: number): string {
@@ -158,6 +164,7 @@ export default function CallDetail() {
                     <Row label="Provider" value={call.appointment.provider} />
                     <Row label="When" value={call.appointment.when} />
                   </dl>
+                  <SmsActions call={call} />
                 </div>
               </Card>
             )}
@@ -179,6 +186,82 @@ export default function CallDetail() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+/**
+ * Confirmation / reminder text actions for a booked call. Renders the clinic's
+ * saved template with this call's details and sends via the SMS helper (which
+ * hits the Twilio Netlify Function; simulates in demo/preview).
+ */
+function SmsActions({ call }: { call: Call }) {
+  const [pending, setPending] = useState<"confirmation" | "reminder" | null>(null);
+  const [result, setResult] = useState<SmsResult | null>(null);
+
+  async function send(kind: "confirmation" | "reminder") {
+    if (!call.appointment) return;
+    const settings = loadClinicSettings();
+    const template =
+      kind === "confirmation"
+        ? settings.confirmationTemplate
+        : settings.reminderTemplate;
+    const body = renderTemplate(template, {
+      patient_name: call.caller,
+      clinic_name: settings.clinicName,
+      service: call.appointment.type,
+      appointment_time: call.appointment.when,
+      provider: call.appointment.provider,
+    });
+    setPending(kind);
+    setResult(null);
+    const res = await sendSms(call.phone, body);
+    setPending(null);
+    setResult(res);
+  }
+
+  return (
+    <div className="mt-5 border-t border-accent/20 pt-4">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={pending !== null}
+          onClick={() => send("confirmation")}
+        >
+          {pending === "confirmation" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Send />
+          )}
+          Resend confirmation
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={pending !== null}
+          onClick={() => send("reminder")}
+        >
+          {pending === "reminder" ? <Loader2 className="animate-spin" /> : <Send />}
+          Send reminder
+        </Button>
+      </div>
+      {result && (
+        <p
+          className={cn(
+            "mt-2.5 text-xs",
+            result.status === "sent"
+              ? "text-accent-hover"
+              : result.status === "error"
+                ? "text-destructive"
+                : "text-muted-foreground"
+          )}
+        >
+          {describeSmsResult(result)} · to {call.phone}
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -9,14 +9,18 @@ import {
   Plus,
   X,
   Mic,
+  MessageSquareText,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { loadClinicSettings, saveClinicSettings } from "@/lib/clinicSettings";
+import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SERVICES = [
@@ -31,7 +35,9 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function Settings() {
   useDocumentMeta({ title: "Clinic Setup", noindex: true });
-  const [clinicName, setClinicName] = useState("Bayview Dental");
+  // Read persisted settings once (localStorage today, Supabase-ready).
+  const [loaded] = useState(loadClinicSettings);
+  const [clinicName, setClinicName] = useState(loaded.clinicName);
   const [phone, setPhone] = useState("(415) 555-0100");
   const [services, setServices] = useState<string[]>(DEFAULT_SERVICES);
   const [newService, setNewService] = useState("");
@@ -40,6 +46,11 @@ export default function Settings() {
   const [closeTime, setCloseTime] = useState("17:00");
   const [voice, setVoice] = useState("Ava");
   const [calendarConnected, setCalendarConnected] = useState(false);
+  const [twilioNumber, setTwilioNumber] = useState(loaded.twilioNumber);
+  const [confirmationTemplate, setConfirmationTemplate] = useState(
+    loaded.confirmationTemplate
+  );
+  const [reminderTemplate, setReminderTemplate] = useState(loaded.reminderTemplate);
   const [saved, setSaved] = useState(false);
 
   function addService() {
@@ -58,8 +69,14 @@ export default function Settings() {
 
   function onSave(e: FormEvent) {
     e.preventDefault();
-    // In production this would persist to Supabase. For the demo we flash a
-    // success state.
+    // Persist the settings the SMS features read (localStorage today; swap for
+    // Supabase later without touching the rest of the app).
+    saveClinicSettings({
+      clinicName,
+      twilioNumber,
+      confirmationTemplate,
+      reminderTemplate,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -313,6 +330,73 @@ export default function Settings() {
           </fieldset>
         </Card>
 
+        {/* Text messages (SMS) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquareText className="size-4 text-primary" />
+              Text messages (SMS)
+            </CardTitle>
+            <CardDescription>
+              Confirmations and reminders sent to patients after they book.
+            </CardDescription>
+          </CardHeader>
+          <div className="space-y-6 px-6 pb-6">
+            <div className="space-y-1.5">
+              <Label htmlFor="twilio">Your Twilio phone number</Label>
+              <div className="relative max-w-xs">
+                <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="twilio"
+                  value={twilioNumber}
+                  onChange={(e) => setTwilioNumber(e.target.value)}
+                  className="pl-9"
+                  placeholder="+1 (415) 555-0199"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The number texts are sent from. Connect it in Netlify with your
+                Twilio keys to start sending.
+              </p>
+            </div>
+
+            {/* Available variables */}
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="text-xs font-medium text-foreground">
+                Insert these — they fill in automatically:
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {SMS_VARIABLES.map((v) => (
+                  <code
+                    key={v.token}
+                    title={v.label}
+                    className="rounded-md bg-background px-1.5 py-0.5 text-xs text-primary shadow-soft"
+                  >
+                    {v.token}
+                  </code>
+                ))}
+              </div>
+            </div>
+
+            <SmsTemplateField
+              id="confirmation"
+              label="Confirmation text"
+              hint="Sent right after the AI books an appointment."
+              value={confirmationTemplate}
+              onChange={setConfirmationTemplate}
+              clinicName={clinicName}
+            />
+            <SmsTemplateField
+              id="reminder"
+              label="Reminder text"
+              hint="Sent automatically ~24 hours before the appointment."
+              value={reminderTemplate}
+              onChange={setReminderTemplate}
+              clinicName={clinicName}
+            />
+          </div>
+        </Card>
+
         {/* Sticky save bar */}
         <div className="sticky bottom-4 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-elevated backdrop-blur">
           <p className="text-sm text-muted-foreground">
@@ -331,5 +415,42 @@ export default function Settings() {
         </div>
       </form>
     </DashboardLayout>
+  );
+}
+
+/** A template editor with a live "how it'll read" preview bubble. */
+function SmsTemplateField({
+  id,
+  label,
+  hint,
+  value,
+  onChange,
+  clinicName,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  value: string;
+  onChange: (v: string) => void;
+  clinicName: string;
+}) {
+  const preview = renderTemplate(value, sampleVars(clinicName));
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <p className="text-xs text-muted-foreground">{hint}</p>
+      <Textarea
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+      />
+      <div className="mt-2">
+        <p className="mb-1 text-xs font-medium text-muted-foreground">Preview</p>
+        <div className="max-w-sm rounded-2xl rounded-bl-sm bg-primary px-3.5 py-2.5 text-sm text-primary-foreground shadow-soft">
+          {preview}
+        </div>
+      </div>
+    </div>
   );
 }

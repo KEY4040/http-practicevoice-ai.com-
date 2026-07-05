@@ -11,6 +11,9 @@ written in plain English, no coding required.
    online and connect the real services, in order, only as you need them.
 4. **[Audit Report](./04-AUDIT-REPORT.md)** — the 4-level code review and every
    fix that was applied (for you or a future developer).
+5. **[Go-Live Handoff](./05-GO-LIVE-HANDOFF.md)** — the master checklist of the
+   only things left, each one needing *you* (accounts, keys, switches). **Read
+   this when you're ready to connect the real services.**
 
 For the technical setup (`npm install`, structure, Supabase schema), see the
 [main README](../README.md).
