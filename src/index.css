@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * PracticeVoice AI design tokens.
+ * Colors are stored as HSL channels so Tailwind's hsl(var(--token)) can layer
+ * opacity on top. Palette: deep trustworthy blue + fresh green accent on a
+ * clean white / light-gray canvas.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 16%;
+
+    /* Primary — deep trustworthy blue (#1E40AF) */
+    --primary: 224 76% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 224 76% 34%;
+
+    /* Accent — fresh green (#10B981) */
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 160 84% 32%;
+
+    --muted: 210 40% 97%;
+    --muted-foreground: 215 20% 45%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 83% 14%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 224 76% 40%;
+
+    --radius: 1rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  /* Subtle, professional focus ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Faint dotted grid used behind hero / setup sections */
+  .bg-grid {
+    background-image: radial-gradient(
+      hsl(var(--border)) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+}
