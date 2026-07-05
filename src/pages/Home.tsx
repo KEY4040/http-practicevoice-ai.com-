@@ -37,14 +37,14 @@ function Hero() {
             <span className="gradient-text">patient call</span>.
           </h1>
           <p className="mt-6 max-w-xl text-balance text-lg text-muted-foreground">
-            PracticeVoice AI answers every call with a warm, professional voice —
-            booking appointments 24/7, sending smart SMS reminders, and showing
-            you exactly how much revenue it generates.
+            Your AI receptionist answers every call, books the appointment, and
+            shows you the revenue it brought in. No missed patients, no
+            voicemail — live in 5 minutes.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link to="/signup">
+              <Link to="/signup?plan=professional">
                 Start 14-day free trial
                 <ArrowRight />
               </Link>
@@ -110,20 +110,20 @@ function TrustBar() {
 const benefits = [
   {
     Icon: PhoneCall,
-    title: "Answer every call, instantly",
-    body: "A natural, warm voice picks up on the first ring — day or night, weekends and holidays. No hold music, no missed patients.",
+    title: "Never miss a call",
+    body: "Every call answered on the first ring — nights, weekends, lunch, holidays. No hold music, no voicemail, no patient left behind.",
     accent: "primary" as const,
   },
   {
     Icon: CalendarCheck,
-    title: "Book appointments 24/7",
-    body: "The AI checks real availability, books the right provider, and sends an instant SMS confirmation — while you sleep.",
+    title: "Books appointments for you",
+    body: "The AI checks your calendar, books the right provider, and texts a confirmation — while your team helps the patients in the chair.",
     accent: "accent" as const,
   },
   {
     Icon: TrendingUp,
-    title: "See the revenue it creates",
-    body: "Every booked call is tied to real dollars, so you know exactly how much your AI receptionist earns you each month.",
+    title: "Shows the revenue it makes you",
+    body: "Every booked call is tied to real dollars, so you see exactly what your AI receptionist earns you each month.",
     accent: "primary" as const,
   },
 ];
@@ -134,14 +134,14 @@ function Benefits() {
       <div className="container-page">
         <div className="mx-auto max-w-2xl text-center">
           <Badge variant="success" className="mb-4">
-            Why practices switch
+            Built for busy front desks
           </Badge>
           <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            10x better than a generic answering service
+            Every call your front desk misses — handled
           </h2>
           <p className="mt-4 text-balance text-lg text-muted-foreground">
-            Focused on one thing: turning calls into booked, paying patients —
-            and proving it.
+            Lunch breaks, after hours, two lines ringing at once. We catch them
+            all and turn them into booked patients.
           </p>
         </div>
 
@@ -194,8 +194,8 @@ function RevenueHighlight() {
               The only receptionist that shows you the money it makes
             </h2>
             <p className="mt-4 text-balance text-primary-foreground/80">
-              Your dashboard ties every answered call to booked revenue — clear
-              ROI, no guesswork.
+              Every answered call, tied to booked revenue. You see the ROI in
+              real dollars — not guesswork.
             </p>
           </div>
           <div className="mt-10 grid grid-cols-2 gap-6 lg:grid-cols-4">
@@ -284,12 +284,12 @@ function FinalCTA() {
             Stop sending patients to voicemail
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-            Join 200+ practices that never miss a call. Start your 14-day free
-            trial — no credit card required.
+            Join 200+ practices that never miss a call. Free for 14 days, no
+            credit card, live in 5 minutes.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link to="/signup">
+              <Link to="/signup?plan=professional">
                 Start free trial
                 <ArrowRight />
               </Link>

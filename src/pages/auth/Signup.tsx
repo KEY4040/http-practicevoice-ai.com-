@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Check } from "lucide-react";
 import { AuthLayout } from "./AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { PLANS } from "@/data/plans";
 
 const perks = [
   "14-day free trial",
@@ -18,6 +20,11 @@ export default function Signup() {
   useDocumentMeta({ title: "Start your free trial", noindex: true });
   const { signUp, demoMode } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // The plan chosen on the pricing/home page rides along in `?plan=`. When
+  // Stripe is connected, this is where you'd start the Checkout Session after
+  // the account is created.
+  const selectedPlan = PLANS.find((p) => p.id === searchParams.get("plan"));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,6 +58,18 @@ export default function Signup() {
           </span>
         ))}
       </div>
+
+      {selectedPlan && (
+        <div className="mb-6 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/[0.04] px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold">{selectedPlan.name} plan</p>
+            <p className="text-xs text-muted-foreground">
+              ${selectedPlan.price}{selectedPlan.period} after your free trial
+            </p>
+          </div>
+          <Badge variant="primary">14-day free trial</Badge>
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5">
