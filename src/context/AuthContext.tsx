@@ -23,7 +23,13 @@ interface AuthContextValue {
   /** True when running in demo/mock auth (no real backend). */
   demoMode: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  /** Resolves with `needsConfirmation: true` when Supabase requires the user
+   *  to confirm their email before a session exists. */
+  signUp: (
+    email: string,
+    password: string,
+    name: string
+  ) => Promise<{ needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -158,14 +164,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             options: { data: { name } },
           });
           if (error) throw error;
-          if (data.user) {
+          // With "Confirm email" on (Supabase default), signUp returns a user
+          // but NO session. Don't mark them logged in — tell the UI to ask them
+          // to confirm their email. Only set the user when a session exists.
+          if (data.session && data.user) {
             setUser({
               email: data.user.email ?? email,
               name: resolveName(name, email),
             });
+            return { needsConfirmation: false };
           }
+          return { needsConfirmation: true };
         } else if (isDemoMode) {
           setDemoUser({ email, name: resolveName(name, email) });
+          return { needsConfirmation: false };
         } else {
           throw new Error(MISCONFIGURED_MESSAGE);
         }

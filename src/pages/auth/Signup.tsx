@@ -30,19 +30,46 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmSent, setConfirmSent] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await signUp(email, password, name);
-      navigate("/dashboard");
+      const { needsConfirmation } = await signUp(email, password, name);
+      if (needsConfirmation) {
+        // Email confirmation is on — don't pretend they're logged in.
+        setConfirmSent(true);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign up.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (confirmSent) {
+    return (
+      <AuthLayout
+        title="Check your email"
+        subtitle="One quick step to activate your account."
+      >
+        <div className="rounded-xl border border-border bg-muted/40 p-5 text-sm text-muted-foreground">
+          We sent a confirmation link to{" "}
+          <span className="font-semibold text-foreground">{email}</span>. Click
+          it to activate your account, then come back and log in.
+        </div>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Already confirmed?{" "}
+          <Link to="/login" className="font-semibold text-primary hover:underline">
+            Log in
+          </Link>
+        </p>
+      </AuthLayout>
+    );
   }
 
   return (
