@@ -1,14 +1,22 @@
--- PracticeVoice AI — starter Supabase schema
+-- PracticeVoice AI — Supabase schema
 -- Run in the Supabase SQL editor. Sets up clinics, calls, and appointments
 -- with row-level security so each authenticated owner sees only their data.
+--
+-- This script is IDEMPOTENT: it drops anything it previously created before
+-- rebuilding, so it's always safe to re-run (e.g. after a partial run).
+-- The database is empty until real data flows in, so the drops are harmless.
+
+-- Clean slate (drop in dependency order) ------------------------------------
+drop table if exists public.appointments cascade;
+drop table if exists public.calls cascade;
+drop table if exists public.clinics cascade;
+drop type if exists public.call_outcome cascade;
 
 -- Enable UUID generation
 create extension if not exists "pgcrypto";
 
--- ---------------------------------------------------------------------------
--- Clinics (one per practice owner)
--- ---------------------------------------------------------------------------
-create table if not exists public.clinics (
+-- Clinics (one per practice owner) ------------------------------------------
+create table public.clinics (
   id            uuid primary key default gen_random_uuid(),
   owner_id      uuid not null references auth.users (id) on delete cascade,
   name          text not null,
@@ -22,19 +30,17 @@ create table if not exists public.clinics (
   created_at    timestamptz not null default now()
 );
 
--- ---------------------------------------------------------------------------
--- Calls
--- ---------------------------------------------------------------------------
-create type call_outcome as enum ('booked', 'escalated', 'missed', 'info');
+-- Calls ---------------------------------------------------------------------
+create type public.call_outcome as enum ('booked', 'escalated', 'missed', 'info');
 
-create table if not exists public.calls (
+create table public.calls (
   id            uuid primary key default gen_random_uuid(),
   clinic_id     uuid not null references public.clinics (id) on delete cascade,
   caller_name   text,
   caller_phone  text,
   started_at    timestamptz not null default now(),
   duration_sec  integer default 0,
-  outcome       call_outcome not null default 'info',
+  outcome       public.call_outcome not null default 'info',
   reason        text,
   summary       text,
   transcript    jsonb default '[]',
@@ -42,13 +48,11 @@ create table if not exists public.calls (
   notes         text
 );
 
-create index if not exists calls_clinic_started_idx
+create index calls_clinic_started_idx
   on public.calls (clinic_id, started_at desc);
 
--- ---------------------------------------------------------------------------
--- Appointments (created when a call books)
--- ---------------------------------------------------------------------------
-create table if not exists public.appointments (
+-- Appointments (created when a call books) ----------------------------------
+create table public.appointments (
   id            uuid primary key default gen_random_uuid(),
   clinic_id     uuid not null references public.clinics (id) on delete cascade,
   call_id       uuid references public.calls (id) on delete set null,
@@ -59,14 +63,9 @@ create table if not exists public.appointments (
   created_at    timestamptz not null default now()
 );
 
--- ---------------------------------------------------------------------------
--- Row-level security
---
--- `force row level security` ensures even a table owner / privileged connection
--- is still filtered. Policies are scoped `to authenticated` so the anon role is
--- never evaluated against them at all (defense-in-depth; auth.uid() is null for
--- anon anyway, so no row would match).
--- ---------------------------------------------------------------------------
+-- Row-level security --------------------------------------------------------
+-- `force row level security` filters even privileged connections. Policies are
+-- scoped `to authenticated` so the anon role is never evaluated against them.
 alter table public.clinics enable row level security;
 alter table public.calls enable row level security;
 alter table public.appointments enable row level security;
