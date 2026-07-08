@@ -10,6 +10,8 @@ import {
   X,
   Mic,
   MessageSquareText,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { loadClinicSettings, saveClinicSettings } from "@/lib/clinicSettings";
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
+import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SERVICES = [
@@ -360,6 +363,8 @@ export default function Settings() {
               </p>
             </div>
 
+            <SendTestText />
+
             {/* Available variables */}
             <div className="rounded-xl bg-muted/50 p-3">
               <p className="text-xs font-medium text-foreground">
@@ -415,6 +420,78 @@ export default function Settings() {
         </div>
       </form>
     </DashboardLayout>
+  );
+}
+
+/** Normalize a typed US phone number to E.164 (e.g. "+14788341308"). */
+function toE164(input: string): string {
+  const trimmed = input.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (trimmed.startsWith("+")) return "+" + digits;
+  if (digits.length === 10) return "+1" + digits;
+  if (digits.length === 11 && digits.startsWith("1")) return "+" + digits;
+  return trimmed;
+}
+
+/**
+ * Lets the owner send a real test text to their own phone to confirm Twilio is
+ * working — no fake data, no dev tools. Uses the same send path as everything
+ * else (the send-sms Netlify Function).
+ */
+function SendTestText() {
+  const [to, setTo] = useState("");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<SmsResult | null>(null);
+
+  async function send() {
+    if (!to.trim()) return;
+    setSending(true);
+    setResult(null);
+    const res = await sendSms(
+      toE164(to),
+      "✅ Test from PracticeVoice AI — your text messaging is working!"
+    );
+    setSending(false);
+    setResult(res);
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-muted/30 p-4">
+      <p className="text-sm font-medium">Send a test text</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Text your own phone to confirm Twilio is set up correctly.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <Input
+          type="tel"
+          aria-label="Your phone number for a test text"
+          placeholder="Your cell, e.g. (762) 555-0100"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          className="sm:max-w-xs"
+        />
+        <Button type="button" onClick={send} disabled={sending || !to.trim()}>
+          {sending ? <Loader2 className="animate-spin" /> : <Send />}
+          Send test
+        </Button>
+      </div>
+      {result && (
+        <p
+          className={cn(
+            "mt-2.5 text-xs",
+            result.status === "sent"
+              ? "font-medium text-accent-hover"
+              : result.status === "error"
+                ? "text-destructive"
+                : "text-muted-foreground"
+          )}
+        >
+          {result.status === "sent"
+            ? `Sent ✓ Check ${toE164(to)} for the text.`
+            : describeSmsResult(result)}
+        </p>
+      )}
+    </div>
   );
 }
 
