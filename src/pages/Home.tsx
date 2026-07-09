@@ -273,6 +273,68 @@ function HowItWorks() {
   );
 }
 
+/* -------------------------------- FAQ ----------------------------------- */
+
+const faqs = [
+  {
+    q: "What is PracticeVoice AI?",
+    a: "PracticeVoice AI is an AI voice receptionist for medical, dental, and legal practices. It answers every incoming call, books appointments around the clock, sends text confirmations, and shows the revenue each call generates.",
+  },
+  {
+    q: "How does the AI receptionist answer calls?",
+    a: "You forward your existing practice line to PracticeVoice AI. A warm, professional AI voice answers on the first ring, understands what the caller needs, books the right appointment, and texts a confirmation — day or night.",
+  },
+  {
+    q: "Is PracticeVoice AI HIPAA compliant?",
+    a: "It's built for HIPAA-conscious workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans.",
+  },
+  {
+    q: "How long does setup take?",
+    a: "Most practices are live in under five minutes: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away.",
+  },
+  {
+    q: "How much does PracticeVoice AI cost?",
+    a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan includes a 14-day free trial with no credit card required.",
+  },
+  {
+    q: "Which practices is it built for?",
+    a: "It's designed for small and mid-sized medical, dental, and legal practices — any office that answers appointment calls and can't afford to miss one.",
+  },
+];
+
+function FAQ() {
+  return (
+    <section id="faq" className="scroll-mt-20 py-20 lg:py-28">
+      <div className="container-page">
+        <div className="mx-auto max-w-2xl text-center">
+          <Badge variant="neutral" className="mb-4">
+            Frequently asked questions
+          </Badge>
+          <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+            Everything you need to know
+          </h2>
+        </div>
+
+        <div className="mx-auto mt-12 max-w-3xl divide-y divide-border rounded-2xl border border-border bg-card">
+          {faqs.map((item) => (
+            <details key={item.q} className="group px-6 py-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold">
+                {item.q}
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground transition-transform group-open:rotate-45">
+                  +
+                </span>
+              </summary>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {item.a}
+              </p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* -------------------------------- CTA ----------------------------------- */
 
 function FinalCTA() {
@@ -322,6 +384,7 @@ export default function Home() {
         <Benefits />
         <RevenueHighlight />
         <HowItWorks />
+        <FAQ />
         <FinalCTA />
       </main>
       <Footer />
