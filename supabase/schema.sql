@@ -5,6 +5,12 @@
 -- This script is IDEMPOTENT: it drops anything it previously created before
 -- rebuilding, so it's always safe to re-run (e.g. after a partial run).
 -- The database is empty until real data flows in, so the drops are harmless.
+--
+-- Note on the server side: the Netlify functions (retell-webhook,
+-- send-reminders) connect with the Supabase SERVICE ROLE key, which bypasses
+-- row-level security by design — that's how a call from Retell gets written
+-- into the right clinic. The browser only ever uses the anon key and is fully
+-- constrained by the policies below.
 
 -- Clean slate (drop in dependency order) ------------------------------------
 drop table if exists public.appointments cascade;
@@ -18,7 +24,10 @@ create extension if not exists "pgcrypto";
 -- Clinics (one per practice owner) ------------------------------------------
 create table public.clinics (
   id            uuid primary key default gen_random_uuid(),
-  owner_id      uuid not null references auth.users (id) on delete cascade,
+  -- One clinic per owner. The unique constraint also makes the app's
+  -- get-or-create race-safe: a second tab's insert conflicts and falls back to
+  -- reading the existing row instead of creating a duplicate.
+  owner_id      uuid not null unique references auth.users (id) on delete cascade,
   name          text not null,
   phone         text,
   services      text[] default '{}',
@@ -27,6 +36,12 @@ create table public.clinics (
   close_time    time default '17:00',
   voice         text default 'Ava',
   calendar_connected boolean default false,
+  -- Maps an incoming Retell call to this clinic. Either is enough:
+  --   retell_number   = the phone number callers dial (Retell "to_number")
+  --   retell_agent_id = the Retell agent id that answered the call
+  -- For a single practice you can skip both and set DEFAULT_CLINIC_ID instead.
+  retell_number text,
+  retell_agent_id text,
   created_at    timestamptz not null default now()
 );
 
@@ -36,6 +51,8 @@ create type public.call_outcome as enum ('booked', 'escalated', 'missed', 'info'
 create table public.calls (
   id            uuid primary key default gen_random_uuid(),
   clinic_id     uuid not null references public.clinics (id) on delete cascade,
+  -- Retell's own call id, so a repeated webhook can't create a duplicate row.
+  retell_call_id text unique,
   caller_name   text,
   caller_phone  text,
   started_at    timestamptz not null default now(),
@@ -57,15 +74,28 @@ create table public.appointments (
   clinic_id     uuid not null references public.clinics (id) on delete cascade,
   call_id       uuid references public.calls (id) on delete set null,
   patient_name  text,
+  -- The patient's number, copied onto the appointment so the reminder job can
+  -- text them without having to join back through the call.
+  patient_phone text,
   type          text,
   provider      text,
   scheduled_for timestamptz,
+  -- Set true once the 24h reminder text has gone out, so it only sends once.
+  reminder_sent boolean not null default false,
   created_at    timestamptz not null default now()
 );
+
+-- The reminder job scans for appointments coming up in ~24h that haven't been
+-- reminded yet; this index keeps that scan fast.
+create index appointments_reminder_idx
+  on public.appointments (scheduled_for)
+  where reminder_sent = false;
 
 -- Row-level security --------------------------------------------------------
 -- `force row level security` filters even privileged connections. Policies are
 -- scoped `to authenticated` so the anon role is never evaluated against them.
+-- (The service role key used by the server functions has BYPASSRLS, so it is
+-- intentionally not constrained by these policies.)
 alter table public.clinics enable row level security;
 alter table public.calls enable row level security;
 alter table public.appointments enable row level security;

@@ -38,6 +38,21 @@ export function formatDateTime(iso: string): string {
   });
 }
 
+/** "Tue, Jul 8 · 10:00 AM" style label for a scheduled appointment. */
+export function formatAppointmentWhen(iso: string): string {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const time = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${date} · ${time}`;
+}
+
 /** Relative label such as "12m ago", "3h ago", "2d ago". */
 export function timeAgo(iso: string, now: Date = new Date()): string {
   const diffMs = now.getTime() - new Date(iso).getTime();

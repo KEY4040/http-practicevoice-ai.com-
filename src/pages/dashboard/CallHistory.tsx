@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Phone, ChevronRight } from "lucide-react";
+import { Search, Phone, ChevronRight, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { OutcomeBadge } from "@/components/OutcomeBadge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { calls, type CallOutcome } from "@/data/mockData";
+import { type CallOutcome } from "@/data/mockData";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { formatCurrency, formatDateTime, initials, cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ function formatDuration(sec: number): string {
 export default function CallHistory() {
   useDocumentMeta({ title: "Call History", noindex: true });
   const navigate = useNavigate();
+  const { loading, calls } = useDashboardData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CallOutcome | "all">("all");
 
@@ -41,7 +43,7 @@ export default function CallHistory() {
         c.phone.includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [query, filter]);
+  }, [calls, query, filter]);
 
   return (
     <DashboardLayout>
@@ -85,6 +87,13 @@ export default function CallHistory() {
           </div>
         </div>
 
+        {loading ? (
+          <Card className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Loading calls…
+          </Card>
+        ) : (
+          <>
         {/* Desktop table */}
         <Card className="hidden overflow-hidden md:block">
           <table className="w-full text-sm">
@@ -183,6 +192,8 @@ export default function CallHistory() {
             </Card>
           )}
         </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

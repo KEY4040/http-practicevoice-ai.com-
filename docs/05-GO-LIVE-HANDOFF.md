@@ -20,9 +20,10 @@ Legend: 🟢 done in code · 🔑 needs you
 | Stripe checkout | 🟢 Payment Links wired to buttons | 🔑 Decide test vs live; (optional) subscription webhook |
 | Demo login | 🟢 Works (`VITE_DEMO_MODE=true`) | 🔑 Real accounts = connect Supabase |
 | Database | 🟢 Schema written (`supabase/schema.sql`) | 🔑 Create Supabase project + run schema |
-| Voice AI (Retell) | 🟢 Webhook endpoint built | 🔑 Create Retell agent + paste webhook URL |
+| Voice AI (Retell) | 🟢 Webhook built — verifies signature, saves the call + appointment to the dashboard, texts the confirmation | 🔑 Create agent, paste webhook URL, add 2 env vars |
+| Calls → dashboard | 🟢 Real calls, metrics, revenue, and transcripts flow from the database automatically | 🔑 Nothing (comes with Supabase + Retell above) |
 | SMS (Twilio) | 🟢 Send function + settings UI + templates built | 🔑 Twilio account + 3 keys |
-| SMS reminders (24h) | 🟢 Scheduled function built | 🔑 Needs Supabase + Twilio (above) |
+| SMS reminders (24h) | 🟢 Scheduled function fully implemented (queries appointments, sends, marks sent) | 🔑 Needs Supabase + Twilio (above) |
 
 You do **not** have to do all of this to keep selling with the demo. Do each
 piece when you're ready to serve a real paying customer.
@@ -77,25 +78,37 @@ sending. It just needs your keys.
 
 ## 3. 🔑 Retell AI — the actual voice (answers calls, books appointments)
 
-**Code is complete:** a webhook endpoint that, when a call books an appointment,
-saves it (once Supabase is on) and texts the confirmation.
+**Code is complete:** the webhook verifies the request is really from Retell,
+writes the call (caller, duration, transcript, outcome, revenue) and any booked
+appointment into the database so it appears in your dashboard, and texts the
+patient a confirmation. You just connect it.
 
-1. Create an agent at [retellai.com](https://retellai.com) — give it the
-   receptionist persona, your services, and booking rules.
-2. Get a phone number from Retell (or forward your practice line to it).
-3. In Retell's dashboard, set the **webhook URL** to:
+1. Create your agent at [retellai.com](https://retellai.com) and attach a phone
+   number to it (you've done this — `PracticeVoice Receptionist` on your number).
+2. On the agent, check **"Add an inbound webhook"** and paste:
    ```
    https://practicevoice-ai.com/.netlify/functions/retell-webhook
    ```
-4. Map Retell's booking output fields to what the webhook expects (patient name,
-   phone, appointment type/time/provider) — see the field notes in
-   `netlify/functions/retell-webhook.mjs`.
+3. In Netlify → **Environment variables**, add two:
+   - `RETELL_API_KEY` = your Retell API key (Retell → Settings → API Keys). This
+     lets the webhook verify each call is genuinely from Retell.
+   - `DEFAULT_CLINIC_ID` = your clinic's id. Get it after logging into the
+     dashboard once (that creates your clinic): Supabase → **Table editor →
+     clinics** → copy the `id`. *(Alternative: set that row's `retell_number` to
+     your Retell number instead, and skip this var.)*
+   - *(optional)* `DEFAULT_BOOKING_VALUE` = e.g. `200` — the dollar value each
+     booking adds to your revenue dashboard when the agent doesn't quote one.
+4. **Sharper data (recommended):** in the Retell agent's **Post-Call Analysis**,
+   add fields so the dashboard fills in exactly. The webhook reads these names:
+   `appointment_booked` (yes/no), `appointment_type`, `provider`,
+   `appointment_time` (text) or `appointment_datetime` (ISO), `patient_name`,
+   `revenue`, `escalated`, `reason`. Without them it still logs every call using
+   smart keyword detection — this just makes it precise.
+5. Redeploy (Netlify → Deploys → **Trigger deploy**).
 
-✅ Done when a test call is answered by the AI and (with Twilio on) the caller
-gets a confirmation text.
-
-> ⚠️ Add Retell **signature verification** to the webhook before going live (see
-> the SECURITY TODO in that file) so fake events can't trigger texts.
+✅ Done when a test call is answered by the AI and, within a few seconds of
+hanging up, the call appears in your dashboard (and, with Twilio on, the caller
+gets a confirmation text). Signature verification is already built in.
 
 ---
 

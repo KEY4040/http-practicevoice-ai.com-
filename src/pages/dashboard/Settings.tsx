@@ -22,6 +22,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { loadClinicSettings, saveClinicSettings } from "@/lib/clinicSettings";
+import { isSupabaseConfigured, getSupabase } from "@/lib/supabase";
+import { updateClinicProfile } from "@/lib/clinic";
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { cn } from "@/lib/utils";
@@ -72,14 +74,24 @@ export default function Settings() {
 
   function onSave(e: FormEvent) {
     e.preventDefault();
-    // Persist the settings the SMS features read (localStorage today; swap for
-    // Supabase later without touching the rest of the app).
+    // Persist the settings the SMS features read (localStorage for templates,
+    // which stay on-device; the clinic profile also syncs to Supabase so the
+    // receptionist's confirmation texts use the right practice name/phone).
     saveClinicSettings({
       clinicName,
       twilioNumber,
       confirmationTemplate,
       reminderTemplate,
     });
+    if (isSupabaseConfigured) {
+      getSupabase()
+        .then((supabase) => {
+          if (supabase) return updateClinicProfile(supabase, { name: clinicName, phone });
+        })
+        .catch(() => {
+          /* non-fatal — settings still saved locally */
+        });
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }

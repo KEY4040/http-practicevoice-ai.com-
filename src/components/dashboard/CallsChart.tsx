@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { callsOverTime } from "@/data/mockData";
+import type { CallsOverTimePoint } from "@/lib/dashboardData";
 
 const PRIMARY = "hsl(224 76% 40%)";
 const ACCENT = "hsl(160 84% 39%)";
@@ -36,7 +36,8 @@ function ChartTooltip({
   );
 }
 
-export function CallsChart() {
+export function CallsChart({ data }: { data: CallsOverTimePoint[] }) {
+  const callsOverTime = data;
   const totalCalls = callsOverTime.reduce((s, d) => s + d.calls, 0);
   const totalBooked = callsOverTime.reduce((s, d) => s + d.booked, 0);
   return (

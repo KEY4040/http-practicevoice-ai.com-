@@ -16,7 +16,8 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { OutcomeBadge } from "@/components/OutcomeBadge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getCallById, type Call } from "@/data/mockData";
+import { type Call } from "@/data/mockData";
+import { useCall } from "@/hooks/useDashboardData";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { loadClinicSettings } from "@/lib/clinicSettings";
 import { renderTemplate } from "@/lib/smsTemplates";
@@ -32,11 +33,22 @@ function formatDuration(sec: number): string {
 
 export default function CallDetail() {
   const { id } = useParams<{ id: string }>();
-  const call = id ? getCallById(id) : undefined;
+  const { loading, call } = useCall(id);
   useDocumentMeta({
     title: call ? `${call.caller} · Call detail` : "Call detail",
     noindex: true,
   });
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Loading call…
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (!call) {
     return (

@@ -5,6 +5,8 @@ import {
   TrendingUp,
   MoonStar,
   ArrowRight,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -14,12 +16,8 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import {
-  metrics,
-  calls,
-  revenueByType,
-  type Metric,
-} from "@/data/mockData";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { type Metric } from "@/data/mockData";
 import { formatCurrency, timeAgo, initials } from "@/lib/utils";
 
 const ICONS = [PhoneCall, CalendarCheck, TrendingUp, MoonStar];
@@ -27,9 +25,12 @@ const ICONS = [PhoneCall, CalendarCheck, TrendingUp, MoonStar];
 export default function Dashboard() {
   useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
+  const { loading, isDemo, calls, metrics, callsOverTime, revenueByType } =
+    useDashboardData();
   const firstName = user?.name?.split(" ")[0] ?? "there";
   const recent = calls.slice(0, 5);
   const totalRevenue = revenueByType.reduce((sum, r) => sum + r.value, 0);
+  const hasCalls = calls.length > 0;
 
   return (
     <DashboardLayout>
@@ -41,7 +42,9 @@ export default function Dashboard() {
               Good to see you, {firstName} 👋
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Here's what your AI receptionist did this month.
+              {isDemo
+                ? "Here's what your AI receptionist did this month."
+                : "Here's what your AI receptionist has been up to."}
             </p>
           </div>
           <Button asChild variant="outline">
@@ -52,115 +55,184 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Metric cards */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {metrics.map((m: Metric, i) => (
-            <MetricCard
-              key={m.label}
-              label={m.label}
-              value={m.value}
-              delta={m.delta}
-              hint={m.hint}
-              Icon={ICONS[i]}
-              highlight={m.label === "Revenue Generated"}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <LoadingState />
+        ) : (
+          <>
+            {!isDemo && !hasCalls && <FirstCallBanner />}
 
-        {/* Chart + revenue breakdown */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex-row items-center justify-between">
-              <div>
-                <CardTitle>Calls over time</CardTitle>
-                <CardDescription>Answered vs. booked · last 14 days</CardDescription>
-              </div>
-              <div className="hidden gap-4 sm:flex">
-                <Legend color="hsl(224 76% 40%)" label="Answered" />
-                <Legend color="hsl(160 84% 39%)" label="Booked" />
-              </div>
-            </CardHeader>
-            <div className="px-3 pb-4">
-              <CallsChart />
+            {/* Metric cards */}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {metrics.map((m: Metric, i) => (
+                <MetricCard
+                  key={m.label}
+                  label={m.label}
+                  value={m.value}
+                  delta={m.delta}
+                  hint={m.hint}
+                  Icon={ICONS[i]}
+                  highlight={m.label === "Revenue Generated"}
+                />
+              ))}
             </div>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue by service</CardTitle>
-              <CardDescription>
-                {formatCurrency(totalRevenue)} attributed this month
-              </CardDescription>
-            </CardHeader>
-            <div className="space-y-4 px-6 pb-6">
-              {revenueByType.map((r) => {
-                const pct = Math.round((r.value / totalRevenue) * 100);
-                return (
-                  <div key={r.type}>
-                    <div className="mb-1.5 flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{r.type}</span>
-                      <span className="font-semibold">{formatCurrency(r.value)}</span>
-                    </div>
-                    <div
-                      className="h-2 overflow-hidden rounded-full bg-muted"
-                      role="progressbar"
-                      aria-valuenow={pct}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`${r.type}: ${formatCurrency(r.value)}, ${pct}% of revenue`}
-                    >
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+            {/* Chart + revenue breakdown */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              <Card className="lg:col-span-2">
+                <CardHeader className="flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Calls over time</CardTitle>
+                    <CardDescription>
+                      Answered vs. booked · last 14 days
+                    </CardDescription>
                   </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
+                  <div className="hidden gap-4 sm:flex">
+                    <Legend color="hsl(224 76% 40%)" label="Answered" />
+                    <Legend color="hsl(160 84% 39%)" label="Booked" />
+                  </div>
+                </CardHeader>
+                <div className="px-3 pb-4">
+                  <CallsChart data={callsOverTime} />
+                </div>
+              </Card>
 
-        {/* Recent activity */}
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <div>
-              <CardTitle>Recent calls</CardTitle>
-              <CardDescription>Live activity from your AI receptionist</CardDescription>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revenue by service</CardTitle>
+                  <CardDescription>
+                    {formatCurrency(totalRevenue)} attributed{" "}
+                    {isDemo ? "this month" : "so far"}
+                  </CardDescription>
+                </CardHeader>
+                <div className="space-y-4 px-6 pb-6">
+                  {revenueByType.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      Revenue from booked calls will appear here.
+                    </p>
+                  ) : (
+                    revenueByType.map((r) => {
+                      const pct = totalRevenue
+                        ? Math.round((r.value / totalRevenue) * 100)
+                        : 0;
+                      return (
+                        <div key={r.type}>
+                          <div className="mb-1.5 flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{r.type}</span>
+                            <span className="font-semibold">
+                              {formatCurrency(r.value)}
+                            </span>
+                          </div>
+                          <div
+                            className="h-2 overflow-hidden rounded-full bg-muted"
+                            role="progressbar"
+                            aria-valuenow={pct}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`${r.type}: ${formatCurrency(r.value)}, ${pct}% of revenue`}
+                          >
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </Card>
             </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/dashboard/calls">See all</Link>
-            </Button>
-          </CardHeader>
-          <div className="divide-y divide-border border-t border-border">
-            {recent.map((call) => (
-              <Link
-                key={call.id}
-                to={`/dashboard/calls/${call.id}`}
-                className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
-              >
-                <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                  {call.caller === "Unknown Caller" ? "?" : initials(call.caller)}
+
+            {/* Recent activity */}
+            <Card>
+              <CardHeader className="flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Recent calls</CardTitle>
+                  <CardDescription>
+                    Live activity from your AI receptionist
+                  </CardDescription>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{call.caller}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {call.reason}
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/dashboard/calls">See all</Link>
+                </Button>
+              </CardHeader>
+              {hasCalls ? (
+                <div className="divide-y divide-border border-t border-border">
+                  {recent.map((call) => (
+                    <Link
+                      key={call.id}
+                      to={`/dashboard/calls/${call.id}`}
+                      className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                        {call.caller === "Unknown Caller" ? "?" : initials(call.caller)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{call.caller}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {call.reason}
+                        </p>
+                      </div>
+                      <div className="hidden text-right sm:block">
+                        <p className="text-sm font-semibold text-accent-hover">
+                          {call.revenue > 0 ? formatCurrency(call.revenue) : "—"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {timeAgo(call.time)}
+                        </p>
+                      </div>
+                      <OutcomeBadge outcome={call.outcome} />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 border-t border-border py-14 text-center">
+                  <span className="grid size-11 place-items-center rounded-full bg-muted text-muted-foreground">
+                    <PhoneCall className="size-5" />
+                  </span>
+                  <p className="text-sm font-medium">No calls yet</p>
+                  <p className="max-w-xs text-xs text-muted-foreground">
+                    The moment your AI receptionist answers a call, it shows up
+                    here automatically.
                   </p>
                 </div>
-                <div className="hidden text-right sm:block">
-                  <p className="text-sm font-semibold text-accent-hover">
-                    {call.revenue > 0 ? formatCurrency(call.revenue) : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{timeAgo(call.time)}</p>
-                </div>
-                <OutcomeBadge outcome={call.outcome} />
-              </Link>
-            ))}
-          </div>
-        </Card>
+              )}
+            </Card>
+          </>
+        )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
+      <Loader2 className="size-4 animate-spin" />
+      Loading your dashboard…
+    </div>
+  );
+}
+
+/** Shown to a real (non-demo) account that hasn't logged its first call yet. */
+function FirstCallBanner() {
+  return (
+    <Card className="border-primary/20 bg-primary/[0.04]">
+      <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+            <Sparkles className="size-4" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold">Your receptionist is ready</p>
+            <p className="text-sm text-muted-foreground">
+              Call your PracticeVoice number and book a test appointment — it'll
+              appear here within a few seconds of hanging up.
+            </p>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 
