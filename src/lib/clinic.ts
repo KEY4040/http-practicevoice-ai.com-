@@ -14,8 +14,11 @@ export interface ClinicRow {
   calendar_connected: boolean | null;
 }
 
-const CLINIC_COLUMNS =
-  "id, owner_id, name, phone, retell_number, retell_agent_id, calendar_connected";
+// Select all columns rather than naming the newer ones — this keeps the app
+// working even if the database predates the retell_number/retell_agent_id
+// columns (PostgREST errors on a named column that doesn't exist, but "*" is
+// safe). Re-running supabase/schema.sql adds those columns when convenient.
+const CLINIC_COLUMNS = "*";
 
 /**
  * Fetch the signed-in owner's clinic, creating one on first use so the rest of
