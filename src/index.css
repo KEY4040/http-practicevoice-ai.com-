@@ -97,6 +97,8 @@
     background-size: 22px 22px;
   }
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    /* Ends on accent-hover (darker green) so the tail of the headline still
+       clears WCAG AA large-text contrast on white. */
+    @apply bg-gradient-to-r from-primary to-accent-hover bg-clip-text text-transparent;
   }
 }

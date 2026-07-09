@@ -43,8 +43,17 @@ export default async (req) => {
     if (!verifySignature(raw, signature, apiKey)) {
       return json({ ok: false, error: "bad_signature" }, 401);
     }
+  } else if (process.env.ALLOW_UNSIGNED_RETELL === "true") {
+    // Explicit, deliberate opt-out (e.g. local testing). Never leave this on.
+    console.warn("[retell-webhook] Signature check DISABLED via ALLOW_UNSIGNED_RETELL.");
   } else {
-    console.warn("[retell-webhook] RETELL_API_KEY not set — skipping signature check.");
+    // Fail CLOSED: without the key we cannot prove the request is from Retell,
+    // and this function writes to the DB + can send SMS. Reject rather than
+    // process forged events.
+    console.error(
+      "[retell-webhook] RETELL_API_KEY not set — rejecting. Set it (or ALLOW_UNSIGNED_RETELL=true to bypass, not recommended)."
+    );
+    return json({ ok: false, error: "webhook_not_configured" }, 401);
   }
 
   let event;
@@ -66,8 +75,12 @@ export default async (req) => {
     defaultBookingValue: process.env.DEFAULT_BOOKING_VALUE,
   });
 
-  // Persist to Supabase (if configured). Confirmation SMS is sent regardless.
+  // Persist to Supabase (if configured).
   let saved = false;
+  // Whether this is the FIRST time we've seen this call. Retell delivers
+  // at-least-once (and our own 500s trigger retries), so we only text the
+  // patient / insert the appointment on the first delivery.
+  let isNew = true;
   if (hasSupabase()) {
     try {
       const clinicId = await resolveClinicId(parsed);
@@ -76,7 +89,9 @@ export default async (req) => {
         console.error("[retell-webhook] No clinic matched this call. Set DEFAULT_CLINIC_ID or clinics.retell_number.");
         return json({ ok: false, error: "no_clinic_matched" }, 200);
       }
-      saved = await persistCall(clinicId, parsed);
+      const res = await persistCall(clinicId, parsed);
+      saved = res.saved;
+      isNew = res.isNew;
     } catch (err) {
       // Transient (DB hiccup) — 500 lets Retell retry the delivery.
       console.error("[retell-webhook] persist failed:", err);
@@ -84,12 +99,13 @@ export default async (req) => {
     }
   }
 
-  // Confirmation text on a booking.
-  if (parsed.appointment && parsed.appointment.patientPhone) {
+  // Confirmation text — only on a NEW booking, so a redelivered/retried webhook
+  // never texts the patient twice.
+  if (isNew && parsed.appointment && parsed.appointment.patientPhone) {
     await sendConfirmation(parsed);
   }
 
-  return json({ ok: true, saved, outcome: parsed.outcome });
+  return json({ ok: true, saved, isNew, outcome: parsed.outcome });
 };
 
 /** Figure out which clinic this call belongs to. */
@@ -117,8 +133,23 @@ async function resolveClinicId(parsed) {
   return all.length === 1 ? all[0].id : null;
 }
 
-/** Insert the call row (idempotent on retell_call_id) and any appointment. */
+/**
+ * Insert the call row (idempotent on retell_call_id) and, only on first sight,
+ * the appointment. Returns { saved, isNew } so the caller can avoid re-texting
+ * the patient on a redelivered webhook.
+ */
 async function persistCall(clinicId, parsed) {
+  // Detect a redelivery BEFORE the upsert so we know whether to add the
+  // appointment / send the confirmation.
+  let isNew = true;
+  if (parsed.retellCallId) {
+    const existing = await sbSelect(
+      "calls",
+      `select=id&retell_call_id=eq.${encodeURIComponent(parsed.retellCallId)}&limit=1`
+    );
+    isNew = existing.length === 0;
+  }
+
   const callRow = await sbInsert(
     "calls",
     {
@@ -138,7 +169,9 @@ async function persistCall(clinicId, parsed) {
     parsed.retellCallId ? { onConflict: "retell_call_id" } : undefined
   );
 
-  if (parsed.appointment && callRow?.id) {
+  // Only create the appointment on the first delivery — otherwise a retry would
+  // add a duplicate row (and duplicate 24h reminders).
+  if (parsed.appointment && callRow?.id && isNew) {
     await sbInsert("appointments", {
       clinic_id: clinicId,
       call_id: callRow.id,
@@ -149,7 +182,7 @@ async function persistCall(clinicId, parsed) {
       scheduled_for: parsed.appointment.scheduledFor ?? undefined,
     });
   }
-  return true;
+  return { saved: true, isNew };
 }
 
 /** Text the patient their appointment confirmation. */

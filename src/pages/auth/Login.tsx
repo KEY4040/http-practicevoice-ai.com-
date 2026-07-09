@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AuthLayout } from "./AuthLayout";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,11 @@ export default function Login() {
   useDocumentMeta({ title: "Log in", noindex: true });
   const { signIn, demoMode } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Where the user was headed before ProtectedRoute bounced them here.
+  const from =
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+    "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +28,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signIn(email, password);
-      navigate("/dashboard");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");
     } finally {

@@ -82,13 +82,24 @@ export function parseCall(call, opts = {}) {
       ? Math.max(0, Math.round((endMs - startMs) / 1000))
       : 0;
 
+  // Prefer the agent's structured booleans. The keyword fallback looks for a
+  // positive booking word BUT bails if the summary also contains a negation or
+  // "reschedule"/"cancel", so "unable to schedule", "did not book", and
+  // "reschedule" don't count as bookings.
+  const NEGATION = /\b(no|not|n't|never|unable|cancel|reschedul|without|instead of)\b/i;
   const booked =
     custom.appointment_booked === true ||
-    (!inVoicemail && /\b(book|booked|schedul|appointment (?:is )?(?:set|confirmed))/i.test(summary));
+    (custom.appointment_booked !== false &&
+      !inVoicemail &&
+      /\b(booked|scheduled|all set|confirmed)\b/i.test(summary) &&
+      !NEGATION.test(summary));
   const escalated =
     custom.escalated === true ||
     custom.urgent === true ||
-    /\b(emergency|urgent|escalat|on-call|severe pain)\b/i.test(summary);
+    (custom.escalated !== false &&
+      custom.urgent !== false &&
+      /\b(emergency|urgent|escalat|on-call|severe pain)\b/i.test(summary) &&
+      !NEGATION.test(summary));
 
   let outcome;
   if (escalated) outcome = "escalated";
@@ -100,19 +111,28 @@ export function parseCall(call, opts = {}) {
   const apptWhenText = (custom.appointment_time || "").toString().trim();
   const scheduledFor =
     parseDate(custom.appointment_datetime) || parseDate(custom.appointment_time);
-  const hasAppointment = booked || Boolean(apptType || scheduledFor || apptWhenText);
+  // Only record an appointment when there's real evidence of one — either the
+  // agent's explicit flag or actual appointment details. This prevents a stray
+  // keyword match from creating a phantom appointment + confirmation text.
+  const structuredBooked = custom.appointment_booked === true;
+  const hasApptData = Boolean(apptType || scheduledFor || apptWhenText);
+  const hasAppointment = structuredBooked || hasApptData;
 
   const patientName =
     (custom.patient_name || custom.caller_name || "").toString().trim() || null;
   const patientPhone = call.from_number || null;
 
   // Revenue: explicit value wins; otherwise fall back to a flat per-booking
-  // estimate if the operator set DEFAULT_BOOKING_VALUE.
+  // estimate ONLY when there's genuine appointment evidence (never from a bare
+  // keyword guess).
   const explicit = Number(custom.revenue ?? custom.estimated_value);
   const fallback = Number(opts.defaultBookingValue);
   let revenue = 0;
   if (Number.isFinite(explicit) && explicit > 0) revenue = explicit;
-  else if ((outcome === "booked" || (escalated && hasAppointment)) && Number.isFinite(fallback))
+  else if (
+    Number.isFinite(fallback) &&
+    (structuredBooked || ((outcome === "booked" || escalated) && hasApptData))
+  )
     revenue = fallback;
 
   return {

@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Loader2,
   Sparkles,
+  TriangleAlert,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -25,11 +26,10 @@ const ICONS = [PhoneCall, CalendarCheck, TrendingUp, MoonStar];
 export default function Dashboard() {
   useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
-  const { loading, isDemo, calls, metrics, callsOverTime, revenueByType } =
+  const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue } =
     useDashboardData();
   const firstName = user?.name?.split(" ")[0] ?? "there";
   const recent = calls.slice(0, 5);
-  const totalRevenue = revenueByType.reduce((sum, r) => sum + r.value, 0);
   const hasCalls = calls.length > 0;
 
   return (
@@ -57,6 +57,8 @@ export default function Dashboard() {
 
         {loading ? (
           <LoadingState />
+        ) : error ? (
+          <ErrorState />
         ) : (
           <>
             {!isDemo && !hasCalls && <FirstCallBanner />}
@@ -211,6 +213,27 @@ function LoadingState() {
       <Loader2 className="size-4 animate-spin" />
       Loading your dashboard…
     </div>
+  );
+}
+
+/** Distinct from the empty state — a real load failure, with a retry. */
+function ErrorState() {
+  return (
+    <Card className="mx-auto max-w-lg text-center">
+      <div className="flex flex-col items-center gap-3 p-10">
+        <span className="grid size-11 place-items-center rounded-full bg-destructive/10 text-destructive">
+          <TriangleAlert className="size-5" />
+        </span>
+        <p className="text-sm font-semibold">We couldn't load your dashboard</p>
+        <p className="max-w-xs text-xs text-muted-foreground">
+          Something went wrong reaching your data — this is not the same as
+          having no calls. Please try again.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    </Card>
   );
 }
 

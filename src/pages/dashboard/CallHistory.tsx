@@ -28,7 +28,7 @@ function formatDuration(sec: number): string {
 export default function CallHistory() {
   useDocumentMeta({ title: "Call History", noindex: true });
   const navigate = useNavigate();
-  const { loading, calls } = useDashboardData();
+  const { loading, error, calls } = useDashboardData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CallOutcome | "all">("all");
 
@@ -91,6 +91,20 @@ export default function CallHistory() {
           <Card className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
             Loading calls…
+          </Card>
+        ) : error ? (
+          <Card className="flex flex-col items-center gap-3 py-16 text-center">
+            <p className="text-sm font-semibold">We couldn't load your calls</p>
+            <p className="max-w-xs text-xs text-muted-foreground">
+              Something went wrong reaching your data (not the same as having no
+              calls). Please try again.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+            >
+              Retry
+            </button>
           </Card>
         ) : (
           <>

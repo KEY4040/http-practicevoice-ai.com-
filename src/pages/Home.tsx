@@ -318,8 +318,8 @@ function FAQ() {
         <div className="mx-auto mt-12 max-w-3xl divide-y divide-border rounded-2xl border border-border bg-card">
           {faqs.map((item) => (
             <details key={item.q} className="group px-6 py-5">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold">
-                {item.q}
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
+                <h3 className="text-base font-semibold">{item.q}</h3>
                 <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground transition-transform group-open:rotate-45">
                   +
                 </span>

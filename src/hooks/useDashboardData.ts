@@ -11,7 +11,6 @@
 import { useEffect, useState } from "react";
 import { getSupabase, isDemoMode } from "@/lib/supabase";
 import { getOrCreateClinic } from "@/lib/clinic";
-import { loadClinicSettings } from "@/lib/clinicSettings";
 import {
   fetchCall,
   fetchCalls,
@@ -39,6 +38,12 @@ export interface DashboardData {
   metrics: Metric[];
   callsOverTime: CallsOverTimePoint[];
   revenueByType: RevenueByType[];
+  /** Total revenue across ALL calls (not just the top revenueByType slices). */
+  totalRevenue: number;
+}
+
+function sumRevenue(calls: Call[]): number {
+  return calls.reduce((sum, c) => sum + (c.revenue || 0), 0);
 }
 
 export function useDashboardData(): DashboardData {
@@ -50,6 +55,9 @@ export function useDashboardData(): DashboardData {
     metrics: isDemoMode ? mockMetrics : [],
     callsOverTime: isDemoMode ? mockCallsOverTime : [],
     revenueByType: isDemoMode ? mockRevenueByType : [],
+    totalRevenue: isDemoMode
+      ? mockRevenueByType.reduce((s, r) => s + r.value, 0)
+      : 0,
   });
 
   useEffect(() => {
@@ -60,8 +68,10 @@ export function useDashboardData(): DashboardData {
       try {
         const supabase = await getSupabase();
         if (!supabase) throw new Error("not_configured");
-        const clinicName = loadClinicSettings().clinicName;
-        const clinic = await getOrCreateClinic(supabase, { name: clinicName });
+        // Don't seed the clinic name from the demo default ("Bayview Dental");
+        // getOrCreateClinic falls back to a neutral "My Practice" that the owner
+        // renames in Settings.
+        const clinic = await getOrCreateClinic(supabase);
         if (!clinic) throw new Error("no_clinic");
         const calls = await fetchCalls(supabase, clinic.id);
         if (!active) return;
@@ -73,6 +83,7 @@ export function useDashboardData(): DashboardData {
           metrics: deriveMetrics(calls),
           callsOverTime: deriveCallsOverTime(calls),
           revenueByType: deriveRevenueByType(calls),
+          totalRevenue: sumRevenue(calls),
         });
       } catch (err) {
         if (!active) return;

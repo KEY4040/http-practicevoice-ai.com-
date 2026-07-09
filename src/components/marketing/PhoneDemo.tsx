@@ -49,7 +49,9 @@ export function PhoneDemo() {
   }, []);
 
   return (
-    <div className="relative mx-auto w-full max-w-[340px]">
+    // Decorative, auto-playing simulation — hide from assistive tech so a
+    // screen reader doesn't announce a fake "incoming call" as real content.
+    <div className="relative mx-auto w-full max-w-[340px]" aria-hidden="true">
       {/* Ambient glow */}
       <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-gradient-to-tr from-primary/20 via-accent/10 to-transparent blur-2xl" />
 

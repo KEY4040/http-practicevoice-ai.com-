@@ -33,7 +33,7 @@ function formatDuration(sec: number): string {
 
 export default function CallDetail() {
   const { id } = useParams<{ id: string }>();
-  const { loading, call } = useCall(id);
+  const { loading, error, call } = useCall(id);
   useDocumentMeta({
     title: call ? `${call.caller} · Call detail` : "Call detail",
     noindex: true,
@@ -45,6 +45,27 @@ export default function CallDetail() {
         <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
           Loading call…
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="mx-auto max-w-md py-20 text-center">
+          <h2 className="text-xl font-semibold">Couldn't load this call</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Something went wrong reaching your data. Please try again.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+            <Button asChild>
+              <Link to="/dashboard/calls">Back to call history</Link>
+            </Button>
+          </div>
         </div>
       </DashboardLayout>
     );

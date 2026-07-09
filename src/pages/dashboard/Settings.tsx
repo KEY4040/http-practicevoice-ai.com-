@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   Building2,
   Phone,
@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { loadClinicSettings, saveClinicSettings } from "@/lib/clinicSettings";
 import { isSupabaseConfigured, getSupabase } from "@/lib/supabase";
-import { updateClinicProfile } from "@/lib/clinic";
+import { getOrCreateClinic, updateClinicProfile } from "@/lib/clinic";
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { cn } from "@/lib/utils";
@@ -43,7 +43,7 @@ export default function Settings() {
   // Read persisted settings once (localStorage today, Supabase-ready).
   const [loaded] = useState(loadClinicSettings);
   const [clinicName, setClinicName] = useState(loaded.clinicName);
-  const [phone, setPhone] = useState("(415) 555-0100");
+  const [phone, setPhone] = useState("");
   const [services, setServices] = useState<string[]>(DEFAULT_SERVICES);
   const [newService, setNewService] = useState("");
   const [openDays, setOpenDays] = useState<string[]>(["Mon", "Tue", "Wed", "Thu", "Fri"]);
@@ -57,6 +57,29 @@ export default function Settings() {
   );
   const [reminderTemplate, setReminderTemplate] = useState(loaded.reminderTemplate);
   const [saved, setSaved] = useState(false);
+
+  // On a real (Supabase-connected) account, load the clinic's saved name/phone
+  // so the form reflects reality — and so saving never clobbers them with
+  // placeholder values.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let active = true;
+    (async () => {
+      try {
+        const supabase = await getSupabase();
+        if (!supabase) return;
+        const clinic = await getOrCreateClinic(supabase);
+        if (!active || !clinic) return;
+        if (clinic.name && clinic.name !== "My Practice") setClinicName(clinic.name);
+        if (clinic.phone) setPhone(clinic.phone);
+      } catch {
+        /* non-fatal — keep local defaults */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function addService() {
     const s = newService.trim();
@@ -86,7 +109,12 @@ export default function Settings() {
     if (isSupabaseConfigured) {
       getSupabase()
         .then((supabase) => {
-          if (supabase) return updateClinicProfile(supabase, { name: clinicName, phone });
+          if (supabase)
+            return updateClinicProfile(supabase, {
+              name: clinicName,
+              // Only write phone when the user actually has one — never blank it.
+              phone: phone.trim() || undefined,
+            });
         })
         .catch(() => {
           /* non-fatal — settings still saved locally */

@@ -65,8 +65,12 @@ export default async () => {
       console.error(`[send-reminders] SMS failed for ${appt.id}:`, result.error);
       continue; // leave reminder_sent false so it retries next hour
     }
-    // Mark as reminded (also when simulated, so a not-yet-Twilio setup doesn't
-    // loop forever once it IS connected — we only reach here on non-error).
+    if (result.simulated) {
+      // Twilio isn't configured yet — do NOT mark as reminded, otherwise these
+      // patients would be silently skipped once Twilio is connected.
+      continue;
+    }
+    // A real text went out — mark it so we only remind once.
     try {
       await sbUpdate("appointments", `id=eq.${encodeURIComponent(appt.id)}`, {
         reminder_sent: true,
