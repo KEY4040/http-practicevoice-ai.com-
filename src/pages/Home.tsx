@@ -234,7 +234,7 @@ const steps = [
   },
   {
     Icon: MessageSquareText,
-    title: "Go live in minutes",
+    title: "Go live the same day",
     body: "Your AI receptionist starts answering, booking, and texting confirmations — with full transcripts.",
   },
 ];
@@ -293,7 +293,7 @@ const faqs = [
   },
   {
     q: "How long does setup take?",
-    a: "Most practices are live in under five minutes: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away.",
+    a: "Most practices are live the same day: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away.",
   },
   {
     q: "How much does PracticeVoice AI cost?",
@@ -349,8 +349,8 @@ function FinalCTA() {
             Stop sending patients to voicemail
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-            Become one of our founding practices. 14-day free trial, live in 5
-            minutes, cancel anytime.
+            Become one of our founding practices. 14-day free trial, live the
+            same day, cancel anytime.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
