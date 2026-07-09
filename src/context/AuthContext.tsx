@@ -13,6 +13,8 @@ import {
 } from "@/lib/supabase";
 
 interface AuthUser {
+  /** Supabase auth user id (empty in demo mode). Used to reconcile payments. */
+  id: string;
   email: string;
   name: string;
 }
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (active && data.session?.user) {
             const u = data.session.user;
             setUser({
+              id: u.id,
               email: u.email ?? "",
               name: resolveName(u.user_metadata?.name, u.email ?? ""),
             });
@@ -85,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               if (!active) return;
               if (session?.user) {
                 setUser({
+                  id: session.user.id,
                   email: session.user.email ?? "",
                   name: resolveName(
                     session.user.user_metadata?.name,
@@ -144,12 +148,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // to /dashboard doesn't race the async onAuthStateChange event.
           if (data.user) {
             setUser({
+              id: data.user.id,
               email: data.user.email ?? email,
               name: resolveName(data.user.user_metadata?.name, email),
             });
           }
         } else if (isDemoMode) {
-          setDemoUser({ email, name: nameFromEmail(email) });
+          setDemoUser({ id: "demo", email, name: nameFromEmail(email) });
         } else {
           throw new Error(MISCONFIGURED_MESSAGE);
         }
@@ -169,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // to confirm their email. Only set the user when a session exists.
           if (data.session && data.user) {
             setUser({
+              id: data.user.id,
               email: data.user.email ?? email,
               name: resolveName(name, email),
             });
@@ -176,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           return { needsConfirmation: true };
         } else if (isDemoMode) {
-          setDemoUser({ email, name: resolveName(name, email) });
+          setDemoUser({ id: "demo", email, name: resolveName(name, email) });
           return { needsConfirmation: false };
         } else {
           throw new Error(MISCONFIGURED_MESSAGE);

@@ -123,14 +123,27 @@ The **"Connect Google Calendar"** button exists in Settings. Making it real:
 
 ---
 
-## 5. 🔑 Stripe — you've already connected checkout
+## 5. 🔑 Stripe — checkout + subscription gating
 
-Payment Links are live and wired to every plan button. Remaining decisions:
-- **Test vs live:** if your links are in **live** mode, real cards are charged
-  after the 14-day trial. Since the voice service isn't answering calls yet,
-  consider **test mode** (or early-adopter pre-sales only) until it is.
-- **Optional later:** a `stripe-webhook` function to tie subscriptions to
-  accounts (upgrade/downgrade, cancellations). Not needed for basic checkout.
+Payment Links are wired to every plan button. Two modes:
+
+**Open beta (default, no setup):** anyone can sign up and use the dashboard;
+plan buttons open Stripe checkout. Good for early users/feedback.
+
+**Gated (require a paid/trial plan to use the dashboard):** the code for this is
+built — a `stripe-webhook` function writes each customer's plan into the
+`subscriptions` table, and the app locks the dashboard behind an active plan
+(sending users to `/billing` to start their trial). To turn it on:
+1. Re-run `supabase/schema.sql` (adds the `subscriptions` table — it's idempotent).
+2. Stripe → **Developers → Webhooks** → add endpoint
+   `https://practicevoice-ai.com/.netlify/functions/stripe-webhook`, subscribe to
+   `checkout.session.completed` and `customer.subscription.*`.
+3. Copy the webhook **Signing secret** into Netlify env `STRIPE_WEBHOOK_SECRET`.
+4. On each Payment Link, add a **14-day free trial** (Stripe → Payment Links).
+5. Set Netlify env `VITE_BILLING_ENABLED=true` and **Clear cache and deploy**.
+
+- **Test vs live:** confirm each link's mode and that Basic=$99 / Professional=$199
+  / Premium=$399 in the Stripe dashboard before taking real cards.
 
 ---
 

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -19,6 +20,7 @@ const Dashboard = lazy(() => import("@/pages/dashboard/Dashboard"));
 const CallHistory = lazy(() => import("@/pages/dashboard/CallHistory"));
 const CallDetail = lazy(() => import("@/pages/dashboard/CallDetail"));
 const Settings = lazy(() => import("@/pages/dashboard/Settings"));
+const Billing = lazy(() => import("@/pages/dashboard/Billing"));
 
 function PageFallback() {
   return (
@@ -49,12 +51,25 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
 
-            {/* App (protected) */}
+            {/* Billing — authenticated, but NOT behind the subscription gate
+                (this is where unsubscribed users start their plan). */}
+            <Route
+              path="/billing"
+              element={
+                <ProtectedRoute>
+                  <Billing />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* App (protected + requires an active plan when billing is on) */}
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <SubscriptionGate>
+                    <Dashboard />
+                  </SubscriptionGate>
                 </ProtectedRoute>
               }
             />
@@ -62,7 +77,9 @@ export default function App() {
               path="/dashboard/calls"
               element={
                 <ProtectedRoute>
-                  <CallHistory />
+                  <SubscriptionGate>
+                    <CallHistory />
+                  </SubscriptionGate>
                 </ProtectedRoute>
               }
             />
@@ -70,7 +87,9 @@ export default function App() {
               path="/dashboard/calls/:id"
               element={
                 <ProtectedRoute>
-                  <CallDetail />
+                  <SubscriptionGate>
+                    <CallDetail />
+                  </SubscriptionGate>
                 </ProtectedRoute>
               }
             />
@@ -78,7 +97,9 @@ export default function App() {
               path="/dashboard/settings"
               element={
                 <ProtectedRoute>
-                  <Settings />
+                  <SubscriptionGate>
+                    <Settings />
+                  </SubscriptionGate>
                 </ProtectedRoute>
               }
             />

@@ -10,7 +10,6 @@ import {
   Clock,
   MessageSquareText,
   Sparkles,
-  Star,
 } from "lucide-react";
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
@@ -64,8 +63,8 @@ function Hero() {
               HIPAA-conscious &amp; secure
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Star className="size-4 fill-warning text-warning" />
-              4.9/5 from 200+ practices
+              <TrendingUp className="size-4 text-accent" />
+              See the revenue it books
             </span>
           </div>
         </div>
@@ -188,7 +187,7 @@ function RevenueHighlight() {
         <div className="overflow-hidden rounded-[1.75rem] border border-primary/15 bg-gradient-to-br from-primary to-[hsl(224_76%_32%)] px-7 py-12 text-primary-foreground shadow-elevated sm:px-12">
           <div className="mx-auto max-w-2xl text-center">
             <Badge className="mb-4 border-transparent bg-white/15 text-white">
-              The differentiator
+              Sample dashboard
             </Badge>
             <h2 className="text-balance text-3xl font-bold sm:text-4xl">
               The only receptionist that shows you the money it makes
@@ -210,6 +209,10 @@ function RevenueHighlight() {
               </div>
             ))}
           </div>
+          <p className="mt-8 text-center text-xs text-primary-foreground/60">
+            Illustrative figures showing how the dashboard looks for an active
+            practice.
+          </p>
         </div>
       </div>
     </section>
@@ -294,7 +297,7 @@ const faqs = [
   },
   {
     q: "How much does PracticeVoice AI cost?",
-    a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan includes a 14-day free trial with no credit card required.",
+    a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan includes a 14-day free trial, and you can cancel anytime.",
   },
   {
     q: "Which practices is it built for?",
@@ -346,8 +349,8 @@ function FinalCTA() {
             Stop sending patients to voicemail
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-            Join 200+ practices that never miss a call. 14-day free trial, live
-            in 5 minutes, cancel anytime.
+            Become one of our founding practices. 14-day free trial, live in 5
+            minutes, cancel anytime.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">

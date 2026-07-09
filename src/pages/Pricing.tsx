@@ -7,10 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { PLANS, type Plan } from "@/data/plans";
 import { startCheckout } from "@/lib/checkout";
+import { isBillingEnabled } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   useDocumentMeta({
     title: "Pricing — PracticeVoice AI",
     description:
@@ -19,7 +22,13 @@ export default function Pricing() {
   });
 
   function handleCta(plan: Plan) {
-    // Opens the plan's Stripe Payment Link (14-day free trial, then billed).
+    if (isBillingEnabled) {
+      // Billing enforced: send them to create/confirm an account first so the
+      // trial ties to it (logged in -> Billing; logged out -> Signup).
+      navigate(user ? "/billing" : `/signup?plan=${plan.id}`);
+      return;
+    }
+    // Open beta: straight to the plan's Stripe Payment Link.
     startCheckout(plan, navigate);
   }
 

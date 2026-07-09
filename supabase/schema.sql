@@ -15,6 +15,7 @@
 -- Clean slate (drop in dependency order) ------------------------------------
 drop table if exists public.appointments cascade;
 drop table if exists public.calls cascade;
+drop table if exists public.subscriptions cascade;
 drop table if exists public.clinics cascade;
 drop type if exists public.call_outcome cascade;
 
@@ -91,6 +92,20 @@ create index appointments_reminder_idx
   on public.appointments (scheduled_for)
   where reminder_sent = false;
 
+-- Subscriptions (billing entitlement, one per user) -------------------------
+-- Written by the stripe-webhook function (service role). The app reads this to
+-- decide whether a signed-in user may access the dashboard. `status` mirrors
+-- Stripe: trialing / active / past_due / canceled / unpaid / incomplete.
+create table public.subscriptions (
+  user_id            uuid primary key references auth.users (id) on delete cascade,
+  status             text not null default 'incomplete',
+  plan               text,
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  current_period_end timestamptz,
+  updated_at         timestamptz not null default now()
+);
+
 -- Row-level security --------------------------------------------------------
 -- `force row level security` filters even privileged connections. Policies are
 -- scoped `to authenticated` so the anon role is never evaluated against them.
@@ -99,10 +114,12 @@ create index appointments_reminder_idx
 alter table public.clinics enable row level security;
 alter table public.calls enable row level security;
 alter table public.appointments enable row level security;
+alter table public.subscriptions enable row level security;
 
 alter table public.clinics force row level security;
 alter table public.calls force row level security;
 alter table public.appointments force row level security;
+alter table public.subscriptions force row level security;
 
 create policy "Owners manage their clinics"
   on public.clinics for all
@@ -121,3 +138,10 @@ create policy "Owners access their clinic appointments"
   to authenticated
   using (clinic_id in (select id from public.clinics where owner_id = auth.uid()))
   with check (clinic_id in (select id from public.clinics where owner_id = auth.uid()));
+
+-- Users may READ their own subscription (to unlock the dashboard); only the
+-- server (service role, which bypasses RLS) ever writes it.
+create policy "Users read their own subscription"
+  on public.subscriptions for select
+  to authenticated
+  using (user_id = auth.uid());

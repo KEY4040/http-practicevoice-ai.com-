@@ -29,7 +29,7 @@ export const PLANS: Plan[] = [
     price: 99,
     period: "/month",
     tagline: "For a single practice that's done missing calls.",
-    cta: "Start free trial",
+    cta: "Start 14-day free trial",
     paymentLink: "https://buy.stripe.com/4gMfZh8WF8Ya3812hJcjS0i",
     features: [
       "Up to 300 calls answered / mo",
@@ -66,7 +66,7 @@ export const PLANS: Plan[] = [
     price: 399,
     period: "/month",
     tagline: "For groups and multi-location practices.",
-    cta: "Start free trial",
+    cta: "Start 14-day free trial",
     paymentLink: "https://buy.stripe.com/14A3cvb4N3DQ7oh7C3cjS0g",
     features: [
       "Unlimited calls answered",
@@ -75,7 +75,7 @@ export const PLANS: Plan[] = [
       "Custom voice & knowledge base",
       "EHR / practice-software integrations",
       "Dedicated success manager",
-      "HIPAA BAA included",
+      "HIPAA BAA available",
     ],
   },
 ];

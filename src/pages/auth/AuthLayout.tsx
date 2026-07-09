@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Star, CalendarCheck } from "lucide-react";
+import { ShieldCheck, Clock, CalendarCheck, TrendingUp } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
 
 /**
@@ -40,27 +40,21 @@ export function AuthLayout({
         <div className="absolute -right-24 -top-24 size-96 rounded-full bg-white/5" />
         <div className="absolute -bottom-32 -left-16 size-80 rounded-full bg-accent/10" />
         <div className="relative flex h-full flex-col justify-center px-14 text-primary-foreground">
-          <blockquote className="max-w-md text-2xl font-semibold leading-snug">
-            “We booked 40 more appointments in our first month — from calls we
-            used to miss entirely.”
-          </blockquote>
-          <div className="mt-6 flex items-center gap-3">
-            <div className="grid size-11 place-items-center rounded-full bg-white/15 font-semibold">
-              DR
-            </div>
-            <div>
-              <p className="font-medium">Dr. Renee Alvarez</p>
-              <p className="text-sm text-primary-foreground/70">
-                Bayview Dental Group
-              </p>
-            </div>
-          </div>
+          <span className="mb-5 inline-flex w-fit items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+            Onboarding our founding practices
+          </span>
+          <p className="max-w-md text-2xl font-semibold leading-snug">
+            Never send another patient to voicemail. Your AI receptionist
+            answers every call, books the appointment, and shows you the revenue
+            it brings in.
+          </p>
 
           <div className="mt-12 space-y-4">
             {[
               { Icon: CalendarCheck, text: "24/7 appointment booking" },
+              { Icon: TrendingUp, text: "See the revenue each call books" },
               { Icon: ShieldCheck, text: "HIPAA-conscious & encrypted" },
-              { Icon: Star, text: "Rated 4.9/5 by 200+ practices" },
+              { Icon: Clock, text: "Live in under 5 minutes" },
             ].map(({ Icon, text }) => (
               <div key={text} className="flex items-center gap-3 text-primary-foreground/90">
                 <span className="grid size-9 place-items-center rounded-lg bg-white/10">

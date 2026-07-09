@@ -12,7 +12,7 @@ import { PLANS } from "@/data/plans";
 
 const perks = [
   "14-day free trial",
-  "No credit card required",
+  "Cancel anytime",
   "Live in under 5 minutes",
 ];
 

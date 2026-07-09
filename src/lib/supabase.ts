@@ -7,6 +7,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 /**
+ * Whether paid-subscription gating is enforced. OFF by default so the app works
+ * as an open beta; flip `VITE_BILLING_ENABLED=true` once the Stripe webhook +
+ * subscriptions table are live to require an active plan for dashboard access.
+ */
+export const isBillingEnabled =
+  import.meta.env.VITE_BILLING_ENABLED === "true" && isSupabaseConfigured;
+
+/**
  * Demo mode runs the app with mock auth + mock data (no backend). It is enabled
  * ONLY when explicitly opted into:
  *   - automatically during local development (`npm run dev`), or
