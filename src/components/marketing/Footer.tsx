@@ -11,11 +11,11 @@ const columns = [
     ],
   },
   {
-    title: "Practices",
+    title: "Built for",
     links: [
-      { label: "Dental", href: "/#product" },
-      { label: "Medical", href: "/#product" },
-      { label: "Legal", href: "/#product" },
+      { label: "Dental practices", href: "/demo" },
+      { label: "Medical practices", href: "/demo" },
+      { label: "Legal practices", href: "/demo" },
     ],
   },
   {

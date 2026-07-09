@@ -22,7 +22,7 @@ interface LegalDoc {
 const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
   privacy: {
     title: "Privacy Policy",
-    updated: "This is a template — review with counsel before publishing.",
+    updated: "Last updated: July 9, 2026",
     intro:
       "PracticeVoice AI (“we”, “us”) provides an AI voice receptionist for healthcare and legal practices. This policy explains what we collect and how we use it.",
     sections: [
@@ -67,7 +67,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
   },
   terms: {
     title: "Terms of Service",
-    updated: "This is a template — review with counsel before publishing.",
+    updated: "Last updated: July 9, 2026",
     intro:
       "These terms govern your use of PracticeVoice AI. By creating an account you agree to them.",
     sections: [
@@ -107,7 +107,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
   },
   hipaa: {
     title: "HIPAA & Security",
-    updated: "This is a template — review with counsel before publishing.",
+    updated: "Last updated: July 9, 2026",
     intro:
       "We build PracticeVoice AI to support HIPAA-conscious workflows for healthcare practices. This page summarizes our approach.",
     sections: [
@@ -192,10 +192,15 @@ export default function Legal({ doc }: { doc: keyof typeof DOCS }) {
           </div>
 
           <p className="mt-12 rounded-xl border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
-            <strong className="font-semibold text-foreground">Note:</strong> This
-            is template content to help you launch. Have a qualified attorney
-            review and adapt all legal and compliance pages for your specific
-            practice, state, and specialty before relying on them.
+            This policy is provided for general information and may be updated
+            from time to time. Questions? Email{" "}
+            <a
+              href="mailto:practicevoiceai@yahoo.com"
+              className="font-medium text-primary hover:underline"
+            >
+              practicevoiceai@yahoo.com
+            </a>
+            .
           </p>
         </div>
       </main>

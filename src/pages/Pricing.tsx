@@ -46,7 +46,7 @@ export default function Pricing() {
               One booked patient covers the month
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-              Pick a plan and go live in 5 minutes. 14-day free trial, cancel
+              Pick a plan and go live the same day. 14-day free trial, cancel
               anytime.
             </p>
           </div>

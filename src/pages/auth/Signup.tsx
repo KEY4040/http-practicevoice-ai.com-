@@ -13,7 +13,7 @@ import { PLANS } from "@/data/plans";
 const perks = [
   "14-day free trial",
   "Cancel anytime",
-  "Live in under 5 minutes",
+  "Set up in minutes",
 ];
 
 export default function Signup() {

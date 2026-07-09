@@ -50,7 +50,6 @@ export default function Settings() {
   const [openTime, setOpenTime] = useState("08:00");
   const [closeTime, setCloseTime] = useState("17:00");
   const [voice, setVoice] = useState("Ava");
-  const [calendarConnected, setCalendarConnected] = useState(false);
   const [twilioNumber, setTwilioNumber] = useState(loaded.twilioNumber);
   const [confirmationTemplate, setConfirmationTemplate] = useState(
     loaded.confirmationTemplate
@@ -135,49 +134,23 @@ export default function Settings() {
           </p>
         </div>
 
-        {/* Calendar connect — the hero action */}
-        <Card
-          className={cn(
-            "p-6 transition-colors",
-            calendarConnected
-              ? "border-accent/40 bg-accent/[0.04]"
-              : "border-primary/25 bg-primary/[0.03]"
-          )}
-        >
+        {/* Calendar connect — coming soon (not yet available; shown honestly) */}
+        <Card className="border-border bg-muted/30 p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <span
-                className={cn(
-                  "grid size-12 place-items-center rounded-xl",
-                  calendarConnected ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground"
-                )}
-              >
+              <span className="grid size-12 place-items-center rounded-xl bg-muted text-muted-foreground">
                 <Calendar className="size-6" />
               </span>
               <div>
-                <p className="font-semibold">
-                  {calendarConnected ? "Google Calendar connected" : "Connect Google Calendar"}
-                </p>
+                <p className="font-semibold">Google Calendar sync</p>
                 <p className="text-sm text-muted-foreground">
-                  {calendarConnected
-                    ? "Bookings sync automatically to your calendar."
-                    : "One click to let the AI book into real open slots."}
+                  Two-way calendar sync is coming soon. For now, Ava books using
+                  the hours and services you set below.
                 </p>
               </div>
             </div>
-            <Button
-              type="button"
-              variant={calendarConnected ? "outline" : "primary"}
-              onClick={() => setCalendarConnected((v) => !v)}
-            >
-              {calendarConnected ? (
-                <>
-                  <Check className="size-4" />
-                  Connected
-                </>
-              ) : (
-                "Connect Google Calendar"
-              )}
+            <Button type="button" variant="outline" disabled>
+              Coming soon
             </Button>
           </div>
         </Card>

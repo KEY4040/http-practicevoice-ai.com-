@@ -34,7 +34,6 @@ export const PLANS: Plan[] = [
     features: [
       "Up to 300 calls answered / mo",
       "24/7 call answering & booking",
-      "Google Calendar sync",
       "Text appointment confirmations",
       "Call transcripts & summaries",
       "Email support",

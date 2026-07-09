@@ -38,7 +38,7 @@ function Hero() {
           <p className="mt-6 max-w-xl text-balance text-lg text-muted-foreground">
             Your AI receptionist answers every call, books the appointment, and
             shows you the revenue it brought in. No missed patients, no
-            voicemail — live in 5 minutes.
+            voicemail — live the same day.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -56,7 +56,7 @@ function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Clock className="size-4 text-accent" />
-              Set up in under 5 minutes
+              Set up in minutes
             </span>
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="size-4 text-accent" />
@@ -116,7 +116,7 @@ const benefits = [
   {
     Icon: CalendarCheck,
     title: "Books appointments for you",
-    body: "The AI checks your calendar, books the right provider, and texts a confirmation — while your team helps the patients in the chair.",
+    body: "The AI books the right provider for the right service and texts a confirmation — while your team helps the patients in the chair.",
     accent: "accent" as const,
   },
   {
@@ -229,8 +229,8 @@ const steps = [
   },
   {
     Icon: CalendarCheck,
-    title: "Sync your calendar",
-    body: "One click to connect Google Calendar. The AI books into real open slots with the right provider.",
+    title: "Set your hours & services",
+    body: "Tell Ava your providers, services, and hours in Settings — she books the right slot and texts a confirmation.",
   },
   {
     Icon: MessageSquareText,
@@ -245,7 +245,7 @@ function HowItWorks() {
       <div className="container-page">
         <div className="mx-auto max-w-2xl text-center">
           <Badge variant="primary" className="mb-4">
-            Live in under 5 minutes
+            Live the same day
           </Badge>
           <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
             Setup so simple, you'll be answering calls today
