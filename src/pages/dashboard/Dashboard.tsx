@@ -16,6 +16,7 @@ import { OutcomeBadge } from "@/components/OutcomeBadge";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoView } from "@/context/DemoView";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { type Metric } from "@/data/mockData";
@@ -26,9 +27,10 @@ const ICONS = [PhoneCall, CalendarCheck, TrendingUp, MoonStar];
 export default function Dashboard() {
   useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
+  const { base } = useDemoView();
   const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue } =
     useDashboardData();
-  const firstName = user?.name?.split(" ")[0] ?? "there";
+  const firstName = user?.name?.split(" ")[0] ?? (isDemo ? "Dr. Patel" : "there");
   const recent = calls.slice(0, 5);
   const hasCalls = calls.length > 0;
 
@@ -48,7 +50,7 @@ export default function Dashboard() {
             </p>
           </div>
           <Button asChild variant="outline">
-            <Link to="/dashboard/calls">
+            <Link to={`${base}/calls`}>
               View all calls
               <ArrowRight />
             </Link>
@@ -155,7 +157,7 @@ export default function Dashboard() {
                   </CardDescription>
                 </div>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to="/dashboard/calls">See all</Link>
+                  <Link to={`${base}/calls`}>See all</Link>
                 </Button>
               </CardHeader>
               {hasCalls ? (
@@ -163,7 +165,7 @@ export default function Dashboard() {
                   {recent.map((call) => (
                     <Link
                       key={call.id}
-                      to={`/dashboard/calls/${call.id}`}
+                      to={`${base}/calls/${call.id}`}
                       className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
                     >
                       <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">

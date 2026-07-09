@@ -10,6 +10,7 @@
  */
 import { useEffect, useState } from "react";
 import { getSupabase, isDemoMode } from "@/lib/supabase";
+import { useDemoView } from "@/context/DemoView";
 import { getOrCreateClinic } from "@/lib/clinic";
 import {
   fetchCall,
@@ -47,21 +48,21 @@ function sumRevenue(calls: Call[]): number {
 }
 
 export function useDashboardData(): DashboardData {
+  // The public /demo view forces mock data even when Supabase is configured.
+  const demo = isDemoMode || useDemoView().demo;
   const [state, setState] = useState<DashboardData>({
-    loading: !isDemoMode,
-    isDemo: isDemoMode,
+    loading: !demo,
+    isDemo: demo,
     error: null,
-    calls: isDemoMode ? mockCalls : [],
-    metrics: isDemoMode ? mockMetrics : [],
-    callsOverTime: isDemoMode ? mockCallsOverTime : [],
-    revenueByType: isDemoMode ? mockRevenueByType : [],
-    totalRevenue: isDemoMode
-      ? mockRevenueByType.reduce((s, r) => s + r.value, 0)
-      : 0,
+    calls: demo ? mockCalls : [],
+    metrics: demo ? mockMetrics : [],
+    callsOverTime: demo ? mockCallsOverTime : [],
+    revenueByType: demo ? mockRevenueByType : [],
+    totalRevenue: demo ? mockRevenueByType.reduce((s, r) => s + r.value, 0) : 0,
   });
 
   useEffect(() => {
-    if (isDemoMode) return;
+    if (demo) return;
     let active = true;
 
     (async () => {
@@ -98,7 +99,7 @@ export function useDashboardData(): DashboardData {
     return () => {
       active = false;
     };
-  }, []);
+  }, [demo]);
 
   return state;
 }
@@ -111,14 +112,15 @@ export interface CallDetailData {
 
 /** Load a single call for the detail page (mock in demo mode, DB otherwise). */
 export function useCall(id: string | undefined): CallDetailData {
+  const demo = isDemoMode || useDemoView().demo;
   const [state, setState] = useState<CallDetailData>({
-    loading: !isDemoMode,
+    loading: !demo,
     error: null,
-    call: isDemoMode && id ? getCallById(id) ?? null : null,
+    call: demo && id ? getCallById(id) ?? null : null,
   });
 
   useEffect(() => {
-    if (isDemoMode) {
+    if (demo) {
       setState({ loading: false, error: null, call: id ? getCallById(id) ?? null : null });
       return;
     }
@@ -150,7 +152,7 @@ export function useCall(id: string | undefined): CallDetailData {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, demo]);
 
   return state;
 }

@@ -18,6 +18,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { type Call } from "@/data/mockData";
 import { useCall } from "@/hooks/useDashboardData";
+import { useDemoView } from "@/context/DemoView";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { loadClinicSettings } from "@/lib/clinicSettings";
 import { renderTemplate } from "@/lib/smsTemplates";
@@ -33,6 +34,7 @@ function formatDuration(sec: number): string {
 
 export default function CallDetail() {
   const { id } = useParams<{ id: string }>();
+  const { base } = useDemoView();
   const { loading, error, call } = useCall(id);
   useDocumentMeta({
     title: call ? `${call.caller} · Call detail` : "Call detail",
@@ -63,7 +65,7 @@ export default function CallDetail() {
               Retry
             </Button>
             <Button asChild>
-              <Link to="/dashboard/calls">Back to call history</Link>
+              <Link to={`${base}/calls`}>Back to call history</Link>
             </Button>
           </div>
         </div>
@@ -80,7 +82,7 @@ export default function CallDetail() {
             This call may have been removed.
           </p>
           <Button asChild className="mt-6">
-            <Link to="/dashboard/calls">Back to call history</Link>
+            <Link to={`${base}/calls`}>Back to call history</Link>
           </Button>
         </div>
       </DashboardLayout>
@@ -91,7 +93,7 @@ export default function CallDetail() {
     <DashboardLayout>
       <div className="mx-auto max-w-4xl space-y-6">
         <Link
-          to="/dashboard/calls"
+          to={`${base}/calls`}
           className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />

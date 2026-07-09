@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
+import { DemoViewProvider } from "@/context/DemoView";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -50,6 +51,32 @@ export default function App() {
             {/* Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+
+            {/* Public demo — the real dashboard with sample data, no login. */}
+            <Route
+              path="/demo"
+              element={
+                <DemoViewProvider>
+                  <Dashboard />
+                </DemoViewProvider>
+              }
+            />
+            <Route
+              path="/demo/calls"
+              element={
+                <DemoViewProvider>
+                  <CallHistory />
+                </DemoViewProvider>
+              }
+            />
+            <Route
+              path="/demo/calls/:id"
+              element={
+                <DemoViewProvider>
+                  <CallDetail />
+                </DemoViewProvider>
+              }
+            />
 
             {/* Billing — authenticated, but NOT behind the subscription gate
                 (this is where unsubscribed users start their plan). */}

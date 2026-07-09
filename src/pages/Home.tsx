@@ -49,7 +49,7 @@ function Hero() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/dashboard">See live dashboard</Link>
+              <Link to="/demo">See live dashboard</Link>
             </Button>
           </div>
 
