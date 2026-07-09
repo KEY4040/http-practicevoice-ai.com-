@@ -14,6 +14,9 @@ import Pricing from "@/pages/Pricing";
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
 import Legal from "@/pages/Legal";
+import Vertical from "@/pages/Vertical";
+import Comparison from "@/pages/Comparison";
+import Contact from "@/pages/Contact";
 import NotFound from "@/pages/NotFound";
 
 // Lazy: the app shell (and its heavier chart deps) load only once signed in.
@@ -47,6 +50,19 @@ export default function App() {
             <Route path="/privacy" element={<Legal doc="privacy" />} />
             <Route path="/terms" element={<Legal doc="terms" />} />
             <Route path="/hipaa" element={<Legal doc="hipaa" />} />
+
+            {/* Vertical landing pages */}
+            <Route path="/dental" element={<Vertical slug="dental" />} />
+            <Route path="/medical" element={<Vertical slug="medical" />} />
+            <Route path="/legal" element={<Vertical slug="legal" />} />
+
+            {/* Comparison pages */}
+            <Route path="/vs/ruby" element={<Comparison slug="ruby" />} />
+            <Route path="/vs/answering-service" element={<Comparison slug="answering-service" />} />
+            <Route path="/vs/smith-ai" element={<Comparison slug="smith-ai" />} />
+
+            {/* Book a demo / contact */}
+            <Route path="/contact" element={<Contact />} />
 
             {/* Auth */}
             <Route path="/login" element={<Login />} />

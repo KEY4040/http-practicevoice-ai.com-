@@ -16,6 +16,7 @@
 drop table if exists public.appointments cascade;
 drop table if exists public.calls cascade;
 drop table if exists public.subscriptions cascade;
+drop table if exists public.leads cascade;
 drop table if exists public.clinics cascade;
 drop type if exists public.call_outcome cascade;
 
@@ -106,6 +107,20 @@ create table public.subscriptions (
   updated_at         timestamptz not null default now()
 );
 
+-- Leads (marketing "book a demo" form submissions) --------------------------
+-- Written by the submit-lead function (service role). Not readable by the anon
+-- role; view them in the Supabase table editor.
+create table public.leads (
+  id         uuid primary key default gen_random_uuid(),
+  name       text,
+  email      text,
+  practice   text,
+  phone      text,
+  message    text,
+  vertical   text,
+  created_at timestamptz not null default now()
+);
+
 -- Row-level security --------------------------------------------------------
 -- `force row level security` filters even privileged connections. Policies are
 -- scoped `to authenticated` so the anon role is never evaluated against them.
@@ -115,11 +130,13 @@ alter table public.clinics enable row level security;
 alter table public.calls enable row level security;
 alter table public.appointments enable row level security;
 alter table public.subscriptions enable row level security;
+alter table public.leads enable row level security;
 
 alter table public.clinics force row level security;
 alter table public.calls force row level security;
 alter table public.appointments force row level security;
 alter table public.subscriptions force row level security;
+alter table public.leads force row level security;
 
 create policy "Owners manage their clinics"
   on public.clinics for all

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Check, ArrowRight, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
@@ -132,12 +132,12 @@ export default function Pricing() {
             <p className="mt-10 text-center text-sm text-muted-foreground">
               Every plan includes unlimited team members, encrypted call storage,
               and HIPAA-conscious infrastructure.{" "}
-              <a
-                href="mailto:practicevoiceai@yahoo.com"
+              <Link
+                to="/contact"
                 className="font-medium text-primary hover:underline"
               >
-                Have a question? Talk to us
-              </a>
+                Have a question? Book a demo
+              </Link>
             </p>
           </div>
         </section>

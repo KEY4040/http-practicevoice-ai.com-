@@ -14,6 +14,7 @@ import {
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { PhoneDemo } from "@/components/marketing/PhoneDemo";
+import { MissedRevenueCalculator } from "@/components/marketing/MissedRevenueCalculator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -386,6 +387,7 @@ export default function Home() {
         <TrustBar />
         <Benefits />
         <RevenueHighlight />
+        <MissedRevenueCalculator />
         <HowItWorks />
         <FAQ />
         <FinalCTA />

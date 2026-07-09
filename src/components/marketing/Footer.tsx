@@ -8,14 +8,16 @@ const columns = [
       { label: "How it works", href: "/#how" },
       { label: "Pricing", href: "/pricing" },
       { label: "Live demo", href: "/demo" },
+      { label: "vs Ruby", href: "/vs/ruby" },
+      { label: "vs an answering service", href: "/vs/answering-service" },
     ],
   },
   {
     title: "Built for",
     links: [
-      { label: "Dental practices", href: "/demo" },
-      { label: "Medical practices", href: "/demo" },
-      { label: "Legal practices", href: "/demo" },
+      { label: "Dental practices", href: "/dental" },
+      { label: "Medical practices", href: "/medical" },
+      { label: "Law firms", href: "/legal" },
     ],
   },
   {
@@ -23,7 +25,7 @@ const columns = [
     links: [
       { label: "Log in", href: "/login" },
       { label: "Start free trial", href: "/signup" },
-      { label: "Contact", href: "mailto:practicevoiceai@yahoo.com" },
+      { label: "Book a demo", href: "/contact" },
     ],
   },
 ];
