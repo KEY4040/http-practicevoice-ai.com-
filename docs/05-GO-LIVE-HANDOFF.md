@@ -130,10 +130,13 @@ Payment Links are wired to every plan button. Two modes:
 **Open beta (default, no setup):** anyone can sign up and use the dashboard;
 plan buttons open Stripe checkout. Good for early users/feedback.
 
-**Gated (require a paid/trial plan to use the dashboard):** the code for this is
-built — a `stripe-webhook` function writes each customer's plan into the
-`subscriptions` table, and the app locks the dashboard behind an active plan
-(sending users to `/billing` to start their trial). To turn it on:
+**Reverse trial (recommended once you're ready to charge):** sign-up stays free
+with no card, but a silent **14-day clock** starts at sign-up. During the 14
+days users have full access (a "days left" banner shows); when it ends with no
+plan, they hit a soft paywall at `/billing` ("your trial ended — pick a plan").
+Paying (Stripe) lifts the paywall automatically via the webhook. This is all
+built and controlled by the same switch below — turn it on to activate it. To
+turn it on:
 1. Re-run `supabase/schema.sql` (adds the `subscriptions` table — it's idempotent).
 2. Stripe → **Developers → Webhooks** → add endpoint
    `https://practicevoice-ai.com/.netlify/functions/stripe-webhook`, subscribe to

@@ -14,6 +14,7 @@ import { Logo } from "@/components/marketing/Logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useDemoView } from "@/context/DemoView";
+import { useSubscription, type AccessState } from "@/hooks/useSubscription";
 import { initials } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -62,10 +63,46 @@ function NavItems({ items, onNavigate }: { items: NavEntry[]; onNavigate?: () =>
   );
 }
 
-function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarInner({
+  onNavigate,
+  accessState = "open",
+  trialDaysLeft = 0,
+}: {
+  onNavigate?: () => void;
+  accessState?: AccessState;
+  trialDaysLeft?: number;
+}) {
   const { user, signOut } = useAuth();
   const { demo, base } = useDemoView();
   const items = navFor(base, demo);
+
+  const card = demo
+    ? {
+        title: "This is a live demo",
+        body: "Sample data. Start your own free trial to see your real calls here.",
+        cta: "Start free trial",
+        to: "/signup",
+      }
+    : accessState === "trial"
+      ? {
+          title: `Free trial · ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left`,
+          body: "Choose a plan before it ends to keep your receptionist running.",
+          cta: "Choose a plan",
+          to: "/billing",
+        }
+      : accessState === "active"
+        ? {
+            title: "Plan active",
+            body: "Thanks for being a customer. Manage or change your plan anytime.",
+            cta: "Manage plan",
+            to: "/pricing",
+          }
+        : {
+            title: "Free beta",
+            body: "You're on the free beta. Explore everything — no charge.",
+            cta: "See plans",
+            to: "/pricing",
+          };
 
   return (
     <div className="flex h-full flex-col gap-6 p-4">
@@ -79,18 +116,12 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
       <div className="mt-2 rounded-xl border border-primary/15 bg-primary/[0.04] p-4">
         <div className="flex items-center gap-2 text-primary">
           <Sparkles className="size-4" />
-          <span className="text-sm font-semibold">
-            {demo ? "This is a live demo" : "Professional trial"}
-          </span>
+          <span className="text-sm font-semibold">{card.title}</span>
         </div>
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          {demo
-            ? "Sample data. Start your own free trial to see your real calls here."
-            : "9 days left. Unlock revenue attribution & smart reminders."}
-        </p>
+        <p className="mt-1.5 text-xs text-muted-foreground">{card.body}</p>
         <Button asChild size="sm" className="mt-3 w-full">
-          <Link to={demo ? "/signup" : "/pricing"} onClick={onNavigate}>
-            {demo ? "Start free trial" : "Upgrade plan"}
+          <Link to={card.to} onClick={onNavigate}>
+            {card.cta}
           </Link>
         </Button>
       </div>
@@ -140,6 +171,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { demo, base } = useDemoView();
+  const access = useSubscription();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const items = navFor(base, demo);
@@ -167,7 +199,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-muted/30 lg:grid lg:grid-cols-[272px_1fr]">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen border-r border-border bg-card lg:block">
-        <SidebarInner />
+        <SidebarInner accessState={access.state} trialDaysLeft={access.trialDaysLeft} />
       </aside>
 
       {/* Mobile top bar */}
@@ -207,7 +239,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <X className="size-5" />
             </button>
-            <SidebarInner onNavigate={() => setMobileOpen(false)} />
+            <SidebarInner
+              onNavigate={() => setMobileOpen(false)}
+              accessState={access.state}
+              trialDaysLeft={access.trialDaysLeft}
+            />
           </div>
         </div>
       )}
@@ -225,6 +261,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               className="font-semibold underline underline-offset-2 hover:no-underline"
             >
               Start your free trial →
+            </Link>
+          </div>
+        )}
+
+        {/* Free-trial countdown (reverse trial, when billing is enforced) */}
+        {!demo && access.state === "trial" && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-accent/10 px-4 py-2.5 text-center text-sm">
+            <span className="font-medium text-foreground">
+              🎁 {access.trialDaysLeft} day{access.trialDaysLeft === 1 ? "" : "s"} left in your free
+              trial
+            </span>
+            <Link
+              to="/billing"
+              className="font-semibold text-accent-hover underline underline-offset-2 hover:no-underline"
+            >
+              Choose a plan →
             </Link>
           </div>
         )}

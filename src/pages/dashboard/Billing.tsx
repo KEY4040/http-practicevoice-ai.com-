@@ -4,6 +4,7 @@ import { Logo } from "@/components/marketing/Logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { PLANS, type Plan } from "@/data/plans";
 import { startCheckout } from "@/lib/checkout";
@@ -18,6 +19,8 @@ export default function Billing() {
   useDocumentMeta({ title: "Choose your plan", noindex: true });
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { state } = useSubscription();
+  const expired = state === "expired";
 
   function choose(plan: Plan) {
     // Carry the user id (client_reference_id) + email so the stripe-webhook can
@@ -40,14 +43,17 @@ export default function Billing() {
       <main className="mx-auto max-w-5xl px-6 pb-20">
         <div className="mx-auto max-w-2xl text-center">
           <Badge variant="primary" className="mb-4">
-            Start your 14-day free trial
+            {expired ? "Your free trial has ended" : "Start your 14-day free trial"}
           </Badge>
           <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            One quick step to activate your receptionist
+            {expired
+              ? "Pick a plan to keep your receptionist running"
+              : "One quick step to activate your receptionist"}
           </h1>
           <p className="mt-3 text-balance text-muted-foreground">
-            Pick a plan to start your free trial. You won't be charged until the
-            trial ends, and you can cancel anytime.
+            {expired
+              ? "Your calls, appointments, and data are safe — choose a plan to pick right back up. Cancel anytime."
+              : "Pick a plan to start your free trial. You won't be charged until the trial ends, and you can cancel anytime."}
           </p>
         </div>
 
