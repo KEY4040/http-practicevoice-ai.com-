@@ -53,7 +53,7 @@ export default function Login() {
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <a
-              href="mailto:support@practicevoice-ai.com?subject=Password%20reset"
+              href="mailto:practicevoiceai@yahoo.com?subject=Password%20reset"
               className="text-xs font-medium text-primary hover:underline"
             >
               Forgot password?

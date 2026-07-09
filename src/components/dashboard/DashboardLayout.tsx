@@ -77,7 +77,7 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="mt-auto space-y-1">
         <a
-          href="mailto:hello@practicevoice-ai.com"
+          href="mailto:practicevoiceai@yahoo.com"
           className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <LifeBuoy className="size-[18px]" />

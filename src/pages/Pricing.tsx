@@ -124,7 +124,7 @@ export default function Pricing() {
               Every plan includes unlimited team members, encrypted call storage,
               and HIPAA-conscious infrastructure.{" "}
               <a
-                href="mailto:hello@practicevoice-ai.com"
+                href="mailto:practicevoiceai@yahoo.com"
                 className="font-medium text-primary hover:underline"
               >
                 Have a question? Talk to us

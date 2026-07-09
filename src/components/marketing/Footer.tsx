@@ -23,7 +23,7 @@ const columns = [
     links: [
       { label: "Log in", href: "/login" },
       { label: "Start free trial", href: "/signup" },
-      { label: "Contact", href: "mailto:hello@practicevoice-ai.com" },
+      { label: "Contact", href: "mailto:practicevoiceai@yahoo.com" },
     ],
   },
 ];

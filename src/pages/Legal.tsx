@@ -60,7 +60,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
         heading: "Your choices",
         body: [
           "You can access, export, or delete your practice's data from Settings or by contacting us.",
-          "Contact hello@practicevoice-ai.com with any privacy request.",
+          "Contact practicevoiceai@yahoo.com with any privacy request.",
         ],
       },
     ],
@@ -101,7 +101,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
       },
       {
         heading: "Contact",
-        body: ["Questions about these terms? Email hello@practicevoice-ai.com."],
+        body: ["Questions about these terms? Email practicevoiceai@yahoo.com."],
       },
     ],
   },
@@ -142,7 +142,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
       {
         heading: "Reporting a concern",
         body: [
-          "Report a security concern to security@practicevoice-ai.com and we will respond promptly.",
+          "Report a security concern to practicevoiceai@yahoo.com and we will respond promptly.",
         ],
       },
     ],
