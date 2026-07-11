@@ -5,7 +5,18 @@ import { Footer } from "@/components/marketing/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { useJsonLd, breadcrumbLd, faqLd } from "@/hooks/useJsonLd";
 import { VERTICALS, type Vertical as VerticalData } from "@/data/verticals";
+import { BLOG_POSTS } from "@/data/blog";
+
+const SITE = "https://practicevoice-ai.com";
+
+// Hub-and-spoke: each vertical links down to its most relevant articles.
+const RELATED_POSTS: Record<VerticalData["slug"], string[]> = {
+  dental: ["cost-of-missed-calls-dental-practice", "ai-receptionist-vs-answering-service"],
+  medical: ["real-cost-of-missed-calls-medical-practices", "hipaa-ai-receptionist-guide"],
+  legal: ["ai-reception-for-law-firms-never-miss-a-call", "ai-receptionist-vs-answering-service"],
+};
 
 export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
   const v = VERTICALS[slug];
@@ -14,6 +25,24 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
     description: v.metaDescription,
     path: `/${v.slug}`,
   });
+
+  useJsonLd(`vertical-${v.slug}`, [
+    faqLd(v.faqs),
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: `AI receptionist for ${v.audience}`,
+      serviceType: "AI voice receptionist",
+      provider: { "@type": "Organization", name: "PracticeVoice AI", url: `${SITE}/` },
+      areaServed: { "@type": "Country", name: "United States" },
+      url: `${SITE}/${v.slug}`,
+      description: v.metaDescription,
+    },
+    breadcrumbLd([
+      { name: "Home", path: "/" },
+      { name: v.audience, path: `/${v.slug}` },
+    ]),
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -102,6 +131,36 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
                     </p>
                   </details>
                 ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Further reading — internal links to blog */}
+        <section className="pb-4 pt-12">
+          <div className="container-page">
+            <div className="mx-auto max-w-3xl">
+              <h2 className="text-center text-2xl font-bold tracking-tight">
+                Further reading
+              </h2>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {RELATED_POSTS[slug]
+                  .map((s) => BLOG_POSTS.find((p) => p.slug === s))
+                  .filter((p): p is (typeof BLOG_POSTS)[number] => Boolean(p))
+                  .map((p) => (
+                    <Link
+                      key={p.slug}
+                      to={`/blog/${p.slug}`}
+                      className="group rounded-2xl border border-border bg-card p-6 shadow-card transition-shadow hover:shadow-elevated"
+                    >
+                      <h3 className="text-base font-semibold leading-snug group-hover:text-primary">
+                        {p.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {p.description}
+                      </p>
+                    </Link>
+                  ))}
               </div>
             </div>
           </div>

@@ -1,9 +1,38 @@
+# PracticeVoice AI — crawl the marketing site, skip the signed-in app.
 User-agent: *
 Allow: /
-
-# Keep the signed-in app out of search results
 Disallow: /dashboard
 Disallow: /login
 Disallow: /signup
+Disallow: /billing
+
+# --- AI search / answer engines (explicitly welcomed so we can be cited) ---
+# OpenAI
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-SearchBot
+Allow: /
+User-agent: Claude-User
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+User-agent: Perplexity-User
+Allow: /
+
+# Google (AI Overviews / Gemini) and Bing (Copilot)
+User-agent: Google-Extended
+Allow: /
+User-agent: Bingbot
+Allow: /
 
 Sitemap: https://practicevoice-ai.com/sitemap.xml

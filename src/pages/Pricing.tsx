@@ -5,7 +5,10 @@ import { Footer } from "@/components/marketing/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { useJsonLd, breadcrumbLd } from "@/hooks/useJsonLd";
 import { PLANS, type Plan } from "@/data/plans";
+
+const SITE = "https://practicevoice-ai.com";
 import { startCheckout } from "@/lib/checkout";
 import { isBillingEnabled } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +23,36 @@ export default function Pricing() {
       "Straightforward pricing for PracticeVoice AI. Plans from $99/mo with a 14-day free trial.",
     path: "/pricing",
   });
+
+  useJsonLd("pricing", [
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: "PracticeVoice AI",
+      description:
+        "AI voice receptionist for medical, dental, and legal practices.",
+      brand: { "@type": "Brand", name: "PracticeVoice AI" },
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "USD",
+        lowPrice: "99",
+        highPrice: "399",
+        offerCount: PLANS.length,
+        offers: PLANS.map((p) => ({
+          "@type": "Offer",
+          name: p.name,
+          price: String(p.price),
+          priceCurrency: "USD",
+          url: `${SITE}/pricing`,
+          availability: "https://schema.org/InStock",
+        })),
+      },
+    },
+    breadcrumbLd([
+      { name: "Home", path: "/" },
+      { name: "Pricing", path: "/pricing" },
+    ]),
+  ]);
 
   function handleCta(plan: Plan) {
     if (isBillingEnabled) {

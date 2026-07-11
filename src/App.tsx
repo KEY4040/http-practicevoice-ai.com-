@@ -17,6 +17,8 @@ import Legal from "@/pages/Legal";
 import Vertical from "@/pages/Vertical";
 import Comparison from "@/pages/Comparison";
 import Contact from "@/pages/Contact";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 import NotFound from "@/pages/NotFound";
 
 // Lazy: the app shell (and its heavier chart deps) load only once signed in.
@@ -60,6 +62,10 @@ export default function App() {
             <Route path="/vs/ruby" element={<Comparison slug="ruby" />} />
             <Route path="/vs/answering-service" element={<Comparison slug="answering-service" />} />
             <Route path="/vs/smith-ai" element={<Comparison slug="smith-ai" />} />
+
+            {/* Blog */}
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
 
             {/* Book a demo / contact */}
             <Route path="/contact" element={<Contact />} />

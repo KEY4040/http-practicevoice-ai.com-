@@ -5,6 +5,7 @@ import { Footer } from "@/components/marketing/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { useJsonLd, breadcrumbLd, faqLd } from "@/hooks/useJsonLd";
 import { COMPARISONS } from "@/data/comparisons";
 
 export default function Comparison({ slug }: { slug: string }) {
@@ -14,6 +15,17 @@ export default function Comparison({ slug }: { slug: string }) {
     description: c.metaDescription,
     path: `/vs/${c.slug}`,
   });
+
+  useJsonLd(`vs-${c.slug}`, [
+    faqLd([
+      { q: `How is PracticeVoice AI different from ${c.competitor}?`, a: c.sub },
+      { q: `When is ${c.competitor} the better choice?`, a: c.fairness },
+    ]),
+    breadcrumbLd([
+      { name: "Home", path: "/" },
+      { name: `vs ${c.competitor}`, path: `/vs/${c.slug}` },
+    ]),
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -67,6 +79,23 @@ export default function Comparison({ slug }: { slug: string }) {
             <p className="mx-auto mt-6 max-w-3xl rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">Being fair:</span>{" "}
               {c.fairness}
+            </p>
+
+            {/* Internal links — how it works for each practice type */}
+            <p className="mx-auto mt-4 max-w-3xl text-center text-sm text-muted-foreground">
+              See how PracticeVoice AI works for{" "}
+              <Link to="/dental" className="font-medium text-primary hover:underline">
+                dental practices
+              </Link>
+              ,{" "}
+              <Link to="/medical" className="font-medium text-primary hover:underline">
+                medical practices
+              </Link>
+              , and{" "}
+              <Link to="/legal" className="font-medium text-primary hover:underline">
+                law firms
+              </Link>
+              .
             </p>
           </div>
         </section>
