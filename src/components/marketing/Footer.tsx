@@ -18,6 +18,7 @@ const columns = [
     links: [
       { label: "Dental practices", href: "/dental" },
       { label: "Medical practices", href: "/medical" },
+      { label: "Veterinary clinics", href: "/veterinary" },
       { label: "Law firms", href: "/legal" },
     ],
   },

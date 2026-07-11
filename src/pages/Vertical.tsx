@@ -16,6 +16,7 @@ const RELATED_POSTS: Record<VerticalData["slug"], string[]> = {
   dental: ["cost-of-missed-calls-dental-practice", "ai-receptionist-vs-answering-service"],
   medical: ["real-cost-of-missed-calls-medical-practices", "hipaa-ai-receptionist-guide"],
   legal: ["ai-reception-for-law-firms-never-miss-a-call", "ai-receptionist-vs-answering-service"],
+  veterinary: ["why-your-vet-clinic-keeps-missing-calls", "ai-receptionist-vs-answering-service"],
 };
 
 export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {

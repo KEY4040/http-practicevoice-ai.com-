@@ -240,7 +240,7 @@ A good veterinary answering service should:
 - **Answer common questions** (hours, location, refill process) without tying up staff.
 - **Show you the revenue** it recovers, so you're not guessing. PracticeVoice AI includes a dashboard that tracks captured calls and booked appointments.
 
-It runs on a HIPAA-conscious setup, goes live the same day, and starts at $99/mo—no rip-and-replace of your current phone system. Want to see the mechanics? [See how it works](/demo).
+It runs on a HIPAA-conscious setup, goes live the same day, and starts at $99/mo—no rip-and-replace of your current phone system. See how it works for [veterinary clinics](/veterinary), or [watch the live demo](/demo).
 
 ## The Bottom Line
 

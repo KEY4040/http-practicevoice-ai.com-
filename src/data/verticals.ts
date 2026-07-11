@@ -15,7 +15,7 @@ export interface VerticalFaq {
 }
 
 export interface Vertical {
-  slug: "dental" | "medical" | "legal";
+  slug: "dental" | "medical" | "legal" | "veterinary";
   /** e.g. "dental practices" */
   audience: string;
   eyebrow: string;
@@ -104,6 +104,45 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
       {
         q: "What about urgent or emergency calls?",
         a: "You set the rules. The AI recognizes urgency, delivers your after-hours instructions, and can escalate to your on-call line.",
+      },
+    ],
+  },
+  veterinary: {
+    slug: "veterinary",
+    audience: "veterinary clinics",
+    eyebrow: "For veterinary clinics",
+    title: "AI receptionist for veterinary clinics",
+    metaTitle: "AI Receptionist for Veterinary Clinics — PracticeVoice AI",
+    metaDescription:
+      "An AI receptionist for vet clinics that answers every call 24/7, books and triages appointments, handles after-hours pet emergencies, and shows the revenue each call books.",
+    headline: "The AI receptionist built for veterinary clinics",
+    sub: "Your team can't love the animals and answer every ring at once. PracticeVoice answers every call, books and triages, and flags urgent cases — so no worried pet owner dials the next clinic.",
+    benefits: [
+      {
+        title: "Never lose a worried pet owner",
+        body: "When the front desk is slammed or closed, PracticeVoice answers on the first ring, 24/7 — so panicked after-hours callers reach you instead of the clinic down the street.",
+      },
+      {
+        title: "Triage urgent cases the right way",
+        body: "The AI screens urgency, delivers your after-hours guidance, and books routine visits or escalates emergencies — instead of leaving it all to voicemail.",
+      },
+      {
+        title: "See the revenue each call books",
+        body: "Every booked appointment is tied to real dollars, so you can see exactly what your AI receptionist earns the clinic each month.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Can it book different appointment types?",
+        a: "Yes — wellness exams, vaccinations, sick visits, and consults. You set your services, doctors, and hours, and the AI books the right slot.",
+      },
+      {
+        q: "How does it handle after-hours emergencies?",
+        a: "You set the rules. The AI recognizes urgency, gives your after-hours instructions, and can escalate to your on-call or nearest emergency line.",
+      },
+      {
+        q: "Will it replace my front desk?",
+        a: "No — it backs them up. It catches the calls your team can't get to (busy, lunch, after-hours) so no client is lost, while your staff focuses on the patients in front of them.",
       },
     ],
   },

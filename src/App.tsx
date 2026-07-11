@@ -56,6 +56,7 @@ export default function App() {
             {/* Vertical landing pages */}
             <Route path="/dental" element={<Vertical slug="dental" />} />
             <Route path="/medical" element={<Vertical slug="medical" />} />
+            <Route path="/veterinary" element={<Vertical slug="veterinary" />} />
             <Route path="/legal" element={<Vertical slug="legal" />} />
 
             {/* Comparison pages */}
