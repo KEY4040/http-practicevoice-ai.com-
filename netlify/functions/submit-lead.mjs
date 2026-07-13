@@ -26,6 +26,12 @@ export default async (req) => {
     return json({ ok: false, error: "invalid_json" }, 400);
   }
 
+  // Honeypot: a hidden field real users never fill. If a bot fills it, silently
+  // accept and drop (don't tip it off, don't write spam to the DB).
+  if ((body?.hp ?? "").toString().trim()) {
+    return json({ ok: true, saved: false });
+  }
+
   const name = (body?.name ?? "").toString().trim().slice(0, 200);
   const email = (body?.email ?? "").toString().trim().slice(0, 200);
   const practice = (body?.practice ?? "").toString().trim().slice(0, 200);
@@ -45,15 +51,22 @@ export default async (req) => {
       return json({ ok: true, saved: true });
     } catch (err) {
       // Table may not exist yet — don't lose the lead or block the visitor.
-      console.error("[submit-lead] insert failed (is the leads table created?):", err);
-      console.log("[submit-lead] LEAD:", JSON.stringify(lead));
+      // Log only a non-PII marker (never the lead's name/email/phone/message).
+      console.error(
+        `[submit-lead] insert failed (leads table created?): ${scrub(err)}`
+      );
       return json({ ok: true, saved: false });
     }
   }
 
-  console.log("[submit-lead] LEAD (no Supabase configured):", JSON.stringify(lead));
   return json({ ok: true, saved: false });
 };
+
+/** Reduce an error to a short, PII-free message for logs. */
+function scrub(err) {
+  const msg = (err && err.message) || String(err);
+  return msg.slice(0, 120).replace(/[\r\n]+/g, " ");
+}
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {

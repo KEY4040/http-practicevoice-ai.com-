@@ -93,8 +93,10 @@ export default async (req) => {
       saved = res.saved;
       isNew = res.isNew;
     } catch (err) {
-      // Transient (DB hiccup) — 500 lets Retell retry the delivery.
-      console.error("[retell-webhook] persist failed:", err);
+      // Transient (DB hiccup) — 500 lets Retell retry the delivery. Log only a
+      // short, PII-free marker (the DB error body can echo caller/transcript).
+      const msg = ((err && err.message) || String(err)).slice(0, 120).replace(/[\r\n]+/g, " ");
+      console.error(`[retell-webhook] persist failed: ${msg}`);
       return json({ ok: false, error: "persist_failed" }, 500);
     }
   }
@@ -206,7 +208,8 @@ async function sendConfirmation(parsed) {
     provider: appt.provider || "our team",
   });
   const result = await sendSms(appt.patientPhone, body);
-  if (result.error) console.error("[retell-webhook] confirmation SMS failed:", result.error);
+  // Log the failure without the patient's phone number (PHI).
+  if (result.error) console.error("[retell-webhook] confirmation SMS failed (see Twilio logs)");
 }
 
 /** Best-effort clinic display name for the SMS (env override → DB → generic). */

@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build && npm run prerender",
     "prerender": "tsx scripts/prerender.mts || true",
     "preview": "vite preview",
+    "test": "node --import tsx --test tests/*.test.ts",
     "lint": "eslint ."
   },
   "dependencies": {

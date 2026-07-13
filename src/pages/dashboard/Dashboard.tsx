@@ -28,7 +28,7 @@ export default function Dashboard() {
   useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
   const { base } = useDemoView();
-  const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue } =
+  const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue, aiNumber } =
     useDashboardData();
   const firstName = user?.name?.split(" ")[0] ?? (isDemo ? "Dr. Patel" : "there");
   const recent = calls.slice(0, 5);
@@ -63,7 +63,7 @@ export default function Dashboard() {
           <ErrorState />
         ) : (
           <>
-            {!isDemo && !hasCalls && <FirstCallBanner />}
+            {!isDemo && !hasCalls && <FirstCallBanner aiNumber={aiNumber} />}
 
             {/* Metric cards */}
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -239,8 +239,10 @@ function ErrorState() {
   );
 }
 
-/** Shown to a real (non-demo) account that hasn't logged its first call yet. */
-function FirstCallBanner() {
+/** Shown to a real (non-demo) account that hasn't logged its first call yet.
+ *  Only claims the receptionist is "ready" once a number is actually live. */
+function FirstCallBanner({ aiNumber }: { aiNumber: string | null }) {
+  const activated = Boolean(aiNumber);
   return (
     <Card className="border-primary/20 bg-primary/[0.04]">
       <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -249,10 +251,26 @@ function FirstCallBanner() {
             <Sparkles className="size-4" />
           </span>
           <div>
-            <p className="text-sm font-semibold">Your receptionist is ready</p>
+            <p className="text-sm font-semibold">
+              {activated ? "Your receptionist is ready" : "Finish setting up your AI receptionist"}
+            </p>
             <p className="text-sm text-muted-foreground">
-              Call your PracticeVoice number and book a test appointment — it'll
-              appear here within a few seconds of hanging up.
+              {activated ? (
+                <>
+                  Call your AI number{" "}
+                  <span className="font-medium text-foreground">{aiNumber}</span> and
+                  book a test appointment — it'll appear here within a few seconds
+                  of hanging up.
+                </>
+              ) : (
+                <>
+                  Head to{" "}
+                  <Link to="/dashboard/settings" className="font-medium text-primary hover:underline">
+                    Settings
+                  </Link>{" "}
+                  to add your business details and activate your AI line.
+                </>
+              )}
             </p>
           </div>
         </div>

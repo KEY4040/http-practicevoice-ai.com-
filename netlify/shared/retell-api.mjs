@@ -29,6 +29,7 @@ async function retellFetch(method, path, body) {
       "Content-Type": "application/json",
     },
     body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(15000),
   });
   const text = await res.text();
   let data;

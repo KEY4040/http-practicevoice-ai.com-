@@ -41,6 +41,8 @@ export interface DashboardData {
   revenueByType: RevenueByType[];
   /** Total revenue across ALL calls (not just the top revenueByType slices). */
   totalRevenue: number;
+  /** The clinic's live AI number, or null if they haven't activated one yet. */
+  aiNumber: string | null;
 }
 
 function sumRevenue(calls: Call[]): number {
@@ -59,6 +61,7 @@ export function useDashboardData(): DashboardData {
     callsOverTime: demo ? mockCallsOverTime : [],
     revenueByType: demo ? mockRevenueByType : [],
     totalRevenue: demo ? mockRevenueByType.reduce((s, r) => s + r.value, 0) : 0,
+    aiNumber: demo ? "+1 (555) 012-3456" : null,
   });
 
   useEffect(() => {
@@ -85,6 +88,7 @@ export function useDashboardData(): DashboardData {
           callsOverTime: deriveCallsOverTime(calls),
           revenueByType: deriveRevenueByType(calls),
           totalRevenue: sumRevenue(calls),
+          aiNumber: clinic.retell_number ?? null,
         });
       } catch (err) {
         if (!active) return;

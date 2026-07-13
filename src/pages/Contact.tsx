@@ -23,6 +23,7 @@ export default function Contact() {
     email: "",
     phone: "",
     message: "",
+    hp: "", // honeypot — hidden; only bots fill it
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
@@ -97,6 +98,17 @@ export default function Contact() {
                 </div>
               ) : (
                 <form onSubmit={onSubmit} className="space-y-4">
+                  {/* Honeypot: hidden from people, catches bots. */}
+                  <input
+                    type="text"
+                    name="company_website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={form.hp}
+                    onChange={(e) => update("hp", e.target.value)}
+                    className="hidden"
+                  />
                   <div className="space-y-1.5">
                     <Label htmlFor="name">Your name</Label>
                     <Input
