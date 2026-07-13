@@ -28,28 +28,20 @@ import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_SERVICES = [
-  "Cleaning & Exam",
-  "Crown / Restorative",
-  "Emergency Visit",
-  "Whitening",
-  "Consultation",
-];
-
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function Settings() {
   useDocumentMeta({ title: "Clinic Setup", noindex: true });
-  // Read persisted settings once (localStorage today, Supabase-ready).
+  // Read persisted settings once so everything the owner set sticks between visits.
   const [loaded] = useState(loadClinicSettings);
   const [clinicName, setClinicName] = useState(loaded.clinicName);
   const [phone, setPhone] = useState("");
-  const [services, setServices] = useState<string[]>(DEFAULT_SERVICES);
+  const [services, setServices] = useState<string[]>(loaded.services);
   const [newService, setNewService] = useState("");
-  const [openDays, setOpenDays] = useState<string[]>(["Mon", "Tue", "Wed", "Thu", "Fri"]);
-  const [openTime, setOpenTime] = useState("08:00");
-  const [closeTime, setCloseTime] = useState("17:00");
-  const [voice, setVoice] = useState("Ava");
+  const [openDays, setOpenDays] = useState<string[]>(loaded.openDays);
+  const [openTime, setOpenTime] = useState(loaded.openTime);
+  const [closeTime, setCloseTime] = useState(loaded.closeTime);
+  const [voice, setVoice] = useState(loaded.voice);
   const [twilioNumber, setTwilioNumber] = useState(loaded.twilioNumber);
   const [confirmationTemplate, setConfirmationTemplate] = useState(
     loaded.confirmationTemplate
@@ -104,6 +96,11 @@ export default function Settings() {
       twilioNumber,
       confirmationTemplate,
       reminderTemplate,
+      services,
+      openDays,
+      openTime,
+      closeTime,
+      voice,
     });
     if (isSupabaseConfigured) {
       getSupabase()

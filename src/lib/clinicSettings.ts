@@ -4,11 +4,12 @@ import {
 } from "./smsTemplates";
 
 /**
- * Clinic-level settings that the SMS features read from.
+ * Clinic-level settings the dashboard collects and the SMS features read from.
  *
- * Persisted to localStorage for now so the UI works end-to-end without a
- * backend. When Supabase is connected, swap the load/save bodies to read/write
- * the `clinics` row — the rest of the app doesn't need to change.
+ * Persisted to localStorage so everything the owner types on the Settings page
+ * — business name, services, hours, voice, and SMS templates — sticks between
+ * visits instead of snapping back to defaults. Name/phone also sync to the
+ * Supabase `clinics` row (see clinic.ts) so the receptionist's texts use them.
  */
 export interface ClinicSettings {
   clinicName: string;
@@ -16,16 +17,35 @@ export interface ClinicSettings {
   twilioNumber: string;
   confirmationTemplate: string;
   reminderTemplate: string;
+  /** What the AI can book / help with. */
+  services: string[];
+  /** Open days, e.g. ["Mon","Tue"]. */
+  openDays: string[];
+  openTime: string;
+  closeTime: string;
+  /** Receptionist voice: "Ava" | "Grace" | "Noah". */
+  voice: string;
 }
 
 const STORAGE_KEY = "pv_clinic_settings";
 
 function defaults(): ClinicSettings {
   return {
-    clinicName: "Bayview Dental",
+    clinicName: "My Business",
     twilioNumber: "",
     confirmationTemplate: DEFAULT_CONFIRMATION_TEMPLATE,
     reminderTemplate: DEFAULT_REMINDER_TEMPLATE,
+    services: [
+      "Cleaning & Exam",
+      "Crown / Restorative",
+      "Emergency Visit",
+      "Whitening",
+      "Consultation",
+    ],
+    openDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    openTime: "08:00",
+    closeTime: "17:00",
+    voice: "Ava",
   };
 }
 
