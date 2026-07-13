@@ -6,17 +6,44 @@
 import crypto from "node:crypto";
 
 /**
- * Verify a Retell webhook signature. Retell signs the raw request body with your
- * API key using HMAC-SHA256 (hex). Returns true when it matches.
+ * Verify a Retell webhook signature.
+ *
+ * Retell's `x-retell-signature` header is `v=<timestampMs>,d=<hexDigest>`, where
+ * digest = HMAC-SHA256(apiKey, rawBody + String(timestampMs)) — the raw body
+ * concatenated with the millisecond timestamp, NO separator — with a 5-minute
+ * timestamp tolerance. (Verified against Retell's official Node/Python SDKs.)
+ *
+ * Falls back to the legacy bare-hex form (HMAC of just the body) if a header
+ * without the `v=,d=` structure is ever received, so older setups still verify.
  */
-export function verifySignature(rawBody, signature, apiKey) {
+const FIVE_MIN_MS = 5 * 60 * 1000;
+
+export function verifySignature(rawBody, signature, apiKey, nowMs = Date.now()) {
   if (!apiKey || !signature) return false;
-  const expected = crypto
-    .createHmac("sha256", apiKey)
-    .update(rawBody, "utf8")
-    .digest("hex");
-  const a = Buffer.from(expected);
-  const b = Buffer.from(String(signature));
+  const sig = String(signature);
+
+  const m = /v=(\d+),d=(.*)/.exec(sig);
+  if (m) {
+    const poststamp = Number(m[1]);
+    const postDigest = m[2];
+    if (!Number.isFinite(poststamp)) return false;
+    if (Math.abs(nowMs - poststamp) > FIVE_MIN_MS) return false; // replay guard
+    return timingSafeHexEqual(
+      crypto.createHmac("sha256", apiKey).update(rawBody + poststamp, "utf8").digest("hex"),
+      postDigest
+    );
+  }
+
+  // Legacy: header is a bare hex HMAC of the body.
+  return timingSafeHexEqual(
+    crypto.createHmac("sha256", apiKey).update(rawBody, "utf8").digest("hex"),
+    sig
+  );
+}
+
+function timingSafeHexEqual(expectedHex, gotHex) {
+  const a = Buffer.from(expectedHex);
+  const b = Buffer.from(String(gotHex));
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
 }
@@ -82,24 +109,27 @@ export function parseCall(call, opts = {}) {
       ? Math.max(0, Math.round((endMs - startMs) / 1000))
       : 0;
 
-  // Prefer the agent's structured booleans. The keyword fallback looks for a
-  // positive booking word BUT bails if the summary also contains a negation or
-  // "reschedule"/"cancel", so "unable to schedule", "did not book", and
-  // "reschedule" don't count as bookings.
-  const NEGATION = /\b(no|not|n't|never|unable|cancel|reschedul|without|instead of)\b/i;
+  // Prefer the agent's structured booleans. The keyword fallback is advisory:
+  // it only fires when there's no explicit flag. We DON'T bail on a bare "no"
+  // anywhere in the summary (that wrongly killed real bookings like "No problem,
+  // you're all set for Tuesday") — we only bail on phrases that actually mean a
+  // booking did NOT happen.
+  const NO_BOOKING =
+    /\b(un(?:able|available)|couldn'?t|could not|did ?n'?t\s+book|not\s+book|no\s+appointment|no\s+availability|call(?:ed)?\s+back\s+later|cancel(?:l?ed|lation)?|reschedul)\b/i;
   const booked =
     custom.appointment_booked === true ||
     (custom.appointment_booked !== false &&
       !inVoicemail &&
       /\b(booked|scheduled|all set|confirmed)\b/i.test(summary) &&
-      !NEGATION.test(summary));
+      !NO_BOOKING.test(summary));
+  const NOT_URGENT = /\b(no\s+emergency|not\s+urgent|non-?urgent|routine)\b/i;
   const escalated =
     custom.escalated === true ||
     custom.urgent === true ||
     (custom.escalated !== false &&
       custom.urgent !== false &&
       /\b(emergency|urgent|escalat|on-call|severe pain)\b/i.test(summary) &&
-      !NEGATION.test(summary));
+      !NOT_URGENT.test(summary));
 
   let outcome;
   if (escalated) outcome = "escalated";

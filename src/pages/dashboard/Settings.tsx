@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   Building2,
   Phone,
@@ -73,6 +74,13 @@ export default function Settings() {
         if (clinic.name && clinic.name !== "My Practice") setClinicName(clinic.name);
         if (clinic.phone) setPhone(clinic.phone);
         if (clinic.about) setAbout(clinic.about);
+        // Hydrate the rest from the DB (source of truth) so settings survive a
+        // new device / cleared cache instead of snapping back to defaults.
+        if (clinic.services && clinic.services.length) setServices(clinic.services);
+        if (clinic.open_days && clinic.open_days.length) setOpenDays(clinic.open_days);
+        if (clinic.open_time) setOpenTime(clinic.open_time.slice(0, 5));
+        if (clinic.close_time) setCloseTime(clinic.close_time.slice(0, 5));
+        if (clinic.voice) setVoice(clinic.voice);
         if (clinic.retell_number) setAiNumber(clinic.retell_number);
       } catch {
         /* non-fatal — keep local defaults */
@@ -223,6 +231,14 @@ export default function Settings() {
                 </Button>
               </div>
 
+              {activateResult && activateResult.status === "needs_card" && (
+                <p className="mt-2.5 text-xs text-foreground">
+                  {activateResult.message}{" "}
+                  <Link to="/billing" className="font-semibold text-primary hover:underline">
+                    Add a card →
+                  </Link>
+                </p>
+              )}
               {activateResult && activateResult.status === "error" && (
                 <p className="mt-2.5 text-xs text-destructive">
                   {activateResult.message}
@@ -230,8 +246,7 @@ export default function Settings() {
               )}
               {activateResult && activateResult.status === "demo" && (
                 <p className="mt-2.5 text-xs text-muted-foreground">
-                  Activation runs on the live site once RETELL_API_KEY is set in
-                  Netlify.
+                  Activation is temporarily unavailable — please try again shortly.
                 </p>
               )}
               {activateResult &&

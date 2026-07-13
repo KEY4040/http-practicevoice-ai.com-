@@ -18,8 +18,49 @@
  * `client_reference_id=<supabase user id>` to the Payment Link, which arrives on
  * checkout.session.completed and keys the subscription row.
  */
-import { hasSupabase, sbInsert, sbUpdate } from "../shared/supabase.mjs";
+import { hasSupabase, sbSelect, sbInsert, sbUpdate } from "../shared/supabase.mjs";
 import { verifyStripeSignature } from "../shared/stripe.mjs";
+import {
+  hasRetell,
+  deleteNumber,
+  deleteAgent,
+  deleteLlm,
+} from "../shared/retell-api.mjs";
+
+/**
+ * Tear down a canceled/expired customer's provisioned Retell line so their
+ * phone number stops billing. Finds the clinic via the subscription's
+ * stripe_customer_id -> user_id -> clinic.owner_id, deletes number -> agent ->
+ * llm (order matters), and clears the ids. Best-effort + non-fatal.
+ */
+async function teardownForCustomer(customerId) {
+  if (!hasRetell() || !customerId) return;
+  try {
+    const subs = await sbSelect(
+      "subscriptions",
+      `select=user_id&stripe_customer_id=eq.${encodeURIComponent(customerId)}&limit=1`
+    );
+    const uid = subs[0]?.user_id;
+    if (!uid) return;
+    const clinics = await sbSelect(
+      "clinics",
+      `select=id,retell_number,retell_agent_id,retell_llm_id&owner_id=eq.${uid}&limit=1`
+    );
+    const clinic = clinics[0];
+    if (!clinic) return;
+    if (clinic.retell_number) await deleteNumber(clinic.retell_number).catch(() => {});
+    if (clinic.retell_agent_id) await deleteAgent(clinic.retell_agent_id).catch(() => {});
+    if (clinic.retell_llm_id) await deleteLlm(clinic.retell_llm_id).catch(() => {});
+    await sbUpdate("clinics", `id=eq.${clinic.id}`, {
+      retell_number: null,
+      retell_agent_id: null,
+      retell_llm_id: null,
+    });
+    console.log(`[stripe-webhook] tore down Retell line for clinic ${clinic.id}`);
+  } catch (e) {
+    console.error("[stripe-webhook] teardown failed (non-fatal):", e.message);
+  }
+}
 
 export default async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -95,6 +136,11 @@ export default async (req) => {
             updated_at: new Date().toISOString(),
           }
         );
+        // Trial ended without payment / canceled / unpaid -> reclaim the number
+        // so it stops costing money. (This is the "shuts off after 14 days".)
+        if (["canceled", "unpaid", "incomplete_expired"].includes(status)) {
+          await teardownForCustomer(customer);
+        }
         break;
       }
       default:

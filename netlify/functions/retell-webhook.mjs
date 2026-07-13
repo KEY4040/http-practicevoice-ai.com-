@@ -108,19 +108,16 @@ export default async (req) => {
   return json({ ok: true, saved, isNew, outcome: parsed.outcome });
 };
 
-/** Figure out which clinic this call belongs to. */
+/**
+ * Figure out which clinic this call belongs to.
+ *
+ * MULTI-TENANT SAFETY: always match on the dialed number / agent id FIRST. A
+ * positive per-tenant match must win. DEFAULT_CLINIC_ID is only a last-resort
+ * fallback for a single-practice deployment — if it ever "won" first, every
+ * tenant's calls (and PHI) would be written to one clinic.
+ */
 async function resolveClinicId(parsed) {
-  const fixed = process.env.DEFAULT_CLINIC_ID;
-  if (fixed) return fixed;
-
-  // Match on the dialed number, then the agent id.
-  if (parsed.toNumber) {
-    const byNumber = await sbSelect(
-      "clinics",
-      `select=id&retell_number=eq.${encodeURIComponent(parsed.toNumber)}&limit=1`
-    );
-    if (byNumber[0]) return byNumber[0].id;
-  }
+  // 1. Agent id is the most stable key (survives number reformatting).
   if (parsed.agentId) {
     const byAgent = await sbSelect(
       "clinics",
@@ -128,7 +125,18 @@ async function resolveClinicId(parsed) {
     );
     if (byAgent[0]) return byAgent[0].id;
   }
-  // Single-tenant fallback: if there's exactly one clinic, use it.
+  // 2. The dialed number.
+  if (parsed.toNumber) {
+    const byNumber = await sbSelect(
+      "clinics",
+      `select=id&retell_number=eq.${encodeURIComponent(parsed.toNumber)}&limit=1`
+    );
+    if (byNumber[0]) return byNumber[0].id;
+  }
+  // 3. Fallbacks only when nothing matched: an explicit single-practice env, or
+  //    a lone clinic. Never override a positive match above.
+  const fixed = process.env.DEFAULT_CLINIC_ID;
+  if (fixed) return fixed;
   const all = await sbSelect("clinics", "select=id&limit=2");
   return all.length === 1 ? all[0].id : null;
 }

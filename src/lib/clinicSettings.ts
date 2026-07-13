@@ -37,13 +37,9 @@ function defaults(): ClinicSettings {
     twilioNumber: "",
     confirmationTemplate: DEFAULT_CONFIRMATION_TEMPLATE,
     reminderTemplate: DEFAULT_REMINDER_TEMPLATE,
-    services: [
-      "Cleaning & Exam",
-      "Crown / Restorative",
-      "Emergency Visit",
-      "Whitening",
-      "Consultation",
-    ],
+    // Empty by default — a law firm should NOT ship with "Whitening". The owner
+    // adds what their business actually handles.
+    services: [],
     openDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     openTime: "08:00",
     closeTime: "17:00",

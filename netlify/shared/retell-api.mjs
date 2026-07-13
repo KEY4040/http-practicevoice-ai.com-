@@ -111,18 +111,29 @@ export async function deleteLlm(llmId) {
 
 /**
  * Pick a voice_id matching the requested tone, from the live catalog so we
- * never hardcode a stale id. Falls back to a known-good voice on any error.
- *   "Ava"  -> warm female · "Grace" -> calm female · "Noah" -> confident male
+ * never hardcode a stale id. Ava and Grace are BOTH female but must map to
+ * DISTINCT voices (else "choose your voice" is a lie). Falls back to a
+ * known-good voice on any error.
+ *   "Ava"  -> warm female (1st) · "Grace" -> calm female (2nd) · "Noah" -> male
  */
 export async function pickVoice(voiceName) {
-  const wantMale = String(voiceName).toLowerCase() === "noah";
+  const name = String(voiceName || "").toLowerCase();
   try {
     const voices = await retellFetch("GET", "/list-voices");
     if (Array.isArray(voices) && voices.length) {
-      const gender = wantMale ? "male" : "female";
-      const match =
-        voices.find((v) => (v.gender || "").toLowerCase() === gender) || voices[0];
-      if (match?.voice_id) return match.voice_id;
+      const byGender = (g) =>
+        voices.filter((v) => (v.voice_id) && (v.gender || "").toLowerCase() === g);
+      if (name === "noah") {
+        const males = byGender("male");
+        if (males[0]) return males[0].voice_id;
+      } else {
+        const females = byGender("female");
+        // Grace = a different female than Ava, when the catalog has two.
+        const idx = name === "grace" && females.length > 1 ? 1 : 0;
+        if (females[idx]) return females[idx].voice_id;
+        if (females[0]) return females[0].voice_id;
+      }
+      if (voices[0]?.voice_id) return voices[0].voice_id;
     }
   } catch {
     /* fall through to default */

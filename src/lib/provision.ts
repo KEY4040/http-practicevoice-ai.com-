@@ -7,7 +7,7 @@
 import { getSupabase } from "./supabase";
 
 export interface ActivateResult {
-  status: "created" | "updated" | "error" | "demo";
+  status: "created" | "updated" | "needs_card" | "error" | "demo";
   /** The AI number to forward calls to (may be null if the number step failed). */
   number?: string | null;
   message?: string;
@@ -41,18 +41,30 @@ export async function activateAiLine(): Promise<ActivateResult> {
       error?: string;
     };
 
+    // Needs a card first (402) — send them to add one.
+    if (res.status === 402 || body.error === "needs_card") {
+      return {
+        status: "needs_card",
+        message: body.message || "Add a card to activate your AI line.",
+      };
+    }
+
     if (!res.ok || !body.ok) {
       return {
         status: "error",
         message: body.message || body.error || "Activation failed. Try again.",
       };
     }
+
+    // Success, but the phone-number step may still have failed — say so plainly.
+    const noNumberMsg =
+      "Your AI is built, but a phone number wasn't attached yet. Add a valid US phone in Settings and a payment method/balance in Retell, then activate again.";
     return {
       status: body.status === "updated" ? "updated" : "created",
       number: body.number ?? null,
-      message: body.numberError
-        ? "Your AI is built, but getting a phone number failed — add a payment method / balance in Retell, then activate again."
-        : undefined,
+      message: body.number
+        ? undefined
+        : body.numberError || noNumberMsg,
     };
   } catch {
     return { status: "demo" };

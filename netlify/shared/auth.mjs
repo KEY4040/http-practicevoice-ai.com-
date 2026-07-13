@@ -1,0 +1,51 @@
+/**
+ * Shared server-side auth: resolve the signed-in Supabase user from the
+ * caller's access token, so money-spending functions can require a real
+ * logged-in user (and, where needed, an entitled subscription).
+ */
+import { sbSelect } from "./supabase.mjs";
+
+/** Verify a Supabase access token and return the user id, or null. */
+export async function getUserId(token) {
+  if (!token) return null;
+  const base = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key) return null;
+  try {
+    const res = await fetch(`${base}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: key },
+    });
+    if (!res.ok) return null;
+    const user = await res.json().catch(() => null);
+    return user?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Pull the Bearer token out of an Authorization header. */
+export function bearer(req) {
+  return (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+}
+
+/**
+ * Statuses that mean "has a valid card / active plan" — the gate for actions
+ * that cost real money (buying a phone number, sending SMS). A trial only
+ * counts here once it's a real Stripe subscription (card on file).
+ */
+const ENTITLED = new Set(["trialing", "active", "past_due"]);
+
+/** True when the user has a Stripe subscription that entitles paid actions. */
+export async function isEntitled(uid) {
+  if (!uid) return false;
+  try {
+    const rows = await sbSelect(
+      "subscriptions",
+      `select=status&user_id=eq.${uid}&limit=1`
+    );
+    return ENTITLED.has(rows[0]?.status);
+  } catch {
+    // Fail CLOSED on the money path — no entitlement proof, no spend.
+    return false;
+  }
+}

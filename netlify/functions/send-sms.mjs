@@ -16,20 +16,19 @@
  * Response: { ok, sent?, simulated?, sid?, error? }
  */
 
+import { getUserId, bearer } from "../shared/auth.mjs";
+
 export default async (req) => {
   if (req.method !== "POST") {
     return json({ ok: false, error: "method_not_allowed" }, 405);
   }
 
-  // Basic abuse guard (defense-in-depth): if ALLOWED_ORIGIN is set, only accept
-  // calls from your own site so a random browser can't drive up your Twilio
-  // bill. NOTE: the real protection is verifying the signed-in user's session
-  // once Supabase auth is wired server-side — do that before enabling Twilio.
-  const allowed = process.env.ALLOWED_ORIGIN;
-  const origin = req.headers.get("origin") || "";
-  if (allowed && origin && origin !== allowed) {
-    return json({ ok: false, error: "forbidden_origin" }, 403);
-  }
+  // Auth: only a signed-in user may send a (test) text — this endpoint sends
+  // from the owner's Twilio number, so leaving it open is straight toll-fraud /
+  // smishing exposure. The Origin header is NOT a control (absent on non-browser
+  // clients), so we verify the Supabase session instead.
+  const uid = await getUserId(bearer(req));
+  if (!uid) return json({ ok: false, error: "not_signed_in" }, 401);
 
   let payload;
   try {

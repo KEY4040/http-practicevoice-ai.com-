@@ -195,6 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           localStorage.removeItem(DEMO_KEY);
         }
+        // Clear per-account cached settings so the next user on a shared
+        // computer never sees / re-saves the previous account's config.
+        localStorage.removeItem("pv_clinic_settings");
         setUser(null);
       },
     };

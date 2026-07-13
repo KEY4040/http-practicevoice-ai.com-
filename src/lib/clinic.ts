@@ -9,6 +9,11 @@ export interface ClinicRow {
   owner_id: string;
   name: string;
   phone: string | null;
+  services: string[] | null;
+  open_days: string[] | null;
+  open_time: string | null;
+  close_time: string | null;
+  voice: string | null;
   retell_number: string | null;
   retell_agent_id: string | null;
   retell_llm_id: string | null;
