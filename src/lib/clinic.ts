@@ -11,6 +11,8 @@ export interface ClinicRow {
   phone: string | null;
   retell_number: string | null;
   retell_agent_id: string | null;
+  retell_llm_id: string | null;
+  about: string | null;
   calendar_connected: boolean | null;
 }
 
@@ -68,16 +70,35 @@ export async function getOrCreateClinic(
   return created.data as ClinicRow;
 }
 
-/** Update the owner's clinic name/phone (used when Settings is saved). No-op if unset. */
+/**
+ * Update the owner's clinic profile (used when Settings is saved). Persists the
+ * fields the AI receptionist reads — name, phone, services, hours, voice, and
+ * the free-text "about" — so provisioning and the webhook use real values.
+ */
 export async function updateClinicProfile(
   supabase: SupabaseClient,
-  patch: { name?: string; phone?: string }
+  patch: {
+    name?: string;
+    phone?: string;
+    about?: string;
+    services?: string[];
+    openDays?: string[];
+    openTime?: string;
+    closeTime?: string;
+    voice?: string;
+  }
 ): Promise<void> {
   const clinic = await getOrCreateClinic(supabase, { name: patch.name, phone: patch.phone });
   if (!clinic) return;
-  const fields: Record<string, string> = {};
+  const fields: Record<string, unknown> = {};
   if (patch.name?.trim()) fields.name = patch.name.trim();
   if (patch.phone != null) fields.phone = patch.phone.trim();
+  if (patch.about != null) fields.about = patch.about.trim();
+  if (patch.services) fields.services = patch.services;
+  if (patch.openDays) fields.open_days = patch.openDays;
+  if (patch.openTime) fields.open_time = patch.openTime;
+  if (patch.closeTime) fields.close_time = patch.closeTime;
+  if (patch.voice) fields.voice = patch.voice;
   if (Object.keys(fields).length === 0) return;
   await supabase.from("clinics").update(fields).eq("id", clinic.id);
 }

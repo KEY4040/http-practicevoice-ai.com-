@@ -12,6 +12,8 @@ import {
   MessageSquareText,
   Send,
   Loader2,
+  PhoneCall,
+  Sparkles,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,6 +28,7 @@ import { isSupabaseConfigured, getSupabase } from "@/lib/supabase";
 import { getOrCreateClinic, updateClinicProfile } from "@/lib/clinic";
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
+import { activateAiLine, type ActivateResult } from "@/lib/provision";
 import { cn } from "@/lib/utils";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -47,7 +50,13 @@ export default function Settings() {
     loaded.confirmationTemplate
   );
   const [reminderTemplate, setReminderTemplate] = useState(loaded.reminderTemplate);
+  const [about, setAbout] = useState(loaded.about);
   const [saved, setSaved] = useState(false);
+
+  // AI line activation state.
+  const [aiNumber, setAiNumber] = useState<string | null>(null);
+  const [activating, setActivating] = useState(false);
+  const [activateResult, setActivateResult] = useState<ActivateResult | null>(null);
 
   // On a real (Supabase-connected) account, load the clinic's saved name/phone
   // so the form reflects reality — and so saving never clobbers them with
@@ -63,6 +72,8 @@ export default function Settings() {
         if (!active || !clinic) return;
         if (clinic.name && clinic.name !== "My Practice") setClinicName(clinic.name);
         if (clinic.phone) setPhone(clinic.phone);
+        if (clinic.about) setAbout(clinic.about);
+        if (clinic.retell_number) setAiNumber(clinic.retell_number);
       } catch {
         /* non-fatal — keep local defaults */
       }
@@ -71,6 +82,17 @@ export default function Settings() {
       active = false;
     };
   }, []);
+
+  async function onActivate() {
+    setActivating(true);
+    setActivateResult(null);
+    // Make sure the latest settings are saved before the AI is built from them.
+    await persist();
+    const result = await activateAiLine();
+    if (result.number) setAiNumber(result.number);
+    setActivateResult(result);
+    setActivating(false);
+  }
 
   function addService() {
     const s = newService.trim();
@@ -86,11 +108,10 @@ export default function Settings() {
     );
   }
 
-  function onSave(e: FormEvent) {
-    e.preventDefault();
-    // Persist the settings the SMS features read (localStorage for templates,
-    // which stay on-device; the clinic profile also syncs to Supabase so the
-    // receptionist's confirmation texts use the right practice name/phone).
+  /** Save everything: on-device (templates) + the clinic profile in Supabase
+   *  (name, phone, services, hours, voice, about) so the AI is built from real
+   *  values. Returns a promise so callers can await before provisioning. */
+  function persist(): Promise<void> {
     saveClinicSettings({
       clinicName,
       twilioNumber,
@@ -101,21 +122,31 @@ export default function Settings() {
       openTime,
       closeTime,
       voice,
+      about,
     });
-    if (isSupabaseConfigured) {
-      getSupabase()
-        .then((supabase) => {
-          if (supabase)
-            return updateClinicProfile(supabase, {
-              name: clinicName,
-              // Only write phone when the user actually has one — never blank it.
-              phone: phone.trim() || undefined,
-            });
-        })
-        .catch(() => {
-          /* non-fatal — settings still saved locally */
-        });
-    }
+    if (!isSupabaseConfigured) return Promise.resolve();
+    return getSupabase()
+      .then((supabase) => {
+        if (supabase)
+          return updateClinicProfile(supabase, {
+            name: clinicName,
+            phone: phone.trim() || undefined,
+            about,
+            services,
+            openDays,
+            openTime,
+            closeTime,
+            voice,
+          });
+      })
+      .catch(() => {
+        /* non-fatal — settings still saved locally */
+      });
+  }
+
+  function onSave(e: FormEvent) {
+    e.preventDefault();
+    void persist();
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -130,6 +161,90 @@ export default function Settings() {
             minutes.
           </p>
         </div>
+
+        {/* Activate the AI line — provisions the customer's own Retell agent + number */}
+        <Card
+          className={cn(
+            "p-6",
+            aiNumber
+              ? "border-accent/30 bg-accent/[0.05]"
+              : "border-primary/30 bg-primary/[0.04]"
+          )}
+        >
+          <div className="flex items-start gap-4">
+            <span
+              className={cn(
+                "grid size-12 shrink-0 place-items-center rounded-xl",
+                aiNumber ? "bg-accent/15 text-accent-hover" : "bg-primary/10 text-primary"
+              )}
+            >
+              <PhoneCall className="size-6" />
+            </span>
+            <div className="min-w-0 flex-1">
+              {aiNumber ? (
+                <>
+                  <p className="font-semibold">Your AI line is live ✅</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Forward your business line to your AI number and every call
+                    is answered.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-lg border border-border bg-background px-3 py-1.5 font-mono text-sm font-semibold">
+                      {aiNumber}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ← forward your calls here
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold">Activate your AI receptionist</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Fill in your details below, then activate. We build your AI
+                    and give you a number to forward your business line to.
+                  </p>
+                </>
+              )}
+
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  onClick={onActivate}
+                  disabled={activating}
+                  variant={aiNumber ? "outline" : "primary"}
+                >
+                  {activating ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Sparkles className="size-4" />
+                  )}
+                  {aiNumber ? "Re-sync my AI with these settings" : "Activate my AI line"}
+                </Button>
+              </div>
+
+              {activateResult && activateResult.status === "error" && (
+                <p className="mt-2.5 text-xs text-destructive">
+                  {activateResult.message}
+                </p>
+              )}
+              {activateResult && activateResult.status === "demo" && (
+                <p className="mt-2.5 text-xs text-muted-foreground">
+                  Activation runs on the live site once RETELL_API_KEY is set in
+                  Netlify.
+                </p>
+              )}
+              {activateResult &&
+                (activateResult.status === "created" ||
+                  activateResult.status === "updated") &&
+                activateResult.message && (
+                  <p className="mt-2.5 text-xs text-warning-foreground">
+                    {activateResult.message}
+                  </p>
+                )}
+            </div>
+          </div>
+        </Card>
 
         {/* Calendar connect — coming soon (not yet available; shown honestly) */}
         <Card className="border-border bg-muted/30 p-6">
@@ -183,6 +298,20 @@ export default function Settings() {
                   placeholder="(415) 555-0100"
                 />
               </div>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="about">Tell your AI about your business</Label>
+              <Textarea
+                id="about"
+                value={about}
+                onChange={(e) => setAbout(e.target.value)}
+                rows={4}
+                placeholder="What you do, what you sell, prices, common questions, anything the AI should know when it answers. Example: We sell rubber feet, grommets, and washers. Free shipping over $50. Minimum order 20 pieces."
+              />
+              <p className="text-xs text-muted-foreground">
+                The more you tell it, the better it answers. This becomes your
+                AI's script.
+              </p>
             </div>
           </div>
         </Card>

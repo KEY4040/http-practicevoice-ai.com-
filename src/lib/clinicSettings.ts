@@ -25,6 +25,8 @@ export interface ClinicSettings {
   closeTime: string;
   /** Receptionist voice: "Ava" | "Grace" | "Noah". */
   voice: string;
+  /** Free-text description of the business so the AI knows what to say. */
+  about: string;
 }
 
 const STORAGE_KEY = "pv_clinic_settings";
@@ -46,6 +48,7 @@ function defaults(): ClinicSettings {
     openTime: "08:00",
     closeTime: "17:00",
     voice: "Ava",
+    about: "",
   };
 }
 

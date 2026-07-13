@@ -44,8 +44,19 @@ create table public.clinics (
   -- For a single practice you can skip both and set DEFAULT_CLINIC_ID instead.
   retell_number text,
   retell_agent_id text,
+  -- The Retell "LLM" (the agent's brain/script) id, so we can update the prompt
+  -- when the owner changes their settings.
+  retell_llm_id text,
+  -- Free-text description the owner writes so the AI knows their business
+  -- (what they do, prices, FAQs). Feeds the agent's prompt.
+  about         text,
   created_at    timestamptz not null default now()
 );
+
+-- Migration for databases created before the self-serve provisioning columns
+-- existed. Safe to run repeatedly.
+alter table public.clinics add column if not exists retell_llm_id text;
+alter table public.clinics add column if not exists about text;
 
 -- Calls ---------------------------------------------------------------------
 create type public.call_outcome as enum ('booked', 'escalated', 'missed', 'info');
