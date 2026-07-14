@@ -67,7 +67,7 @@ export const PLANS: Plan[] = [
     period: "/month",
     tagline: "Everything a busy front desk needs — plus proof of the payoff.",
     cta: "Start — $9.99 for 14 days",
-    paymentLink: "https://buy.stripe.com/14A3cva0J0rE5g97C3cjS0h",
+    paymentLink: "https://buy.stripe.com/fZu4gzgp73DQ6kdaOfcjS0m",
     highlighted: true,
     badge: "Most popular",
     features: [
