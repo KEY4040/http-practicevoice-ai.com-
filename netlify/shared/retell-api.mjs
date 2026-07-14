@@ -77,10 +77,13 @@ export async function updateLlm(llmId, { prompt, beginMessage }) {
   return retellFetch("PATCH", `/update-retell-llm/${llmId}`, patch);
 }
 
-export async function updateAgent(agentId, { voiceId, name }) {
+export async function updateAgent(agentId, { voiceId, name, webhookUrl }) {
   const patch = {};
   if (voiceId) patch.voice_id = voiceId;
   if (name) patch.agent_name = name;
+  // Setting webhook_url here is what makes call events reach us. Without it,
+  // Retell has the calls but never delivers them to our webhook.
+  if (webhookUrl) patch.webhook_url = webhookUrl;
   if (!Object.keys(patch).length) return null;
   return retellFetch("PATCH", `/update-agent/${agentId}`, patch);
 }

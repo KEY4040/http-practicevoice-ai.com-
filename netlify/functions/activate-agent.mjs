@@ -119,7 +119,11 @@ export default async (req) => {
     if (clinic.retell_agent_id && clinic.retell_llm_id) {
       const voiceId = await pickVoice(clinic.voice);
       await updateLlm(clinic.retell_llm_id, { prompt, beginMessage });
-      await updateAgent(clinic.retell_agent_id, { voiceId, name: `${clinic.name} receptionist` });
+      await updateAgent(clinic.retell_agent_id, {
+        voiceId,
+        name: `${clinic.name} receptionist`,
+        webhookUrl, // self-heal: ensure call events reach our webhook
+      });
 
       let number = clinic.retell_number || null;
       let numberError = null;
