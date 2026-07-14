@@ -43,7 +43,7 @@ export default function Billing() {
       <main className="mx-auto max-w-5xl px-6 pb-20">
         <div className="mx-auto max-w-2xl text-center">
           <Badge variant="primary" className="mb-4">
-            {expired ? "Your free trial has ended" : "Start your 14-day free trial"}
+            {expired ? "Your trial has ended" : "Start — $9.99 for 14 days"}
           </Badge>
           <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
             {expired
@@ -53,7 +53,7 @@ export default function Billing() {
           <p className="mt-3 text-balance text-muted-foreground">
             {expired
               ? "Your calls, appointments, and data are safe — choose a plan to pick right back up. Cancel anytime."
-              : "Pick a plan to start your free trial. You won't be charged until the trial ends, and you can cancel anytime."}
+              : "Pick a plan to get started — it's $9.99 for your 14-day trial, then your plan, and you can cancel anytime."}
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function Billing() {
                 variant={plan.highlighted ? "primary" : "outline"}
                 onClick={() => choose(plan)}
               >
-                Start free trial
+                Start for $9.99
                 <ArrowRight />
               </Button>
               <ul className="mt-6 space-y-2.5 text-sm">

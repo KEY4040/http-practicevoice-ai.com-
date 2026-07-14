@@ -75,7 +75,7 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild size="lg">
                 <Link to={v.ctaHref ?? "/pricing"}>
-                  {v.ctaHref ? "Talk to our team" : "Start 14-day free trial"}
+                  {v.ctaHref ? "Talk to our team" : "Start — $9.99 for 14 days"}
                   <ArrowRight />
                 </Link>
               </Button>
@@ -183,12 +183,12 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
                 Stop losing {v.audience.split(" ")[0]} calls to voicemail
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-                14-day free trial, live the same day, cancel anytime.
+                $9.99 to start, then your plan, live the same day, cancel anytime.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Button asChild size="lg">
                   <Link to={v.ctaHref ?? "/pricing"}>
-                    {v.ctaHref ? "Talk to our team" : "Start free trial"}
+                    {v.ctaHref ? "Talk to our team" : "Start for $9.99"}
                     <ArrowRight />
                   </Link>
                 </Button>

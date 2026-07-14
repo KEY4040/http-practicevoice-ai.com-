@@ -103,7 +103,7 @@ export default function BlogPost() {
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild size="lg">
                 <Link to="/pricing">
-                  Start 14-day free trial
+                  Start — $9.99 for 14 days
                   <ArrowRight />
                 </Link>
               </Button>

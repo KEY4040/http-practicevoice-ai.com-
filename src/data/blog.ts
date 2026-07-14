@@ -102,7 +102,7 @@ A trustworthy vendor will welcome these questions and answer them clearly. **Pra
 
 An AI receptionist can be a safe, HIPAA-conscious part of your practice — but only if you do the diligence: get a signed BAA, confirm strong safeguards, lock down how your data can (and can't) be used, and keep the documentation to prove it.
 
-Handled correctly, you get the best of both worlds: never miss a patient call, and keep PHI protected. Want to see a HIPAA-conscious AI receptionist in action? [Watch a quick demo](/demo) or [start your 14-day free trial](/pricing) and bring your compliance questions — we're glad to answer them.`,
+Handled correctly, you get the best of both worlds: never miss a patient call, and keep PHI protected. Want to see a HIPAA-conscious AI receptionist in action? [Watch a quick demo](/demo) or [start a 14-day trial for $9.99](/pricing) and bring your compliance questions — we're glad to answer them.`,
   },
   {
     slug: "ai-receptionist-vs-answering-service",
@@ -181,7 +181,7 @@ Many practices land on a hybrid: an AI receptionist handling the high volume of 
 
 An answering service takes messages. A modern AI receptionist runs your front desk — answering instantly, booking appointments, and doing it 24/7 for a flat, predictable price.
 
-**PracticeVoice AI** is built exactly for this: it goes live the same day, answers every call, books directly into your schedule, and shows you the revenue it recovers on a built-in dashboard. Curious how it sounds? [See how it works](/demo) or [start a 14-day free trial](/pricing) — no per-minute meter, no long onboarding.`,
+**PracticeVoice AI** is built exactly for this: it goes live the same day, answers every call, books directly into your schedule, and shows you the revenue it recovers on a built-in dashboard. Curious how it sounds? [See how it works](/demo) or [start a 14-day trial for $9.99](/pricing) — no per-minute meter, no long onboarding.`,
   },
   {
     slug: "why-your-vet-clinic-keeps-missing-calls",
@@ -246,7 +246,7 @@ It runs on a HIPAA-conscious setup, goes live the same day, and starts at $99/mo
 
 Your phone is your busiest exam room, and right now a quarter of the patients in it are walking out the door. You don't need your team to work harder—you need a line that never goes unanswered.
 
-Start a [14-day free trial](/demo) of PracticeVoice AI and go live today. If it recovers even a handful of the calls you're missing this week, it's already paid for itself. Curious about plans first? Check [pricing](/pricing).`,
+Start a [14-day trial for $9.99](/demo) of PracticeVoice AI and go live today. If it recovers even a handful of the calls you're missing this week, it's already paid for itself. Curious about plans first? Check [pricing](/pricing).`,
   },
   {
     slug: "ai-reception-for-law-firms-never-miss-a-call",
@@ -312,7 +312,7 @@ It's HIPAA-conscious, goes live the same day, and starts at $99/mo—no need to 
 
 In legal intake, the winner is simply whoever picks up. You can keep hoping motivated callers leave a voicemail and wait—or you can guarantee every one of them hears a professional voice the moment they call.
 
-Start a [14-day free trial](/demo) of PracticeVoice AI and be answering every intake call by end of day. Want to compare plans first? See [pricing](/pricing).`,
+Start a [14-day trial for $9.99](/demo) of PracticeVoice AI and be answering every intake call by end of day. Want to compare plans first? See [pricing](/pricing).`,
   },
   {
     slug: "real-cost-of-missed-calls-medical-practices",
@@ -382,7 +382,7 @@ It runs on a HIPAA-conscious setup, goes live the same day, and starts at $99/mo
 
 Missed calls are invisible precisely because they never make it into your system—but they're one of the largest fixable costs in your practice. The good news: this is a solvable problem, and the fix pays for itself fast.
 
-Start a [14-day free trial](/demo) of PracticeVoice AI and have every patient call answered by the end of today. Want to compare plans first? See [pricing](/pricing).`,
+Start a [14-day trial for $9.99](/demo) of PracticeVoice AI and have every patient call answered by the end of today. Want to compare plans first? See [pricing](/pricing).`,
   },
   {
     slug: "cost-of-missed-calls-dental-practice",
@@ -456,7 +456,7 @@ This is where **PracticeVoice AI** fits in. It picks up on the first ring — du
 
 Missed calls aren't a minor front-desk annoyance — they're one of the largest and most fixable sources of lost revenue in dentistry. With nearly a third of calls going unanswered and each new patient worth thousands, the cost compounds quietly, month after month.
 
-The good news: this is solvable today. See how an AI receptionist captures the calls you're currently losing — [try PracticeVoice AI free for 14 days](/dental) or [watch a 2-minute demo](/demo). Your next new patient is already dialing.`,
+The good news: this is solvable today. See how an AI receptionist captures the calls you're currently losing — [try PracticeVoice AI for $9.99](/dental) or [watch a 2-minute demo](/demo). Your next new patient is already dialing.`,
   },
   {
     slug: "ai-receptionist-for-hvac",

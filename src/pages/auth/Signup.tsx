@@ -11,13 +11,13 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { PLANS } from "@/data/plans";
 
 const perks = [
-  "14-day free trial",
+  "$9.99 to start, then your plan",
   "Cancel anytime",
   "Set up in minutes",
 ];
 
 export default function Signup() {
-  useDocumentMeta({ title: "Start your free trial", noindex: true });
+  useDocumentMeta({ title: "Start for $9.99", noindex: true });
   const { signUp, demoMode } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -74,7 +74,7 @@ export default function Signup() {
 
   return (
     <AuthLayout
-      title="Start your free trial"
+      title="Start for $9.99"
       subtitle="Get your AI receptionist answering calls today."
     >
       <div className="mb-6 flex flex-wrap gap-x-4 gap-y-2">
@@ -91,10 +91,10 @@ export default function Signup() {
           <div>
             <p className="text-sm font-semibold">{selectedPlan.name} plan</p>
             <p className="text-xs text-muted-foreground">
-              ${selectedPlan.price}{selectedPlan.period} after your free trial
+              ${selectedPlan.price}{selectedPlan.period} after your 14-day trial
             </p>
           </div>
-          <Badge variant="primary">14-day free trial</Badge>
+          <Badge variant="primary">$9.99 for 14 days</Badge>
         </div>
       )}
 

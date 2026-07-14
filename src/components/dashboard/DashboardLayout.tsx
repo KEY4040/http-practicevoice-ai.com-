@@ -79,8 +79,8 @@ function SidebarInner({
   const card = demo
     ? {
         title: "This is a live demo",
-        body: "Sample data. Start your own free trial to see your real calls here.",
-        cta: "Start free trial",
+        body: "Sample data. Start your own account for $9.99 to see your real calls here.",
+        cta: "Start for $9.99",
         to: "/signup",
       }
     : accessState === "trial"
@@ -260,7 +260,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               to="/signup"
               className="font-semibold underline underline-offset-2 hover:no-underline"
             >
-              Start your free trial →
+              Start for $9.99 →
             </Link>
           </div>
         )}

@@ -46,7 +46,7 @@ function Hero() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link to="/pricing">
-                Start 14-day free trial
+                Start — $9.99 for 14 days
                 <ArrowRight />
               </Link>
             </Button>
@@ -303,7 +303,7 @@ const faqs = [
   },
   {
     q: "How much does PracticeVoice AI cost?",
-    a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan includes a 14-day free trial, and you can cancel anytime.",
+    a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan starts at $9.99 for a 14-day trial, and you can cancel anytime.",
   },
   {
     q: "Which businesses is it built for?",
@@ -416,13 +416,13 @@ function FinalCTA() {
             Stop sending callers to voicemail
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-            Become one of our founding businesses. 14-day free trial, live the
-            same day, cancel anytime.
+            Become one of our founding businesses. $9.99 to start, then your
+            plan, live the same day, cancel anytime.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link to="/pricing">
-                Start free trial
+                Start for $9.99
                 <ArrowRight />
               </Link>
             </Button>

@@ -38,7 +38,7 @@ export function Navbar() {
             <Link to="/login">Log in</Link>
           </Button>
           <Button asChild size="sm">
-            <Link to="/pricing">Start free trial</Link>
+            <Link to="/pricing">Start for $9.99</Link>
           </Button>
         </div>
 
@@ -81,7 +81,7 @@ export function Navbar() {
               </Button>
               <Button asChild>
                 <Link to="/pricing" onClick={() => setOpen(false)}>
-                  Start free trial
+                  Start for $9.99
                 </Link>
               </Button>
             </div>

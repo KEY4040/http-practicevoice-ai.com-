@@ -88,7 +88,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
       {
         heading: "Billing & trials",
         body: [
-          "Paid plans are billed monthly. The 14-day free trial requires no credit card and can be cancelled anytime.",
+          "New accounts start with a one-time $9.99 activation that includes a 14-day trial; your monthly plan begins after the trial unless you cancel. Paid plans are billed monthly, and you can cancel anytime.",
           "Fees are non-refundable except where required by law.",
         ],
       },

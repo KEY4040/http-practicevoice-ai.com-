@@ -108,7 +108,7 @@ export default function Comparison({ slug }: { slug: string }) {
                 See it for yourself
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-                Explore the live dashboard, then start a 14-day free trial —
+                Explore the live dashboard, then start a 14-day trial for $9.99 —
                 cancel anytime.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

@@ -228,7 +228,7 @@ function buildRoutes(): Route[] {
         { q: "How does the AI receptionist answer calls?", a: "You forward your existing business line to PracticeVoice AI. A warm, professional AI voice answers on the first ring, understands what the caller needs, books the right appointment or job, and texts a confirmation — day or night." },
         { q: "Is PracticeVoice AI HIPAA compliant?", a: "PracticeVoice AI is built for HIPAA-conscious workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans." },
         { q: "How long does setup take?", a: "Most businesses are live the same day: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away." },
-        { q: "How much does PracticeVoice AI cost?", a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan includes a 14-day free trial, and you can cancel anytime." },
+        { q: "How much does PracticeVoice AI cost?", a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan starts at $9.99 for a 14-day trial, and you can cancel anytime." },
         { q: "Which businesses is it built for?", a: "Any business that can't afford to miss a call — home services and trades, auto shops, salons and spas, restaurants, real estate teams, medical, dental, and veterinary offices, law firms, and nonprofit or community assistance lines." },
         { q: "Can it talk to callers in other languages?", a: "Yes. Your AI answers in the caller's own language automatically — it greets in English and switches to Spanish (or dozens of other languages) the moment the caller does, with no setup on your part." },
       ]),
@@ -236,7 +236,7 @@ function buildRoutes(): Route[] {
     body:
       `<h1>Never miss another customer call</h1>` +
       `<p>PracticeVoice AI is the AI voice receptionist for any business that answers the phone — home services, contractors, auto shops, salons, restaurants, real estate, medical, dental, veterinary, and legal practices, and community assistance lines. It answers every call 24/7, books appointments and jobs, sends text confirmations, and shows you the revenue it generates.</p>` +
-      `<p>If your phone rings, PracticeVoice answers it. Live the same day. 14-day free trial.</p>`,
+      `<p>If your phone rings, PracticeVoice answers it. Live the same day. $9.99 to start, then your plan.</p>`,
   });
 
   // Every vertical in the data file — new industries prerender automatically.
@@ -253,7 +253,7 @@ function buildRoutes(): Route[] {
     path: "/pricing",
     title: "Pricing — PracticeVoice AI",
     description:
-      "Straightforward pricing for PracticeVoice AI. Plans from $99/mo with a 14-day free trial.",
+      "Straightforward pricing for PracticeVoice AI. Plans from $99/mo with a $9.99 trial.",
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -280,7 +280,7 @@ function buildRoutes(): Route[] {
       breadcrumbLd([{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]),
     ],
     body:
-      `<h1>One booked job covers the month</h1><p>Pick a plan and go live the same day. 14-day free trial, cancel anytime.</p>` +
+      `<h1>One booked job covers the month</h1><p>Pick a plan and go live the same day. $9.99 to start, then your plan, cancel anytime.</p>` +
       PLANS.map(
         (p) =>
           `<h2>${esc(p.name)} — $${p.price}/month</h2><p>${esc(p.tagline)}</p><ul>${p.features

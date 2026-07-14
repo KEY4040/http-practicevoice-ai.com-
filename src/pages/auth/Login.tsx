@@ -98,7 +98,7 @@ export default function Login() {
       <p className="mt-6 text-center text-sm text-muted-foreground">
         New to PracticeVoice AI?{" "}
         <Link to="/signup" className="font-semibold text-primary hover:underline">
-          Start your free trial
+          Start for $9.99
         </Link>
       </p>
     </AuthLayout>

@@ -71,7 +71,7 @@ export default function Contact() {
                 {[
                   "A 15-minute walkthrough, no pressure",
                   "See the live dashboard with your use case",
-                  "14-day free trial, cancel anytime",
+                  "$9.99 to start, then your plan, cancel anytime",
                 ].map((t) => (
                   <li key={t} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                     <Check className="size-4 shrink-0 text-accent" />

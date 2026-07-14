@@ -20,7 +20,7 @@ export default function Pricing() {
   useDocumentMeta({
     title: "Pricing — PracticeVoice AI",
     description:
-      "Straightforward pricing for PracticeVoice AI. Plans from $99/mo with a 14-day free trial.",
+      "Straightforward pricing for PracticeVoice AI. Plans from $99/mo with a $9.99 trial.",
     path: "/pricing",
   });
 
@@ -79,8 +79,8 @@ export default function Pricing() {
               One booked job covers the month
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-              Pick a plan and go live the same day. 14-day free trial, cancel
-              anytime.
+              Pick a plan and go live the same day. $9.99 to start, then your
+              plan, cancel anytime.
             </p>
           </div>
         </section>
