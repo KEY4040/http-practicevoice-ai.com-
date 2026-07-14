@@ -22,13 +22,15 @@
  *   TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_NUMBER   confirmations
  *   SMS_CONFIRMATION_TEMPLATE    (optional) custom confirmation wording
  */
-import { hasSupabase, sbSelect, sbInsert } from "../shared/supabase.mjs";
+import { hasSupabase, sbSelect, sbInsert, sbUpdate } from "../shared/supabase.mjs";
 import {
   sendSms,
   renderTemplate,
   DEFAULT_CONFIRMATION_TEMPLATE,
 } from "../shared/sms.mjs";
 import { verifySignature, parseCall } from "../shared/retell.mjs";
+import { allowanceMinutes, monthStartIso } from "../shared/entitlement.mjs";
+import { unbindNumber } from "../shared/retell-api.mjs";
 
 export default async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -99,6 +101,13 @@ export default async (req) => {
       const res = await persistCall(clinicId, parsed);
       saved = res.saved;
       isNew = res.isNew;
+      // Meter the minute and pause the line if it crossed the plan's allowance —
+      // best-effort, never fails the webhook (money protection, not correctness).
+      try {
+        await enforceUsage(clinicId, parsed, isNew);
+      } catch (e) {
+        console.error(`[retell-webhook] usage enforcement skipped: ${((e && e.message) || e).toString().slice(0, 100)}`);
+      }
     } catch (err) {
       // Transient (DB hiccup) — 500 lets Retell retry the delivery. Log only a
       // short, PII-free marker (the DB error body can echo caller/transcript).
@@ -234,6 +243,49 @@ async function persistCall(clinicId, parsed) {
     });
   }
   return { saved: true, isNew };
+}
+
+/**
+ * Meter this call's minutes against the account's monthly allowance and PAUSE
+ * the line (detach the inbound agent) the moment it crosses the cap — so a
+ * customer can never run up more voice cost than their plan pays for. Only
+ * counts each call once (isNew), resets the tally at the start of each month,
+ * and no-ops if already paused. The hourly sweep re-enables on reset/upgrade.
+ */
+async function enforceUsage(clinicId, parsed, isNew) {
+  if (!isNew) return; // call_ended + call_analyzed both fire — count once
+  const minutes = Math.max(0, Number(parsed.durationSec || 0)) / 60;
+  const rows = await sbSelect(
+    "clinics",
+    `select=owner_id,retell_number,usage_minutes,usage_period_start,usage_suspended&id=eq.${encodeURIComponent(clinicId)}&limit=1`
+  );
+  const clinic = rows[0];
+  if (!clinic) return;
+
+  const periodStart = monthStartIso();
+  const sameMonth =
+    clinic.usage_period_start &&
+    new Date(clinic.usage_period_start).getTime() >= new Date(periodStart).getTime();
+  const used = (sameMonth ? Number(clinic.usage_minutes || 0) : 0) + minutes;
+  await sbUpdate("clinics", `id=eq.${encodeURIComponent(clinicId)}`, {
+    usage_minutes: Number(used.toFixed(2)),
+    usage_period_start: periodStart,
+  });
+
+  // Look up the owner's allowance and pause if over.
+  let allowance = 0;
+  if (clinic.owner_id) {
+    const subs = await sbSelect(
+      "subscriptions",
+      `select=status,plan,tester_days&user_id=eq.${encodeURIComponent(clinic.owner_id)}&limit=1`
+    );
+    allowance = allowanceMinutes(subs[0]);
+  }
+  if (allowance > 0 && used >= allowance && !clinic.usage_suspended && clinic.retell_number) {
+    await unbindNumber(clinic.retell_number).catch(() => {});
+    await sbUpdate("clinics", `id=eq.${encodeURIComponent(clinicId)}`, { usage_suspended: true });
+    console.warn(`[retell-webhook] paused clinic ${clinicId}: used ${used.toFixed(0)}/${allowance} min`);
+  }
 }
 
 /** Text the patient their appointment confirmation. */

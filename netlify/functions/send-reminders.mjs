@@ -18,9 +18,59 @@ import {
   renderTemplate,
   DEFAULT_REMINDER_TEMPLATE,
 } from "../shared/sms.mjs";
-import { hasRetell, deleteNumber, deleteAgent, deleteLlm } from "../shared/retell-api.mjs";
+import {
+  hasRetell,
+  deleteNumber,
+  deleteAgent,
+  deleteLlm,
+  rebindNumber,
+} from "../shared/retell-api.mjs";
+import { allowanceMinutes, monthStartIso } from "../shared/entitlement.mjs";
 
 export const config = { schedule: "@hourly" };
+
+/**
+ * Un-pause any line that was suspended for hitting its minute cap but is now
+ * back under allowance — because the month reset (usage clears) or the owner
+ * upgraded (allowance rose). Re-attaches the inbound agent and clears the flag.
+ */
+async function resumeUnderLimitLines(periodStart) {
+  if (!hasRetell()) return 0;
+  let resumed = 0;
+  try {
+    const paused = await sbSelect(
+      "clinics",
+      "select=id,owner_id,retell_number,retell_agent_id,usage_minutes,usage_period_start&usage_suspended=eq.true"
+    );
+    for (const c of paused) {
+      if (!c.retell_number || !c.retell_agent_id) continue;
+      const sameMonth =
+        c.usage_period_start &&
+        new Date(c.usage_period_start).getTime() >= new Date(periodStart).getTime();
+      const used = sameMonth ? Number(c.usage_minutes || 0) : 0; // new month -> 0
+      let allowance = 0;
+      if (c.owner_id) {
+        const subs = await sbSelect(
+          "subscriptions",
+          `select=status,plan,tester_days&user_id=eq.${c.owner_id}&limit=1`
+        );
+        allowance = allowanceMinutes(subs[0]);
+      }
+      if (allowance > 0 && used < allowance) {
+        await rebindNumber(c.retell_number, c.retell_agent_id).catch(() => {});
+        await sbUpdate("clinics", `id=eq.${c.id}`, {
+          usage_suspended: false,
+          ...(sameMonth ? {} : { usage_minutes: 0, usage_period_start: periodStart }),
+        });
+        resumed += 1;
+        console.log(`[send-reminders] resumed clinic ${c.id} (${used}/${allowance} min)`);
+      }
+    }
+  } catch (e) {
+    console.error("[send-reminders] resume sweep failed (non-fatal):", e.message);
+  }
+  return resumed;
+}
 
 /**
  * Reclaim the Retell line of any TESTER account whose window has expired, so a
@@ -70,6 +120,8 @@ export default async () => {
   const now = Date.now();
   // Reclaim expired tester lines so they stop billing (independent of reminders).
   await sweepExpiredTesters(new Date(now).toISOString());
+  // Un-pause lines that reset (new month) or upgraded back under their allowance.
+  await resumeUnderLimitLines(monthStartIso(now));
   const windowStart = new Date(now + 23 * 3600 * 1000).toISOString();
   const windowEnd = new Date(now + 25 * 3600 * 1000).toISOString();
 

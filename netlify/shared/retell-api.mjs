@@ -130,6 +130,31 @@ export async function updatePhoneNumber(phoneNumber, patch) {
   return retellFetch("PATCH", `/update-phone-number/${encodeURIComponent(phoneNumber)}`, patch);
 }
 
+/**
+ * PAUSE a number (over usage limit): detach its inbound agent so Retell stops
+ * answering — no more billable minutes — while the customer keeps their number.
+ * Reversible with rebindNumber. Tries both the current (inbound_agents) and
+ * legacy (inbound_agent_id) field shapes so it works across API versions.
+ */
+export async function unbindNumber(phoneNumber) {
+  try {
+    return await updatePhoneNumber(phoneNumber, { inbound_agents: [] });
+  } catch {
+    return updatePhoneNumber(phoneNumber, { inbound_agent_id: null });
+  }
+}
+
+/** RESUME a paused number: re-attach its inbound agent (month reset / upgrade). */
+export async function rebindNumber(phoneNumber, agentId) {
+  try {
+    return await updatePhoneNumber(phoneNumber, {
+      inbound_agents: [{ agent_id: agentId, weight: 1 }],
+    });
+  } catch {
+    return updatePhoneNumber(phoneNumber, { inbound_agent_id: agentId });
+  }
+}
+
 /** Teardown (used to shut a trial off). Order: number → agent → llm. */
 export async function deleteNumber(phoneNumber) {
   return retellFetch("DELETE", `/delete-phone-number/${encodeURIComponent(phoneNumber)}`);

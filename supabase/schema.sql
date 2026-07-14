@@ -50,6 +50,12 @@ create table public.clinics (
   -- Free-text description the owner writes so the AI knows their business
   -- (what they do, prices, FAQs). Feeds the agent's prompt.
   about         text,
+  -- Usage metering for the monthly minute allowance. usage_minutes accumulates
+  -- call-minutes in the current period; when it crosses the plan's allowance the
+  -- webhook pauses the line (usage_suspended = true) so it can't run up cost.
+  usage_minutes      numeric(10, 2) not null default 0,
+  usage_period_start timestamptz,
+  usage_suspended    boolean not null default false,
   created_at    timestamptz not null default now()
 );
 
@@ -57,6 +63,9 @@ create table public.clinics (
 -- existed. Safe to run repeatedly.
 alter table public.clinics add column if not exists retell_llm_id text;
 alter table public.clinics add column if not exists about text;
+alter table public.clinics add column if not exists usage_minutes numeric(10, 2) not null default 0;
+alter table public.clinics add column if not exists usage_period_start timestamptz;
+alter table public.clinics add column if not exists usage_suspended boolean not null default false;
 
 -- Calls ---------------------------------------------------------------------
 create type public.call_outcome as enum ('booked', 'escalated', 'missed', 'info');
