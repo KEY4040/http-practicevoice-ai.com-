@@ -112,6 +112,11 @@ export async function listCalls({ limit = 10 } = {}) {
   return retellFetch("POST", "/v2/list-calls", { limit, sort_order: "descending" });
 }
 
+/** Read a phone number's config (to confirm its agent binding). */
+export async function getPhoneNumber(phoneNumber) {
+  return retellFetch("GET", `/get-phone-number/${encodeURIComponent(phoneNumber)}`);
+}
+
 /** Teardown (used to shut a trial off). Order: number → agent → llm. */
 export async function deleteNumber(phoneNumber) {
   return retellFetch("DELETE", `/delete-phone-number/${encodeURIComponent(phoneNumber)}`);

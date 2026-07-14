@@ -17,7 +17,7 @@
  * delivery + persistence work; if it stays flat, Retell isn't reaching us.
  */
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
-import { hasRetell, getAgent, listCalls } from "../shared/retell-api.mjs";
+import { hasRetell, getAgent, listCalls, getPhoneNumber } from "../shared/retell-api.mjs";
 
 export default async (req) => {
   if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -100,9 +100,36 @@ export default async (req) => {
           // THE key fact: is our webhook actually wired onto the agent?
           webhook_url: agent.webhook_url || null,
           webhook_matches_site: agent.webhook_url === out.webhook_url,
+          // The event subscription. If this is an empty array (not absent),
+          // Retell sends NOTHING. Absent/undefined = defaults to all events.
+          webhook_events: agent.webhook_events ?? "(unset — defaults to all)",
+          version: agent.version ?? null,
+          is_published: agent.is_published ?? null,
+          last_modified: agent.last_modification_timestamp ?? null,
         };
       } catch (err) {
         retell.agent_error = ((err && err.message) || String(err)).slice(0, 160);
+      }
+    }
+    // The phone number's binding — which agent actually answers this number,
+    // and whether a stray inbound routing webhook is set on it.
+    const num = out.clinics?.list?.find((c) => c.number)?.number;
+    if (num) {
+      try {
+        const pn = await getPhoneNumber(num);
+        retell.number = {
+          phone_number: pn.phone_number || null,
+          inbound_agent_id:
+            pn.inbound_agent_id ||
+            (Array.isArray(pn.inbound_agents) ? pn.inbound_agents.map((a) => a.agent_id) : null),
+          inbound_webhook_url: pn.inbound_webhook_url || null,
+          bound_to_our_agent:
+            pn.inbound_agent_id === agentId ||
+            (Array.isArray(pn.inbound_agents) &&
+              pn.inbound_agents.some((a) => a.agent_id === agentId)),
+        };
+      } catch (err) {
+        retell.number_error = ((err && err.message) || String(err)).slice(0, 160);
       }
     }
     try {
