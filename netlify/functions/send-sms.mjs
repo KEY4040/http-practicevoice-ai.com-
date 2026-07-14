@@ -16,7 +16,7 @@
  * Response: { ok, sent?, simulated?, sid?, error? }
  */
 
-import { getUserId, bearer } from "../shared/auth.mjs";
+import { getUserId, bearer, isEntitled } from "../shared/auth.mjs";
 
 export default async (req) => {
   if (req.method !== "POST") {
@@ -24,11 +24,18 @@ export default async (req) => {
   }
 
   // Auth: only a signed-in user may send a (test) text — this endpoint sends
-  // from the owner's Twilio number, so leaving it open is straight toll-fraud /
+  // from the shared Twilio number, so leaving it open is straight toll-fraud /
   // smishing exposure. The Origin header is NOT a control (absent on non-browser
   // clients), so we verify the Supabase session instead.
   const uid = await getUserId(bearer(req));
   if (!uid) return json({ ok: false, error: "not_signed_in" }, 401);
+
+  // Entitlement: sending SMS costs real money and carries our number's
+  // reputation, so require a card-backed subscription (trialing/active). A free,
+  // no-card reverse-trial signup must NOT be able to blast texts. Fails closed.
+  if (!(await isEntitled(uid))) {
+    return json({ ok: false, error: "needs_card" }, 402);
+  }
 
   let payload;
   try {

@@ -3,6 +3,7 @@
  * caller's access token, so money-spending functions can require a real
  * logged-in user (and, where needed, an entitled subscription).
  */
+import crypto from "node:crypto";
 import { sbSelect } from "./supabase.mjs";
 
 /** Verify a Supabase access token and return the user id, or null. */
@@ -40,8 +41,8 @@ export function debugAuthorized(req) {
   if (!secret) return false;
   try {
     const token = new URL(req.url).searchParams.get("token") || "";
-    // Constant-time-ish compare (lengths differ -> false fast; ok for a tool).
-    return token.length === secret.length && token === secret;
+    if (token.length !== secret.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(secret));
   } catch {
     return false;
   }

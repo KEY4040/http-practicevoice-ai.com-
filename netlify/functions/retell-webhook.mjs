@@ -149,7 +149,12 @@ async function resolveClinicId(parsed) {
         "clinics",
         "select=id,retell_number&retell_number=not.is.null"
       );
-      const match = activated.find((c) => digits(c.retell_number).endsWith(wanted) || wanted.endsWith(digits(c.retell_number)));
+      // Compare the last 10 digits EXACTLY (US national number), not a
+      // bidirectional endsWith — a loose suffix match could write one tenant's
+      // call (and its PHI) into another tenant whose number is a suffix.
+      const nat = (n) => digits(n).slice(-10);
+      const want10 = nat(parsed.toNumber);
+      const match = want10.length === 10 && activated.find((c) => nat(c.retell_number) === want10);
       if (match) return match.id;
     }
   }
