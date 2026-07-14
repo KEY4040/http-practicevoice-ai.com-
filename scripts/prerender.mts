@@ -219,29 +219,29 @@ function buildRoutes(): Route[] {
   // Home — keep the homepage's own FAQ + a readable hero.
   routes.push({
     path: "/",
-    title: "PracticeVoice AI — Never miss another patient call",
+    title: "PracticeVoice AI — Never miss another customer call",
     description:
-      "PracticeVoice AI — the AI voice receptionist for medical, dental, and legal practices. Never miss a call, book appointments 24/7, and see the revenue your AI generates.",
+      "The AI voice receptionist for any business that answers the phone — home services, auto, salons, restaurants, real estate, medical, dental, legal, and assistance lines. Book jobs and appointments 24/7 and see the revenue your AI generates.",
     jsonLd: [
       faqLd([
-        { q: "What is PracticeVoice AI?", a: "PracticeVoice AI is an AI voice receptionist for medical, dental, and legal practices. It answers every incoming call, books appointments around the clock, sends text confirmations, and shows the revenue each call generates." },
-        { q: "How does the AI receptionist answer calls?", a: "You forward your existing practice line to PracticeVoice AI. A warm, professional AI voice answers on the first ring, understands what the caller needs, books the right appointment, and texts a confirmation — day or night." },
+        { q: "What is PracticeVoice AI?", a: "PracticeVoice AI is an AI voice receptionist for any business that answers the phone — home services, auto, salons, restaurants, real estate, medical, dental, legal, and community assistance lines. It answers every incoming call, books appointments and service calls around the clock, sends text confirmations, and shows the revenue each call generates." },
+        { q: "How does the AI receptionist answer calls?", a: "You forward your existing business line to PracticeVoice AI. A warm, professional AI voice answers on the first ring, understands what the caller needs, books the right appointment or job, and texts a confirmation — day or night." },
         { q: "Is PracticeVoice AI HIPAA compliant?", a: "PracticeVoice AI is built for HIPAA-conscious workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans." },
-        { q: "How long does setup take?", a: "Most practices are live the same day: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away." },
+        { q: "How long does setup take?", a: "Most businesses are live the same day: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away." },
         { q: "How much does PracticeVoice AI cost?", a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan includes a 14-day free trial, and you can cancel anytime." },
-        { q: "Which practices is it built for?", a: "PracticeVoice AI is designed for small and mid-sized medical, dental, and legal practices — any office that answers appointment calls and can't afford to miss one." },
+        { q: "Which businesses is it built for?", a: "Any business that can't afford to miss a call — home services and trades, auto shops, salons and spas, restaurants, real estate teams, medical, dental, and veterinary offices, law firms, and nonprofit or community assistance lines." },
       ]),
     ],
     body:
-      `<h1>Never miss another patient call</h1>` +
-      `<p>PracticeVoice AI is the AI voice receptionist for medical, dental, veterinary, and legal practices. It answers every call 24/7, books appointments, sends text confirmations, and shows you the revenue it generates.</p>` +
-      `<p>Built for dental practices, medical practices, veterinary clinics, and law firms. Live the same day. 14-day free trial.</p>`,
+      `<h1>Never miss another customer call</h1>` +
+      `<p>PracticeVoice AI is the AI voice receptionist for any business that answers the phone — home services, contractors, auto shops, salons, restaurants, real estate, medical, dental, veterinary, and legal practices, and community assistance lines. It answers every call 24/7, books appointments and jobs, sends text confirmations, and shows you the revenue it generates.</p>` +
+      `<p>If your phone rings, PracticeVoice answers it. Live the same day. 14-day free trial.</p>`,
   });
 
-  routes.push(verticalRoute("dental"));
-  routes.push(verticalRoute("medical"));
-  routes.push(verticalRoute("veterinary"));
-  routes.push(verticalRoute("legal"));
+  // Every vertical in the data file — new industries prerender automatically.
+  for (const slug of Object.keys(VERTICALS) as (keyof typeof VERTICALS)[]) {
+    routes.push(verticalRoute(slug));
+  }
 
   routes.push(comparisonRoute("ruby"));
   routes.push(comparisonRoute("answering-service"));
@@ -258,7 +258,7 @@ function buildRoutes(): Route[] {
         "@context": "https://schema.org",
         "@type": "Product",
         name: "PracticeVoice AI",
-        description: "AI voice receptionist for medical, dental, and legal practices.",
+        description: "AI voice receptionist for any business that answers the phone.",
         brand: { "@type": "Brand", name: "PracticeVoice AI" },
         offers: {
           "@type": "AggregateOffer",
@@ -279,7 +279,7 @@ function buildRoutes(): Route[] {
       breadcrumbLd([{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]),
     ],
     body:
-      `<h1>One booked patient covers the month</h1><p>Pick a plan and go live the same day. 14-day free trial, cancel anytime.</p>` +
+      `<h1>One booked job covers the month</h1><p>Pick a plan and go live the same day. 14-day free trial, cancel anytime.</p>` +
       PLANS.map(
         (p) =>
           `<h2>${esc(p.name)} — $${p.price}/month</h2><p>${esc(p.tagline)}</p><ul>${p.features
@@ -291,9 +291,9 @@ function buildRoutes(): Route[] {
   // Blog index
   routes.push({
     path: "/blog",
-    title: "Blog — AI Receptionist Insights for Practices",
+    title: "Blog — AI Receptionist Insights for Every Business",
     description:
-      "Real numbers and plain-English guides on missed calls, HIPAA, and AI receptionists for medical, dental, veterinary, and legal practices.",
+      "Real numbers and plain-English guides on missed calls and AI receptionists for home services, auto, salons, restaurants, real estate, medical, dental, legal, and assistance lines.",
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -320,6 +320,34 @@ function buildRoutes(): Route[] {
 
   // Blog posts
   for (const p of BLOG_POSTS) routes.push(blogPostRoute(p.slug));
+
+  // Contact — otherwise a no-JS crawler gets the homepage head on /contact.
+  routes.push({
+    path: "/contact",
+    title: "Book a Demo — PracticeVoice AI",
+    description:
+      "See PracticeVoice AI answer a live call. Book a 15-minute demo and watch it book an appointment and log the revenue in real time.",
+    jsonLd: [
+      breadcrumbLd([{ name: "Home", path: "/" }, { name: "Book a demo", path: "/contact" }]),
+    ],
+    body: `<h1>Book a demo</h1><p>See PracticeVoice AI answer a call, book the appointment, and log the revenue — live. Tell us about your business and pick a time.</p>`,
+  });
+
+  // Legal pages — prerender so they aren't served the homepage head.
+  for (const [path, title, description] of [
+    ["/privacy", "Privacy Policy — PracticeVoice AI", "How PracticeVoice AI collects, uses, and protects data."],
+    ["/terms", "Terms of Service — PracticeVoice AI", "The terms governing use of PracticeVoice AI."],
+    ["/hipaa", "HIPAA & Security — PracticeVoice AI", "PracticeVoice AI's HIPAA-conscious posture: encryption, access control, audit logging, and BAA availability."],
+  ] as const) {
+    const name = title.split(" — ")[0];
+    routes.push({
+      path,
+      title,
+      description,
+      jsonLd: [breadcrumbLd([{ name: "Home", path: "/" }, { name, path }])],
+      body: `<h1>${esc(name)}</h1><p>${esc(description)}</p>`,
+    });
+  }
 
   return routes;
 }
@@ -375,6 +403,15 @@ function renderPage(shell: string, route: Route): string {
     /<meta property="og:url"[^>]*>/,
     `<meta property="og:url" content="${url}" />`
   );
+  // Twitter card — otherwise every static page ships the homepage's card.
+  html = html.replace(
+    /<meta name="twitter:title"[^>]*>/,
+    `<meta name="twitter:title" content="${t}" />`
+  );
+  html = html.replace(
+    /<meta name="twitter:description"[^>]*>/,
+    `<meta name="twitter:description" content="${d}" />`
+  );
 
   // 3. Inject per-route JSON-LD before </head>.
   const ld = route.jsonLd
@@ -412,6 +449,39 @@ async function main() {
     }
   }
   console.log(`[prerender] wrote ${ok}/${routes.length} static pages.`);
+
+  // Generate sitemap.xml from the SAME data, so new pages are never forgotten.
+  try {
+    await writeSitemap();
+    console.log("[prerender] wrote sitemap.xml");
+  } catch (e) {
+    console.log(`[prerender] sitemap skip: ${(e as Error).message}`);
+  }
+}
+
+/** Build sitemap.xml from the data files (replaces the hand-kept static one). */
+async function writeSitemap() {
+  const today = new Date().toISOString().slice(0, 10);
+  const url = (path: string, priority: string, changefreq: string, lastmod = today) =>
+    `  <url>\n    <loc>${abs(path)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+
+  const urls: string[] = [
+    url("/", "1.0", "weekly"),
+    url("/pricing", "0.9", "weekly"),
+    ...Object.values(VERTICALS).map((v) => url(`/${v.slug}`, "0.8", "monthly")),
+    ...Object.values(COMPARISONS).map((c) => url(`/vs/${c.slug}`, "0.7", "monthly")),
+    url("/blog", "0.7", "weekly"),
+    ...BLOG_POSTS.map((p) => url(`/blog/${p.slug}`, "0.6", "monthly", p.isoDate)),
+    url("/contact", "0.6", "monthly"),
+    url("/privacy", "0.3", "yearly"),
+    url("/terms", "0.3", "yearly"),
+    url("/hipaa", "0.3", "yearly"),
+  ];
+
+  const xml =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`;
+  await writeFile(join(DIST, "sitemap.xml"), xml, "utf8");
 }
 
 main().catch((e) => {

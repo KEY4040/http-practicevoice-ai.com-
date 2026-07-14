@@ -58,6 +58,13 @@ export default function App() {
             <Route path="/medical" element={<Vertical slug="medical" />} />
             <Route path="/veterinary" element={<Vertical slug="veterinary" />} />
             <Route path="/legal" element={<Vertical slug="legal" />} />
+            <Route path="/home-services" element={<Vertical slug="home-services" />} />
+            <Route path="/contractors" element={<Vertical slug="contractors" />} />
+            <Route path="/auto" element={<Vertical slug="auto" />} />
+            <Route path="/salons" element={<Vertical slug="salons" />} />
+            <Route path="/real-estate" element={<Vertical slug="real-estate" />} />
+            <Route path="/restaurants" element={<Vertical slug="restaurants" />} />
+            <Route path="/assistance-line" element={<Vertical slug="assistance-line" />} />
 
             {/* Comparison pages */}
             <Route path="/vs/ruby" element={<Comparison slug="ruby" />} />

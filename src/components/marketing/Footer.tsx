@@ -16,6 +16,13 @@ const columns = [
   {
     title: "Built for",
     links: [
+      { label: "Home services", href: "/home-services" },
+      { label: "Contractors & trades", href: "/contractors" },
+      { label: "Auto shops", href: "/auto" },
+      { label: "Salons & spas", href: "/salons" },
+      { label: "Real estate", href: "/real-estate" },
+      { label: "Restaurants", href: "/restaurants" },
+      { label: "Assistance lines", href: "/assistance-line" },
       { label: "Dental practices", href: "/dental" },
       { label: "Medical practices", href: "/medical" },
       { label: "Veterinary clinics", href: "/veterinary" },
@@ -39,8 +46,8 @@ export function Footer() {
         <div className="max-w-xs">
           <Logo />
           <p className="mt-4 text-sm text-muted-foreground">
-            The AI voice receptionist built for medical, dental, and legal
-            practices. Never miss another call.
+            The AI voice receptionist built for every business that answers the
+            phone. Never miss another call.
           </p>
         </div>
 

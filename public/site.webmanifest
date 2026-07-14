@@ -1,7 +1,7 @@
 {
   "name": "PracticeVoice AI",
   "short_name": "PracticeVoice",
-  "description": "The AI voice receptionist for medical, dental, and legal practices.",
+  "description": "The AI voice receptionist for any business that answers the phone.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

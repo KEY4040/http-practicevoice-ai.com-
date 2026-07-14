@@ -11,13 +11,24 @@ import { BLOG_POSTS } from "@/data/blog";
 
 const SITE = "https://practicevoice-ai.com";
 
-// Hub-and-spoke: each vertical links down to its most relevant articles.
-const RELATED_POSTS: Record<VerticalData["slug"], string[]> = {
+// Hub-and-spoke: each vertical links down to its most relevant articles. Every
+// slug that lacks an entry falls back to the universal comparison post.
+const RELATED_POSTS: Partial<Record<VerticalData["slug"], string[]>> = {
   dental: ["cost-of-missed-calls-dental-practice", "ai-receptionist-vs-answering-service"],
   medical: ["real-cost-of-missed-calls-medical-practices", "hipaa-ai-receptionist-guide"],
   legal: ["ai-reception-for-law-firms-never-miss-a-call", "ai-receptionist-vs-answering-service"],
   veterinary: ["why-your-vet-clinic-keeps-missing-calls", "ai-receptionist-vs-answering-service"],
+  "home-services": ["ai-receptionist-vs-answering-service", "cost-of-missed-calls-dental-practice"],
+  contractors: ["ai-receptionist-vs-answering-service", "ai-reception-for-law-firms-never-miss-a-call"],
+  auto: ["ai-receptionist-vs-answering-service", "cost-of-missed-calls-dental-practice"],
+  salons: ["ai-receptionist-vs-answering-service", "why-your-vet-clinic-keeps-missing-calls"],
+  "real-estate": ["ai-receptionist-vs-answering-service", "ai-reception-for-law-firms-never-miss-a-call"],
+  restaurants: ["ai-receptionist-vs-answering-service", "cost-of-missed-calls-dental-practice"],
+  "assistance-line": ["ai-receptionist-vs-answering-service", "why-your-vet-clinic-keeps-missing-calls"],
 };
+
+const DEFAULT_TRUST = ["Live the same day", "HIPAA-conscious & secure", "Answers 24/7"];
+const TRUST_ICONS = [Clock, ShieldCheck, PhoneCall];
 
 export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
   const v = VERTICALS[slug];
@@ -63,8 +74,8 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild size="lg">
-                <Link to="/pricing">
-                  Start 14-day free trial
+                <Link to={v.ctaHref ?? "/pricing"}>
+                  {v.ctaHref ? "Talk to our team" : "Start 14-day free trial"}
                   <ArrowRight />
                 </Link>
               </Button>
@@ -73,18 +84,15 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
               </Button>
             </div>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="size-4 text-accent" />
-                Live the same day
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck className="size-4 text-accent" />
-                HIPAA-conscious &amp; secure
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <PhoneCall className="size-4 text-accent" />
-                Answers 24/7
-              </span>
+              {(v.trust ?? DEFAULT_TRUST).map((label, i) => {
+                const Icon = TRUST_ICONS[i % TRUST_ICONS.length];
+                return (
+                  <span key={label} className="inline-flex items-center gap-1.5">
+                    <Icon className="size-4 text-accent" />
+                    {label}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -145,7 +153,7 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
                 Further reading
               </h2>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                {RELATED_POSTS[slug]
+                {(RELATED_POSTS[slug] ?? ["ai-receptionist-vs-answering-service"])
                   .map((s) => BLOG_POSTS.find((p) => p.slug === s))
                   .filter((p): p is (typeof BLOG_POSTS)[number] => Boolean(p))
                   .map((p) => (
@@ -179,8 +187,8 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Button asChild size="lg">
-                  <Link to="/pricing">
-                    Start free trial
+                  <Link to={v.ctaHref ?? "/pricing"}>
+                    {v.ctaHref ? "Talk to our team" : "Start free trial"}
                     <ArrowRight />
                   </Link>
                 </Button>
