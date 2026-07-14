@@ -97,9 +97,17 @@ export default async (req) => {
           console.error("[stripe-webhook] checkout.session.completed missing client_reference_id — cannot map to a user.");
           return json({ ok: false, error: "no_client_reference" }, 200);
         }
-        // A subscription with a trial arrives as "trialing"; a straight paid
-        // checkout is "active". subscription.updated events refine this later.
-        const status = obj.payment_status === "paid" ? "active" : "trialing";
+        // A subscription checkout starts as "trialing" — a SAFE FLOOR that keeps
+        // the 60-min trial cap in force — and the customer.subscription.* events
+        // (which fire moments later) set the authoritative status. We must NOT
+        // infer "active" from payment_status: the $9.99 activation fee makes
+        // payment_status "paid" even while the plan is still in its 14-day trial,
+        // which would otherwise wrongly unlock the full plan allowance early.
+        const status = obj.subscription
+          ? "trialing"
+          : obj.payment_status === "paid"
+            ? "active"
+            : "trialing";
         await sbInsert(
           "subscriptions",
           {
