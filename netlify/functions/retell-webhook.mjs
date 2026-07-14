@@ -63,11 +63,14 @@ export default async (req) => {
     return json({ ok: false, error: "invalid_json" }, 400);
   }
 
-  // Retell fires call_started, call_ended, then call_analyzed. Act only on the
-  // analyzed event so we insert once and have the summary/analysis available.
+  // Retell fires call_started, call_ended, then call_analyzed. We save on BOTH
+  // call_ended (so the call shows up the instant it hangs up) and call_analyzed
+  // (which later fills in the summary/booking) — the upsert is idempotent on
+  // retell_call_id, so the analyzed event just enriches the same row. Only
+  // call_started (no useful data) is skipped.
   const type = event?.event ?? event?.type;
   const call = event?.call ?? event?.data ?? {};
-  if (type && type !== "call_analyzed") {
+  if (type && type !== "call_analyzed" && type !== "call_ended") {
     return json({ ok: true, skipped: type });
   }
 
