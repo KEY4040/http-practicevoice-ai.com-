@@ -124,6 +124,27 @@ export default async (req) => {
     out.retell = retell;
   }
 
+  // --- Self-probe: POST to our OWN webhook the way Retell does -------------
+  // Retell delivers call events as a POST to webhook_url. If our domain
+  // redirects (apex -> www or vice-versa), the POST is dropped/downgraded and
+  // the event never lands — even though a browser GET (this page) works fine.
+  // This probes the configured host AND the www/apex sibling so we can SEE a
+  // 301/308 redirect (the smoking gun) vs a clean 200. Uses event=call_started,
+  // which the webhook intentionally skips — so this writes NO row.
+  try {
+    const u = new URL(out.webhook_url);
+    const sibling = u.hostname.startsWith("www.")
+      ? out.webhook_url.replace("://www.", "://")
+      : out.webhook_url.replace("://", "://www.");
+    const candidates = [out.webhook_url, sibling];
+    out.self_probe = {};
+    for (const c of candidates) {
+      out.self_probe[c] = await probePost(c);
+    }
+  } catch (err) {
+    out.self_probe_error = ((err && err.message) || String(err)).slice(0, 160);
+  }
+
   return json(out);
 };
 
@@ -139,6 +160,48 @@ async function firstAgentId() {
   } catch {
     return null;
   }
+}
+
+/**
+ * POST to a URL the way Retell delivers a webhook, and report exactly what
+ * happens. `redirect: "manual"` exposes a 3xx (the redirect that would eat the
+ * event); the follow pass shows where a POST actually lands (a 301/302 turns
+ * the POST into a GET -> our function answers 405, proving the drop).
+ */
+async function probePost(url) {
+  const body = JSON.stringify({
+    event: "call_started", // intentionally skipped by the webhook -> writes no row
+    call: { call_id: "self_probe", agent_id: "self_probe" },
+  });
+  const headers = { "content-type": "application/json" };
+  const out = {};
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers,
+      body,
+      redirect: "manual",
+      signal: AbortSignal.timeout(8000),
+    });
+    out.status = r.status;
+    out.redirected_to = r.headers.get("location") || null;
+  } catch (err) {
+    out.error = ((err && err.message) || String(err)).slice(0, 120);
+  }
+  try {
+    const r2 = await fetch(url, {
+      method: "POST",
+      headers,
+      body,
+      redirect: "follow",
+      signal: AbortSignal.timeout(8000),
+    });
+    out.followed_status = r2.status;
+    out.followed_body = (await r2.text()).slice(0, 100);
+  } catch (err) {
+    out.followed_error = ((err && err.message) || String(err)).slice(0, 120);
+  }
+  return out;
 }
 
 function baseUrl(req) {
