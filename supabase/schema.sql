@@ -81,6 +81,24 @@ create table public.calls (
 create index calls_clinic_started_idx
   on public.calls (clinic_id, started_at desc);
 
+-- Migration for databases whose `calls` table predates these columns. Without
+-- them the retell-webhook insert fails with 42703 ("column ... does not exist")
+-- and NO call is ever saved. Safe to run repeatedly. See
+-- supabase/migrations/2026-07-14-calls-columns.sql for the standalone version.
+alter table public.calls add column if not exists retell_call_id text;
+alter table public.calls add column if not exists caller_name   text;
+alter table public.calls add column if not exists caller_phone  text;
+alter table public.calls add column if not exists started_at    timestamptz not null default now();
+alter table public.calls add column if not exists duration_sec  integer default 0;
+alter table public.calls add column if not exists outcome       public.call_outcome not null default 'info';
+alter table public.calls add column if not exists reason        text;
+alter table public.calls add column if not exists summary       text;
+alter table public.calls add column if not exists transcript    jsonb default '[]';
+alter table public.calls add column if not exists revenue       numeric(10, 2) default 0;
+alter table public.calls add column if not exists notes         text;
+create unique index if not exists calls_retell_call_id_key
+  on public.calls (retell_call_id);
+
 -- Appointments (created when a call books) ----------------------------------
 create table public.appointments (
   id            uuid primary key default gen_random_uuid(),
