@@ -99,6 +99,16 @@ export async function buyNumber({ areaCode, nickname, agentId, webhookUrl }) {
   });
 }
 
+/** Read an agent's config (to confirm its webhook_url is actually set). */
+export async function getAgent(agentId) {
+  return retellFetch("GET", `/get-agent/${encodeURIComponent(agentId)}`);
+}
+
+/** List the most recent calls Retell has on record (diagnostics). */
+export async function listCalls({ limit = 10 } = {}) {
+  return retellFetch("POST", "/v2/list-calls", { limit, sort_order: "descending" });
+}
+
 /** Teardown (used to shut a trial off). Order: number → agent → llm. */
 export async function deleteNumber(phoneNumber) {
   return retellFetch("DELETE", `/delete-phone-number/${encodeURIComponent(phoneNumber)}`);

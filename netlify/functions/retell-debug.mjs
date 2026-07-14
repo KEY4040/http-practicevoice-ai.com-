@@ -17,6 +17,7 @@
  * delivery + persistence work; if it stays flat, Retell isn't reaching us.
  */
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
+import { hasRetell, getAgent, listCalls } from "../shared/retell-api.mjs";
 
 export default async (req) => {
   if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -82,8 +83,63 @@ export default async (req) => {
     }
   }
 
+  // --- Retell's own view (the decisive part) --------------------------------
+  // Ask Retell directly: is our webhook URL attached to the agent, and does
+  // Retell have any record of recent calls? If Retell HAS calls but our DB has
+  // none, delivery is the problem — not our code. Non-PII fields only.
+  if (hasRetell()) {
+    const retell = {};
+    const agentId = out.clinics?.list?.length
+      ? (await firstAgentId())
+      : null;
+    if (agentId) {
+      try {
+        const agent = await getAgent(agentId);
+        retell.agent = {
+          agent_id: agent.agent_id,
+          // THE key fact: is our webhook actually wired onto the agent?
+          webhook_url: agent.webhook_url || null,
+          webhook_matches_site: agent.webhook_url === out.webhook_url,
+        };
+      } catch (err) {
+        retell.agent_error = ((err && err.message) || String(err)).slice(0, 160);
+      }
+    }
+    try {
+      const calls = await listCalls({ limit: 10 });
+      const arr = Array.isArray(calls) ? calls : calls?.calls || [];
+      retell.calls = {
+        total_on_record: arr.length,
+        recent: arr.slice(0, 10).map((c) => ({
+          id: String(c.call_id || "").slice(-6),
+          agent_id: c.agent_id || null,
+          status: c.call_status || null,
+          start_ts: c.start_timestamp || null,
+          disconnect: c.disconnection_reason || null,
+        })),
+      };
+    } catch (err) {
+      retell.calls_error = ((err && err.message) || String(err)).slice(0, 160);
+    }
+    out.retell = retell;
+  }
+
   return json(out);
 };
+
+/** The first activated clinic's Retell agent id (for the Retell-side lookup). */
+async function firstAgentId() {
+  if (!hasSupabase()) return null;
+  try {
+    const rows = await sbSelect(
+      "clinics",
+      "select=retell_agent_id&retell_agent_id=not.is.null&limit=1"
+    );
+    return rows[0]?.retell_agent_id || null;
+  } catch {
+    return null;
+  }
+}
 
 function baseUrl(req) {
   const env = process.env.PUBLIC_BASE_URL || process.env.URL;
