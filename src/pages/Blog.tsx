@@ -12,9 +12,9 @@ const SITE = "https://practicevoice-ai.com";
 
 export default function Blog() {
   useDocumentMeta({
-    title: "Blog — AI Receptionist Insights for Practices",
+    title: "Blog — AI Receptionist Insights for Every Business",
     description:
-      "Real numbers and plain-English guides on missed calls, HIPAA, and AI receptionists for medical, dental, veterinary, and legal practices.",
+      "Real numbers and plain-English guides on missed calls and AI receptionists for home services, auto, salons, restaurants, real estate, medical, dental, legal, and assistance lines.",
     path: "/blog",
   });
 
@@ -25,7 +25,7 @@ export default function Blog() {
       name: "PracticeVoice AI Blog",
       url: `${SITE}/blog`,
       description:
-        "Guides on missed calls, HIPAA, and AI receptionists for medical, dental, veterinary, and legal practices.",
+        "Guides on missed calls and AI receptionists for home services, auto, salons, restaurants, real estate, medical, dental, legal, and community assistance lines.",
       blogPost: BLOG_POSTS.map((p) => ({
         "@type": "BlogPosting",
         headline: p.title,
@@ -55,8 +55,8 @@ export default function Blog() {
               The cost of a missed call — and how to fix it
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
-              Real, cited numbers on missed calls, HIPAA, and AI reception for
-              medical, dental, veterinary, and legal practices.
+              Real, cited numbers on missed calls and AI reception for every
+              business that answers the phone.
             </p>
           </div>
         </section>

@@ -94,7 +94,7 @@ export default function BlogPost() {
           {/* Inline CTA */}
           <div className="mt-12 rounded-2xl border border-primary/20 bg-primary/[0.04] px-6 py-8 text-center">
             <h2 className="text-xl font-bold tracking-tight">
-              Never miss another patient call
+              Never miss another customer call
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
               PracticeVoice AI answers 24/7, books the appointment, and shows the

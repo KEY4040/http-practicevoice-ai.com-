@@ -22,9 +22,9 @@ interface Field {
 }
 
 const FIELDS: Field[] = [
-  { key: "callsPerDay", label: "Calls your practice gets per day", min: 5, max: 100, step: 1 },
+  { key: "callsPerDay", label: "Calls your business gets per day", min: 5, max: 100, step: 1 },
   { key: "missedPct", label: "Percent you miss (busy, after-hours, lunch)", min: 5, max: 60, step: 1, suffix: "%" },
-  { key: "patientValue", label: "Average value of a booked patient", min: 50, max: 1500, step: 10, prefix: "$" },
+  { key: "patientValue", label: "Average value of a booked job or appointment", min: 50, max: 1500, step: 10, prefix: "$" },
 ];
 
 // Conservative share of recovered calls that turn into a booked patient.
@@ -62,7 +62,7 @@ export function MissedRevenueCalculator() {
             How much are missed calls costing you?
           </h2>
           <p className="mt-4 text-balance text-lg text-muted-foreground">
-            Every missed call is a patient who booked somewhere else. Move the
+            Every missed call is a customer who called someone else. Move the
             sliders — see what you're leaving on the table.
           </p>
         </div>

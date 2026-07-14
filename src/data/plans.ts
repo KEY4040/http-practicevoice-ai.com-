@@ -28,7 +28,7 @@ export const PLANS: Plan[] = [
     name: "Basic",
     price: 99,
     period: "/month",
-    tagline: "For a single practice that's done missing calls.",
+    tagline: "For a single location that's done missing calls.",
     cta: "Start 14-day free trial",
     paymentLink: "https://buy.stripe.com/4gMfZh8WF8Ya3812hJcjS0i",
     features: [
@@ -64,7 +64,7 @@ export const PLANS: Plan[] = [
     name: "Premium",
     price: 399,
     period: "/month",
-    tagline: "For groups and multi-location practices.",
+    tagline: "For groups and multi-location businesses.",
     cta: "Start 14-day free trial",
     paymentLink: "https://buy.stripe.com/14A3cvb4N3DQ7oh7C3cjS0g",
     features: [
@@ -72,7 +72,7 @@ export const PLANS: Plan[] = [
       "Everything in Professional, plus:",
       "Multiple locations in one place",
       "Custom voice & knowledge base",
-      "EHR / practice-software integrations",
+      "Booking & practice-software integrations",
       "Dedicated success manager",
       "HIPAA BAA available",
     ],

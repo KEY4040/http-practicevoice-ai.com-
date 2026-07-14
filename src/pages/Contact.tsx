@@ -13,7 +13,7 @@ export default function Contact() {
   useDocumentMeta({
     title: "Book a demo — PracticeVoice AI",
     description:
-      "Book a demo of PracticeVoice AI, the AI voice receptionist for medical, dental, and legal practices. See it answer, book, and report revenue.",
+      "Book a demo of PracticeVoice AI, the AI voice receptionist for any business that answers the phone. See it answer, book, and report revenue.",
     path: "/contact",
   });
 
@@ -63,7 +63,7 @@ export default function Contact() {
                 See your AI receptionist in action
               </h1>
               <p className="mt-5 max-w-md text-balance text-lg text-muted-foreground">
-                Tell us about your practice and we'll show you exactly how
+                Tell us about your business and we'll show you exactly how
                 PracticeVoice answers, books, and reports revenue — then get you
                 set up the same day.
               </p>
@@ -120,12 +120,12 @@ export default function Contact() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="practice">Practice name</Label>
+                    <Label htmlFor="practice">Business name</Label>
                     <Input
                       id="practice"
                       value={form.practice}
                       onChange={(e) => update("practice", e.target.value)}
-                      placeholder="Bayview Dental"
+                      placeholder="Northside HVAC"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -135,7 +135,7 @@ export default function Contact() {
                       type="email"
                       value={form.email}
                       onChange={(e) => update("email", e.target.value)}
-                      placeholder="you@yourpractice.com"
+                      placeholder="you@yourbusiness.com"
                       required
                     />
                   </div>

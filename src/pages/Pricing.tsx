@@ -30,7 +30,7 @@ export default function Pricing() {
       "@type": "Product",
       name: "PracticeVoice AI",
       description:
-        "AI voice receptionist for medical, dental, and legal practices.",
+        "AI voice receptionist for any business that answers the phone.",
       brand: { "@type": "Brand", name: "PracticeVoice AI" },
       offers: {
         "@type": "AggregateOffer",
@@ -76,7 +76,7 @@ export default function Pricing() {
               Pays for itself
             </Badge>
             <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl">
-              One booked patient covers the month
+              One booked job covers the month
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-balance text-lg text-muted-foreground">
               Pick a plan and go live the same day. 14-day free trial, cancel
