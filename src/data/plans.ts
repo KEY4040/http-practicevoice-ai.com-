@@ -55,6 +55,7 @@ export const PLANS: Plan[] = [
       "then 35¢/min — never a surprise",
       "1 AI phone number",
       "24/7 call answering & booking",
+      "Answers in the caller's language (English, Spanish & more)",
       "Text appointment confirmations",
       "Call transcripts & summaries",
       "Email support",

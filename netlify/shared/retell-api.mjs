@@ -64,7 +64,10 @@ export async function createAgent({ llmId, voiceId, name, webhookUrl }) {
     response_engine: { type: "retell-llm", llm_id: llmId },
     voice_id: voiceId || FALLBACK_VOICE,
     agent_name: name,
-    language: "en-US",
+    // "multi" = multilingual: the agent recognizes and answers in the caller's
+    // own language (English, Spanish, and more) automatically — no per-customer
+    // setup. (Verified against Retell SDK: the exact literal is "multi".)
+    language: "multi",
     ...(webhookUrl ? { webhook_url: webhookUrl } : {}),
   });
 }
@@ -77,13 +80,15 @@ export async function updateLlm(llmId, { prompt, beginMessage }) {
   return retellFetch("PATCH", `/update-retell-llm/${llmId}`, patch);
 }
 
-export async function updateAgent(agentId, { voiceId, name, webhookUrl }) {
+export async function updateAgent(agentId, { voiceId, name, webhookUrl, language }) {
   const patch = {};
   if (voiceId) patch.voice_id = voiceId;
   if (name) patch.agent_name = name;
   // Setting webhook_url here is what makes call events reach us. Without it,
   // Retell has the calls but never delivers them to our webhook.
   if (webhookUrl) patch.webhook_url = webhookUrl;
+  // Upgrade older agents to multilingual on re-activation.
+  if (language) patch.language = language;
   if (!Object.keys(patch).length) return null;
   return retellFetch("PATCH", `/update-agent/${agentId}`, patch);
 }
@@ -178,8 +183,12 @@ export async function pickVoice(voiceName) {
   try {
     const voices = await retellFetch("GET", "/list-voices");
     if (Array.isArray(voices) && voices.length) {
+      // Prefer ElevenLabs voices — their models speak other languages (Spanish,
+      // etc.) natively, so the "multi" language setting actually sounds good.
       const byGender = (g) =>
-        voices.filter((v) => (v.voice_id) && (v.gender || "").toLowerCase() === g);
+        voices
+          .filter((v) => v.voice_id && (v.gender || "").toLowerCase() === g)
+          .sort((a, b) => (b.provider === "elevenlabs") - (a.provider === "elevenlabs"));
       if (name === "noah") {
         const males = byGender("male");
         if (males[0]) return males[0].voice_id;
