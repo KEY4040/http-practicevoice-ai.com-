@@ -338,10 +338,12 @@ async function maybeEscalateCompanyLead(type, parsed, call, sigValid) {
   if (!to) return;
 
   const custom = call.call_analysis?.custom_analysis_data || {};
+  // Accept a real boolean (Boolean field) OR a yes/true/1 string (Selector /
+  // Text field) — so the lead trigger works no matter which extraction type
+  // was configured in Retell.
+  const truthy = (v) => v === true || /^(true|yes|y|1)$/i.test(String(v ?? "").trim());
   const escalate =
-    custom.escalate === true ||
-    custom.escalated === true ||
-    custom.big_opportunity === true;
+    truthy(custom.escalate) || truthy(custom.escalated) || truthy(custom.big_opportunity);
   if (!escalate) return;
 
   const val = (...keys) => {
