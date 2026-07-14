@@ -88,7 +88,7 @@ export const PLANS: Plan[] = [
     period: "/month",
     tagline: "For groups and multi-location businesses.",
     cta: "Start — $9.99 for 14 days",
-    paymentLink: "https://buy.stripe.com/14A3cvb4N3DQ7oh7C3cjS0g",
+    paymentLink: "https://buy.stripe.com/8x24gz0q93DQ8slg8zcjS0l",
     features: [
       "2,000 call-minutes / mo included",
       "then 25¢/min",
