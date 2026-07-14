@@ -39,13 +39,17 @@ export default async (req) => {
   const apiKey = process.env.RETELL_API_KEY;
   const signature =
     req.headers.get("x-retell-signature") || req.headers.get("x-retell-signature-256");
-  if (apiKey) {
+  // ALLOW_UNSIGNED_RETELL is a MASTER bypass: when true it skips the signature
+  // check entirely, whether or not the key is set. This is the isolation switch
+  // used to prove whether the signature is what's blocking real calls. It must
+  // be checked FIRST — a previous version only consulted it when the key was
+  // absent, so with the key set the flag silently did nothing. Never leave on.
+  if (process.env.ALLOW_UNSIGNED_RETELL === "true") {
+    console.warn("[retell-webhook] Signature check DISABLED via ALLOW_UNSIGNED_RETELL.");
+  } else if (apiKey) {
     if (!verifySignature(raw, signature, apiKey)) {
       return json({ ok: false, error: "bad_signature" }, 401);
     }
-  } else if (process.env.ALLOW_UNSIGNED_RETELL === "true") {
-    // Explicit, deliberate opt-out (e.g. local testing). Never leave this on.
-    console.warn("[retell-webhook] Signature check DISABLED via ALLOW_UNSIGNED_RETELL.");
   } else {
     // Fail CLOSED: without the key we cannot prove the request is from Retell,
     // and this function writes to the DB + can send SMS. Reject rather than
