@@ -18,13 +18,13 @@ const RELATED_POSTS: Partial<Record<VerticalData["slug"], string[]>> = {
   medical: ["real-cost-of-missed-calls-medical-practices", "hipaa-ai-receptionist-guide"],
   legal: ["ai-reception-for-law-firms-never-miss-a-call", "ai-receptionist-vs-answering-service"],
   veterinary: ["why-your-vet-clinic-keeps-missing-calls", "ai-receptionist-vs-answering-service"],
-  "home-services": ["ai-receptionist-vs-answering-service", "cost-of-missed-calls-dental-practice"],
-  contractors: ["ai-receptionist-vs-answering-service", "ai-reception-for-law-firms-never-miss-a-call"],
-  auto: ["ai-receptionist-vs-answering-service", "cost-of-missed-calls-dental-practice"],
-  salons: ["ai-receptionist-vs-answering-service", "why-your-vet-clinic-keeps-missing-calls"],
-  "real-estate": ["ai-receptionist-vs-answering-service", "ai-reception-for-law-firms-never-miss-a-call"],
-  restaurants: ["ai-receptionist-vs-answering-service", "cost-of-missed-calls-dental-practice"],
-  "assistance-line": ["ai-receptionist-vs-answering-service", "why-your-vet-clinic-keeps-missing-calls"],
+  "home-services": ["ai-receptionist-for-hvac", "ai-receptionist-vs-answering-service"],
+  contractors: ["24-7-answering-service-for-contractors", "ai-receptionist-vs-answering-service"],
+  auto: ["ai-receptionist-for-auto-repair-shops", "ai-receptionist-vs-answering-service"],
+  salons: ["ai-booking-for-salons-and-spas", "ai-receptionist-vs-answering-service"],
+  "real-estate": ["ai-receptionist-for-real-estate-agents", "ai-receptionist-vs-answering-service"],
+  restaurants: ["ai-phone-answering-for-restaurants", "ai-receptionist-vs-answering-service"],
+  "assistance-line": ["nonprofit-intake-call-automation", "211-assistance-line-automation"],
 };
 
 const DEFAULT_TRUST = ["Live the same day", "HIPAA-conscious & secure", "Answers 24/7"];
