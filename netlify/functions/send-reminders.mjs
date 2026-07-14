@@ -18,8 +18,48 @@ import {
   renderTemplate,
   DEFAULT_REMINDER_TEMPLATE,
 } from "../shared/sms.mjs";
+import { hasRetell, deleteNumber, deleteAgent, deleteLlm } from "../shared/retell-api.mjs";
 
 export const config = { schedule: "@hourly" };
+
+/**
+ * Reclaim the Retell line of any TESTER account whose window has expired, so a
+ * time-boxed tester's provisioned number stops billing after lockout. Only
+ * touches tester rows (tester_days set) with no Stripe customer — real paying
+ * customers are handled by the Stripe webhook. Best-effort + non-fatal.
+ */
+async function sweepExpiredTesters(nowIso) {
+  if (!hasRetell()) return 0;
+  let torn = 0;
+  try {
+    const expired = await sbSelect(
+      "subscriptions",
+      `select=user_id&tester_days=not.is.null&stripe_customer_id=is.null` +
+        `&access_expires_at=not.is.null&access_expires_at=lt.${encodeURIComponent(nowIso)}`
+    );
+    for (const sub of expired) {
+      const clinics = await sbSelect(
+        "clinics",
+        `select=id,retell_number,retell_agent_id,retell_llm_id&owner_id=eq.${sub.user_id}&retell_number=not.is.null&limit=1`
+      );
+      const clinic = clinics[0];
+      if (!clinic) continue; // nothing provisioned (or already reclaimed)
+      if (clinic.retell_number) await deleteNumber(clinic.retell_number).catch(() => {});
+      if (clinic.retell_agent_id) await deleteAgent(clinic.retell_agent_id).catch(() => {});
+      if (clinic.retell_llm_id) await deleteLlm(clinic.retell_llm_id).catch(() => {});
+      await sbUpdate("clinics", `id=eq.${clinic.id}`, {
+        retell_number: null,
+        retell_agent_id: null,
+        retell_llm_id: null,
+      });
+      torn += 1;
+      console.log(`[send-reminders] reclaimed expired tester line for clinic ${clinic.id}`);
+    }
+  } catch (e) {
+    console.error("[send-reminders] tester sweep failed (non-fatal):", e.message);
+  }
+  return torn;
+}
 
 export default async () => {
   if (!hasSupabase()) {
@@ -28,6 +68,8 @@ export default async () => {
   }
 
   const now = Date.now();
+  // Reclaim expired tester lines so they stop billing (independent of reminders).
+  await sweepExpiredTesters(new Date(now).toISOString());
   const windowStart = new Date(now + 23 * 3600 * 1000).toISOString();
   const windowEnd = new Date(now + 25 * 3600 * 1000).toISOString();
 

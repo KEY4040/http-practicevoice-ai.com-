@@ -1,7 +1,8 @@
 /**
- * Per-vertical landing-page content (dental / medical / legal). Each becomes a
- * dedicated, SEO-targeted page at /:slug so we rank for "AI receptionist for
- * dentists", etc., and speak to each buyer's specific worries.
+ * Per-vertical landing-page content. Each becomes a dedicated, SEO-targeted page
+ * at /:slug so we rank for "AI receptionist for <industry>" and speak to each
+ * buyer's specific worries. Covers healthcare/legal plus home services,
+ * contractors, auto, salons, real estate, restaurants, and assistance lines.
  */
 
 export interface VerticalBenefit {

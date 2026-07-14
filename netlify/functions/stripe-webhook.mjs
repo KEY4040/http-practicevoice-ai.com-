@@ -107,6 +107,10 @@ export default async (req) => {
             status,
             stripe_customer_id: obj.customer ?? null,
             stripe_subscription_id: obj.subscription ?? null,
+            // If a former tester account converts to a real paid plan, clear the
+            // time-box so the hard-expiry check never locks the paying customer out.
+            access_expires_at: null,
+            tester_days: null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "user_id" }

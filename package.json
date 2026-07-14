@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "PracticeVoice AI — AI voice receptionist for medical, dental, and legal practices",
+  "description": "PracticeVoice AI — AI voice receptionist for any business that answers the phone",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && npm run prerender",

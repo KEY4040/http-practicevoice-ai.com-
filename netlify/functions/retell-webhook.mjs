@@ -109,8 +109,11 @@ export default async (req) => {
   }
 
   // Confirmation text — only on a NEW booking, so a redelivered/retried webhook
-  // never texts the patient twice.
-  if (isNew && parsed.appointment && parsed.appointment.patientPhone) {
+  // never texts the patient twice. CRITICAL: require a VERIFIED signature to
+  // send SMS. While ALLOW_UNSIGNED_RETELL is on, an attacker could POST a forged
+  // "booked" event to make us text an arbitrary number from our Twilio line;
+  // gating on sigValid closes that even before the bypass flag is removed.
+  if (sigValid && isNew && parsed.appointment && parsed.appointment.patientPhone) {
     await sendConfirmation(parsed);
   }
 
