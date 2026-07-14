@@ -84,6 +84,17 @@ export default async (req) => {
     defaultBookingValue: process.env.DEFAULT_BOOKING_VALUE,
   });
 
+  // Company sales line: if this call came in on OUR own contact number and the
+  // AI flagged it as a real opportunity (multi-location / bulk / custom), text
+  // the owner the lead so he can call back personally. Self-contained and runs
+  // BEFORE clinic resolution so it works with no clinic row — best-effort, never
+  // fails the webhook.
+  try {
+    await maybeEscalateCompanyLead(type, parsed, call, sigValid);
+  } catch (e) {
+    console.error(`[retell-webhook] lead escalation skipped: ${((e && e.message) || e).toString().slice(0, 100)}`);
+  }
+
   // Persist to Supabase (if configured).
   let saved = false;
   // Whether this is the FIRST time we've seen this call. Retell delivers
@@ -286,6 +297,72 @@ async function enforceUsage(clinicId, parsed, isNew) {
     await sbUpdate("clinics", `id=eq.${encodeURIComponent(clinicId)}`, { usage_suspended: true });
     console.warn(`[retell-webhook] paused clinic ${clinicId}: used ${used.toFixed(0)}/${allowance} min`);
   }
+}
+
+/**
+ * Is this call on OUR own company contact line (not a customer's number)?
+ * Keyed by env so we never hardcode ids: COMPANY_LINE_AGENT_ID (preferred,
+ * survives number reformatting) and/or COMPANY_LINE_NUMBER (last 10 digits).
+ */
+function isCompanyLine(parsed) {
+  const agent = process.env.COMPANY_LINE_AGENT_ID;
+  if (agent && parsed.agentId && parsed.agentId === agent) return true;
+  const num = process.env.COMPANY_LINE_NUMBER;
+  if (num && parsed.toNumber) {
+    const nat = (n) => String(n || "").replace(/\D/g, "").slice(-10);
+    const a = nat(num);
+    if (a.length === 10 && a === nat(parsed.toNumber)) return true;
+  }
+  return false;
+}
+
+/**
+ * On the company line, text the owner when the AI flagged a big opportunity.
+ * Only acts on `call_analyzed` — that event fires ONCE per call and is the one
+ * that carries the post-call analysis fields, so we get the structured lead and
+ * never double-text without needing a DB row to dedupe against.
+ *
+ * The AI decides "big vs small" via its Post-Call Analysis field `escalate`
+ * (Boolean). Configure these extraction fields on the agent in Retell so the
+ * lead comes out structured instead of buried in the transcript:
+ *   escalate (bool) · lead_name · lead_company · lead_phone · num_locations · lead_interest
+ */
+async function maybeEscalateCompanyLead(type, parsed, call, sigValid) {
+  if (type !== "call_analyzed") return; // fires once + carries analysis data
+  if (!isCompanyLine(parsed)) return;
+  // Same trust gate as the confirmation text: only send on a verified Retell
+  // signature (unless the bypass flag is explicitly on) so a forged event can't
+  // spam the owner's phone.
+  if (!sigValid && process.env.ALLOW_UNSIGNED_RETELL !== "true") return;
+  const to = process.env.OWNER_ALERT_PHONE;
+  if (!to) return;
+
+  const custom = call.call_analysis?.custom_analysis_data || {};
+  const escalate =
+    custom.escalate === true ||
+    custom.escalated === true ||
+    custom.big_opportunity === true;
+  if (!escalate) return;
+
+  const val = (...keys) => {
+    for (const k of keys) {
+      const v = custom[k];
+      if (v != null && String(v).trim()) return String(v).trim();
+    }
+    return "";
+  };
+  const lines = [
+    "🔵 NEW LEAD — PracticeVoice AI",
+    `Name: ${val("lead_name", "caller_name", "name") || parsed.callerName || "(not given)"}`,
+    `Company: ${val("lead_company", "company", "business") || "(not given)"}`,
+    `Phone: ${val("lead_phone", "callback_number", "phone") || parsed.callerPhone || "(not given)"}`,
+    `Locations/lines: ${val("num_locations", "locations", "lines") || "(not given)"}`,
+    `Wants: ${val("lead_interest", "interest", "reason") || parsed.reason || "(not given)"}`,
+    "— Call them back.",
+  ];
+  const result = await sendSms(to, lines.join("\n"));
+  if (result.error) console.error("[retell-webhook] owner lead alert failed (see Twilio logs)");
+  else console.warn("[retell-webhook] owner lead alert sent");
 }
 
 /** Text the patient their appointment confirmation. */
