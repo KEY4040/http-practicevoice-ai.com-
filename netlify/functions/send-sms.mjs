@@ -17,6 +17,9 @@
  */
 
 import { getUserId, bearer, isEntitled } from "../shared/auth.mjs";
+import { sbSelect } from "../shared/supabase.mjs";
+
+const digits = (s) => String(s || "").replace(/\D/g, "");
 
 export default async (req) => {
   if (req.method !== "POST") {
@@ -48,6 +51,21 @@ export default async (req) => {
   const body = (payload?.body ?? "").trim();
   if (!to || !body) {
     return json({ ok: false, error: "missing_to_or_body" }, 400);
+  }
+
+  // ANTI-ABUSE: this endpoint powers the "send test text" button only — real
+  // patient confirmations/reminders go through the webhook + scheduler, not
+  // here. So a customer may ONLY text their OWN business number. That makes it
+  // impossible to weaponize as a bulk-SMS gun against arbitrary recipients.
+  const rows = await sbSelect("clinics", `select=phone&owner_id=eq.${uid}&limit=1`);
+  const ownPhone = digits(rows[0]?.phone);
+  if (!ownPhone) {
+    return json({ ok: false, error: "set_business_phone_first" }, 400);
+  }
+  const want = digits(to);
+  const matches = want.slice(-10) === ownPhone.slice(-10) && ownPhone.length >= 10;
+  if (!matches) {
+    return json({ ok: false, error: "test_texts_go_to_your_own_number_only" }, 403);
   }
 
   const sid = process.env.TWILIO_ACCOUNT_SID;

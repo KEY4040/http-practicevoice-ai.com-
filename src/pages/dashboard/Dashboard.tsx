@@ -28,7 +28,7 @@ export default function Dashboard() {
   useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
   const { base } = useDemoView();
-  const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue, aiNumber } =
+  const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue, aiNumber, usageMinutes, usageSuspended } =
     useDashboardData();
   const firstName = user?.name?.split(" ")[0] ?? (isDemo ? "Dr. Patel" : "there");
   const recent = calls.slice(0, 5);
@@ -63,6 +63,9 @@ export default function Dashboard() {
           <ErrorState />
         ) : (
           <>
+            {!isDemo && (usageSuspended || usageMinutes > 0) && (
+              <UsageBanner minutes={usageMinutes} suspended={usageSuspended} base={base} />
+            )}
             {!isDemo && !hasCalls && <FirstCallBanner aiNumber={aiNumber} />}
 
             {/* Metric cards */}
@@ -241,6 +244,42 @@ function ErrorState() {
 
 /** Shown to a real (non-demo) account that hasn't logged its first call yet.
  *  Only claims the receptionist is "ready" once a number is actually live. */
+function UsageBanner({
+  minutes,
+  suspended,
+  base,
+}: {
+  minutes: number;
+  suspended: boolean;
+  base: string;
+}) {
+  if (suspended) {
+    return (
+      <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm dark:border-amber-500/40 dark:bg-amber-500/10">
+        <p className="font-semibold text-amber-900 dark:text-amber-200">
+          ⏸ Your AI line is paused — you've used all your included minutes this month.
+        </p>
+        <p className="mt-1 text-amber-800 dark:text-amber-200/80">
+          Your number is safe. Upgrade your plan to start answering again right away, or it
+          resumes automatically when your next month begins.{" "}
+          <Link to="/billing" className="font-semibold underline">
+            Upgrade now →
+          </Link>
+        </p>
+      </div>
+    );
+  }
+  return (
+    <p className="text-sm text-muted-foreground">
+      <span className="font-medium text-foreground">{minutes.toLocaleString()} minutes</span>{" "}
+      of call time used this month.{" "}
+      <Link to={`${base}/calls`} className="underline hover:text-foreground">
+        View calls
+      </Link>
+    </p>
+  );
+}
+
 function FirstCallBanner({ aiNumber }: { aiNumber: string | null }) {
   const activated = Boolean(aiNumber);
   return (

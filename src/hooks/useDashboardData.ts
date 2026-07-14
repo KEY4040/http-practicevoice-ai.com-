@@ -43,6 +43,10 @@ export interface DashboardData {
   totalRevenue: number;
   /** The clinic's live AI number, or null if they haven't activated one yet. */
   aiNumber: string | null;
+  /** Call-minutes used this month (for the usage meter). */
+  usageMinutes: number;
+  /** True when the line is paused for hitting its monthly minute cap. */
+  usageSuspended: boolean;
 }
 
 function sumRevenue(calls: Call[]): number {
@@ -62,6 +66,8 @@ export function useDashboardData(): DashboardData {
     revenueByType: demo ? mockRevenueByType : [],
     totalRevenue: demo ? mockRevenueByType.reduce((s, r) => s + r.value, 0) : 0,
     aiNumber: demo ? "+1 (555) 012-3456" : null,
+    usageMinutes: demo ? 128 : 0,
+    usageSuspended: false,
   });
 
   useEffect(() => {
@@ -89,6 +95,8 @@ export function useDashboardData(): DashboardData {
           revenueByType: deriveRevenueByType(calls),
           totalRevenue: sumRevenue(calls),
           aiNumber: clinic.retell_number ?? null,
+          usageMinutes: Math.round(Number(clinic.usage_minutes ?? 0)),
+          usageSuspended: Boolean(clinic.usage_suspended),
         });
       } catch (err) {
         if (!active) return;

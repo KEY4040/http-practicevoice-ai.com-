@@ -19,6 +19,8 @@ export interface ClinicRow {
   retell_llm_id: string | null;
   about: string | null;
   calendar_connected: boolean | null;
+  usage_minutes: number | null;
+  usage_suspended: boolean | null;
 }
 
 // Select all columns rather than naming the newer ones — this keeps the app
