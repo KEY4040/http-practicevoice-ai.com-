@@ -119,6 +119,7 @@ export default async (req) => {
  * tenant's calls (and PHI) would be written to one clinic.
  */
 async function resolveClinicId(parsed) {
+  const digits = (s) => String(s || "").replace(/\D/g, "");
   // 1. Agent id is the most stable key (survives number reformatting).
   if (parsed.agentId) {
     const byAgent = await sbSelect(
@@ -127,20 +128,45 @@ async function resolveClinicId(parsed) {
     );
     if (byAgent[0]) return byAgent[0].id;
   }
-  // 2. The dialed number.
+  // 2. The dialed number — try exact, then compare digits-only to survive any
+  //    +1 / formatting difference between Retell's to_number and what we stored.
   if (parsed.toNumber) {
     const byNumber = await sbSelect(
       "clinics",
       `select=id&retell_number=eq.${encodeURIComponent(parsed.toNumber)}&limit=1`
     );
     if (byNumber[0]) return byNumber[0].id;
+    const wanted = digits(parsed.toNumber);
+    if (wanted) {
+      const activated = await sbSelect(
+        "clinics",
+        "select=id,retell_number&retell_number=not.is.null"
+      );
+      const match = activated.find((c) => digits(c.retell_number).endsWith(wanted) || wanted.endsWith(digits(c.retell_number)));
+      if (match) return match.id;
+    }
   }
-  // 3. Fallbacks only when nothing matched: an explicit single-practice env, or
-  //    a lone clinic. Never override a positive match above.
+  // 3. Fallbacks when nothing matched. Prefer the single ACTIVATED clinic (one
+  //    with a Retell agent) — this covers a lone real customer even if the
+  //    agent_id/number drifted — then an explicit env, then a lone clinic.
+  const activated = await sbSelect(
+    "clinics",
+    "select=id&retell_agent_id=not.is.null&limit=2"
+  );
+  if (activated.length === 1) {
+    console.warn(
+      `[retell-webhook] fell back to the single activated clinic (agent=${parsed.agentId || "?"} to=${parsed.toNumber || "?"})`
+    );
+    return activated[0].id;
+  }
   const fixed = process.env.DEFAULT_CLINIC_ID;
   if (fixed) return fixed;
   const all = await sbSelect("clinics", "select=id&limit=2");
-  return all.length === 1 ? all[0].id : null;
+  if (all.length === 1) return all[0].id;
+  console.error(
+    `[retell-webhook] no clinic matched (agent=${parsed.agentId || "?"} to=${parsed.toNumber || "?"})`
+  );
+  return null;
 }
 
 /**
