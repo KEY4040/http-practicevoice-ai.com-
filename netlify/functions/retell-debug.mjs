@@ -17,10 +17,16 @@
  * delivery + persistence work; if it stays flat, Retell isn't reaching us.
  */
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
+import { debugAuthorized } from "../shared/auth.mjs";
 import { hasRetell, getAgent, listCalls, getPhoneNumber } from "../shared/retell-api.mjs";
 
 export default async (req) => {
   if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
+
+  // Detailed view (business names, phone numbers, Retell config, self-probe)
+  // is only exposed with the debug token. Without it, callers get harmless
+  // aggregates (health check) — no config or PII leaks on the public URL.
+  const detailed = debugAuthorized(req);
 
   const out = {
     ok: true,
@@ -50,14 +56,17 @@ export default async (req) => {
       out.clinics = {
         total: clinics.length,
         activated: clinics.filter((c) => c.retell_agent_id && c.retell_number).length,
-        // Names are the owner's own business names (not third-party PII). Include
-        // a compact provisioning summary so setup gaps are obvious at a glance.
-        list: clinics.map((c) => ({
-          name: c.name || "(unnamed)",
-          has_agent: Boolean(c.retell_agent_id),
-          has_number: Boolean(c.retell_number),
-          number: c.retell_number || null,
-        })),
+        // Business names + numbers are only shown with the debug token.
+        ...(detailed
+          ? {
+              list: clinics.map((c) => ({
+                name: c.name || "(unnamed)",
+                has_agent: Boolean(c.retell_agent_id),
+                has_number: Boolean(c.retell_number),
+                number: c.retell_number || null,
+              })),
+            }
+          : {}),
       };
 
       // Calls: the headline number. If this doesn't move after a test call,
@@ -87,11 +96,9 @@ export default async (req) => {
   // Ask Retell directly: is our webhook URL attached to the agent, and does
   // Retell have any record of recent calls? If Retell HAS calls but our DB has
   // none, delivery is the problem — not our code. Non-PII fields only.
-  if (hasRetell()) {
+  if (detailed && hasRetell()) {
     const retell = {};
-    const agentId = out.clinics?.list?.length
-      ? (await firstAgentId())
-      : null;
+    const agentId = await firstAgentId();
     if (agentId) {
       try {
         const agent = await getAgent(agentId);
@@ -158,7 +165,7 @@ export default async (req) => {
   // This probes the configured host AND the www/apex sibling so we can SEE a
   // 301/308 redirect (the smoking gun) vs a clean 200. Uses event=call_started,
   // which the webhook intentionally skips — so this writes NO row.
-  try {
+  if (detailed) try {
     const u = new URL(out.webhook_url);
     const sibling = u.hostname.startsWith("www.")
       ? out.webhook_url.replace("://www.", "://")

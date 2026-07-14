@@ -29,6 +29,25 @@ export function bearer(req) {
 }
 
 /**
+ * Gate for the diagnostic endpoints (retell-debug / retell-repair). These
+ * expose config and can mutate Retell / write rows, so they must never be
+ * wide open on a live site. Access requires `?token=<DEBUG_TOKEN>` matching
+ * the DEBUG_TOKEN env var. FAILS CLOSED: if DEBUG_TOKEN is unset, the detailed
+ * / mutating features are disabled entirely.
+ */
+export function debugAuthorized(req) {
+  const secret = process.env.DEBUG_TOKEN;
+  if (!secret) return false;
+  try {
+    const token = new URL(req.url).searchParams.get("token") || "";
+    // Constant-time-ish compare (lengths differ -> false fast; ok for a tool).
+    return token.length === secret.length && token === secret;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Statuses that mean "has a valid card / active plan" — the gate for actions
  * that cost real money (buying a phone number, sending SMS). A trial only
  * counts here once it's a real Stripe subscription (card on file).

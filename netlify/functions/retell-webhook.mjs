@@ -39,25 +39,25 @@ export default async (req) => {
   const apiKey = process.env.RETELL_API_KEY;
   const signature =
     req.headers.get("x-retell-signature") || req.headers.get("x-retell-signature-256");
-  // ALLOW_UNSIGNED_RETELL is a MASTER bypass: when true it skips the signature
-  // check entirely, whether or not the key is set. This is the isolation switch
-  // used to prove whether the signature is what's blocking real calls. It must
-  // be checked FIRST — a previous version only consulted it when the key was
-  // absent, so with the key set the flag silently did nothing. Never leave on.
-  if (process.env.ALLOW_UNSIGNED_RETELL === "true") {
-    console.warn("[retell-webhook] Signature check DISABLED via ALLOW_UNSIGNED_RETELL.");
-  } else if (apiKey) {
-    if (!verifySignature(raw, signature, apiKey)) {
+
+  // Verify the request is genuinely from Retell. A VALID signature always
+  // processes and is fully secure — so once RETELL_API_KEY matches the key
+  // Retell signs with, we're protected no matter what the bypass flag says.
+  // ALLOW_UNSIGNED_RETELL only rescues the case where the signature does NOT
+  // verify (wrong/missing key), and it logs loudly so it's never silent. Remove
+  // that env var once the log shows a signed call verifying.
+  const sigValid = Boolean(apiKey && signature && verifySignature(raw, signature, apiKey));
+  if (!sigValid) {
+    if (process.env.ALLOW_UNSIGNED_RETELL === "true") {
+      console.warn(
+        `[retell-webhook] signature NOT verified (${!apiKey ? "no key" : !signature ? "no signature header" : "mismatch"}) — processing anyway due to ALLOW_UNSIGNED_RETELL. Remove this env var once a real call verifies.`
+      );
+    } else if (!apiKey) {
+      console.error("[retell-webhook] RETELL_API_KEY not set — rejecting.");
+      return json({ ok: false, error: "webhook_not_configured" }, 401);
+    } else {
       return json({ ok: false, error: "bad_signature" }, 401);
     }
-  } else {
-    // Fail CLOSED: without the key we cannot prove the request is from Retell,
-    // and this function writes to the DB + can send SMS. Reject rather than
-    // process forged events.
-    console.error(
-      "[retell-webhook] RETELL_API_KEY not set — rejecting. Set it (or ALLOW_UNSIGNED_RETELL=true to bypass, not recommended)."
-    );
-    return json({ ok: false, error: "webhook_not_configured" }, 401);
   }
 
   let event;

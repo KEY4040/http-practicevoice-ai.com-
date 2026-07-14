@@ -17,6 +17,7 @@
  * Idempotent — safe to run repeatedly. No third-party caller PII is touched.
  */
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
+import { debugAuthorized } from "../shared/auth.mjs";
 import {
   hasRetell,
   getAgent,
@@ -26,6 +27,13 @@ import {
 } from "../shared/retell-api.mjs";
 
 export default async (req) => {
+  // Mutating + injects rows -> never public. Requires ?token=<DEBUG_TOKEN>.
+  if (!debugAuthorized(req)) {
+    return json(
+      { ok: false, error: "forbidden", hint: "Set DEBUG_TOKEN and call with ?token=…" },
+      403
+    );
+  }
   if (!hasSupabase()) return json({ ok: false, error: "supabase_not_configured" }, 500);
   if (!hasRetell()) return json({ ok: false, error: "retell_not_configured" }, 503);
 
