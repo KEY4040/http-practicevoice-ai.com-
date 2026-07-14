@@ -61,9 +61,16 @@ export async function isEntitled(uid) {
   try {
     const rows = await sbSelect(
       "subscriptions",
-      `select=status&user_id=eq.${uid}&limit=1`
+      `select=status,access_expires_at&user_id=eq.${uid}&limit=1`
     );
-    return ENTITLED.has(rows[0]?.status);
+    const sub = rows[0];
+    if (!sub) return false;
+    // Hard expiry wins (time-boxed tester accounts): expired -> not entitled.
+    if (sub.access_expires_at) {
+      const exp = new Date(sub.access_expires_at).getTime();
+      if (Number.isFinite(exp) && exp <= Date.now()) return false;
+    }
+    return ENTITLED.has(sub.status);
   } catch {
     // Fail CLOSED on the money path — no entitlement proof, no spend.
     return false;

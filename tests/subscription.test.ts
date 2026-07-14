@@ -19,6 +19,26 @@ test("hasActiveAccess: canceled/incomplete/null do NOT grant access", () => {
   assert.equal(hasActiveAccess(null), false);
 });
 
+test("hasActiveAccess: time-boxed tester is denied once access_expires_at passes", () => {
+  const past = new Date(Date.now() - 60_000).toISOString();
+  const future = new Date(Date.now() + 60_000).toISOString();
+  // Expired window -> denied even though status is trialing.
+  assert.equal(
+    hasActiveAccess({ status: "trialing", plan: null, current_period_end: null, access_expires_at: past }),
+    false
+  );
+  // Window still open -> allowed.
+  assert.equal(
+    hasActiveAccess({ status: "trialing", plan: null, current_period_end: null, access_expires_at: future }),
+    true
+  );
+  // Clock not started yet (null) -> allowed (so they can sign in and start it).
+  assert.equal(
+    hasActiveAccess({ status: "trialing", plan: null, current_period_end: null, access_expires_at: null }),
+    true
+  );
+});
+
 test("trialDaysLeft: full window right after signup", () => {
   const now = new Date("2026-07-13T00:00:00Z");
   assert.equal(trialDaysLeft(now.toISOString(), now), TRIAL_DAYS);

@@ -133,8 +133,19 @@ create table public.subscriptions (
   stripe_customer_id text,
   stripe_subscription_id text,
   current_period_end timestamptz,
+  -- Hard access cutoff for time-boxed accounts (e.g. a 4-day tester login).
+  -- When set and in the past, entitlement is denied regardless of status.
+  access_expires_at  timestamptz,
+  -- When set, this is a tester account: its countdown is this many days and
+  -- starts (stamps access_expires_at) on first sign-in via tester-clock.
+  tester_days        integer,
   updated_at         timestamptz not null default now()
 );
+
+-- Migration for databases created before the tester columns existed. Safe to
+-- re-run. See supabase/migrations/2026-07-14-tester-account.sql.
+alter table public.subscriptions add column if not exists access_expires_at timestamptz;
+alter table public.subscriptions add column if not exists tester_days integer;
 
 -- Leads (marketing "book a demo" form submissions) --------------------------
 -- Written by the submit-lead function (service role). Not readable by the anon

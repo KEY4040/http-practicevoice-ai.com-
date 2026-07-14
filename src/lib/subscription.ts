@@ -5,6 +5,18 @@ export interface Subscription {
   status: string;
   plan: string | null;
   current_period_end: string | null;
+  /**
+   * Hard access cutoff. When set and in the past, access is DENIED regardless
+   * of status — used for time-boxed accounts (e.g. a 4-day tester login).
+   * Null/absent for normal accounts.
+   */
+  access_expires_at?: string | null;
+  /**
+   * When set, this is a time-boxed tester account: its countdown is this many
+   * days and starts (stamps access_expires_at) on first sign-in. Null for
+   * normal accounts.
+   */
+  tester_days?: number | null;
 }
 
 /** Stripe statuses that grant dashboard access (trial + paid + short grace). */
@@ -15,7 +27,13 @@ export const TRIAL_DAYS = 14;
 
 /** Whether a paid/Stripe subscription is currently active. */
 export function hasActiveAccess(sub: Subscription | null): boolean {
-  return !!sub && ACTIVE_STATUSES.has(sub.status);
+  if (!sub) return false;
+  // Hard expiry wins over status (time-boxed tester accounts).
+  if (sub.access_expires_at) {
+    const exp = new Date(sub.access_expires_at).getTime();
+    if (!Number.isNaN(exp) && exp <= Date.now()) return false;
+  }
+  return ACTIVE_STATUSES.has(sub.status);
 }
 
 /**
@@ -43,7 +61,7 @@ export async function fetchSubscription(
   if (!uid) return null;
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("status, plan, current_period_end")
+    .select("status, plan, current_period_end, access_expires_at, tester_days")
     .eq("user_id", uid)
     .maybeSingle();
   if (error) throw error;

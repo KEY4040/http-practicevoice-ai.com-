@@ -1,6 +1,22 @@
 import { useEffect, useState } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase, isBillingEnabled, isDemoMode } from "@/lib/supabase";
 import { fetchSubscription, hasActiveAccess, trialDaysLeft } from "@/lib/subscription";
+
+/** Kick off a tester account's countdown on first sign-in (best-effort). */
+async function startTesterClock(supabase: SupabaseClient): Promise<void> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+    await fetch("/.netlify/functions/tester-clock", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    /* non-fatal — the clock will start on a later load */
+  }
+}
 
 /** How the user currently has access, for banners + the paywall. */
 export type AccessState = "open" | "trial" | "active" | "expired";
@@ -51,8 +67,21 @@ export function useSubscription(): SubscriptionState {
 
         if (!alive) return;
 
+        // Time-boxed tester account: start the countdown on first sign-in
+        // (best-effort; they still have access this session either way).
+        if (sub?.tester_days && !sub.access_expires_at) {
+          void startTesterClock(supabase);
+        }
+
         if (hasActiveAccess(sub)) {
           setState({ loading: false, active: true, state: "active", trialDaysLeft: 0, plan: sub?.plan ?? null });
+          return;
+        }
+
+        // A time-boxed account whose window has passed is EXPIRED — it must not
+        // fall back into the 14-day reverse-trial (that would defeat the timer).
+        if (sub?.access_expires_at || sub?.tester_days) {
+          setState({ loading: false, active: false, state: "expired", trialDaysLeft: 0, plan: null });
           return;
         }
 
