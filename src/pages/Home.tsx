@@ -9,6 +9,7 @@ import {
   HeartPulse,
   Clock,
   MessageSquareText,
+  Languages,
   Sparkles,
 } from "lucide-react";
 import { Navbar } from "@/components/marketing/Navbar";
@@ -66,6 +67,10 @@ function Hero() {
             <span className="inline-flex items-center gap-1.5">
               <TrendingUp className="size-4 text-accent" />
               See the revenue it books
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Languages className="size-4 text-accent" />
+              Speaks your caller's language
             </span>
           </div>
         </div>
@@ -303,6 +308,10 @@ const faqs = [
   {
     q: "Which businesses is it built for?",
     a: "Any business that can't afford to miss a call — home services and trades, auto shops, salons and spas, restaurants, real estate teams, medical, dental, and veterinary offices, law firms, and nonprofit or community assistance lines.",
+  },
+  {
+    q: "Can it talk to callers in other languages?",
+    a: "Yes. Your AI answers in the caller's own language automatically — it greets in English and switches to Spanish (or dozens of other languages) the moment the caller does, with no setup on your part.",
   },
 ];
 

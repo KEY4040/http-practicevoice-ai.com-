@@ -230,6 +230,7 @@ function buildRoutes(): Route[] {
         { q: "How long does setup take?", a: "Most businesses are live the same day: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away." },
         { q: "How much does PracticeVoice AI cost?", a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan includes a 14-day free trial, and you can cancel anytime." },
         { q: "Which businesses is it built for?", a: "Any business that can't afford to miss a call — home services and trades, auto shops, salons and spas, restaurants, real estate teams, medical, dental, and veterinary offices, law firms, and nonprofit or community assistance lines." },
+        { q: "Can it talk to callers in other languages?", a: "Yes. Your AI answers in the caller's own language automatically — it greets in English and switches to Spanish (or dozens of other languages) the moment the caller does, with no setup on your part." },
       ]),
     ],
     body:
