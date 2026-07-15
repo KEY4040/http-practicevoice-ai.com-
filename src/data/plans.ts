@@ -96,7 +96,7 @@ export const PLANS: Plan[] = [
       "Everything in Professional, plus:",
       "Multiple numbers & locations",
       "Custom voice & knowledge base",
-      "Booking & software integrations",
+      "Built-in booking calendar (Google Calendar sync coming soon)",
       "Dedicated success manager",
       "HIPAA BAA available",
     ],
