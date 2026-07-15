@@ -35,6 +35,7 @@ const columns = [
       { label: "Log in", href: "/login" },
       { label: "Start for $9.99", href: "/signup" },
       { label: "Book a demo", href: "/contact" },
+      { label: "Call us: (857) 597-5086", href: "tel:+18575975086" },
     ],
   },
 ];

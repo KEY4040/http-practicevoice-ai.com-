@@ -79,6 +79,13 @@ export default function Contact() {
                   </li>
                 ))}
               </ul>
+              <p className="mt-8 text-sm text-muted-foreground">
+                Prefer to talk now? Call{" "}
+                <a href="tel:+18575975086" className="font-semibold text-primary hover:underline">
+                  (857) 597-5086
+                </a>{" "}
+                — our AI answers 24/7 and gets a real person on anything bigger.
+              </p>
             </div>
 
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8">
