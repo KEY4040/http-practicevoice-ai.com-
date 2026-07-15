@@ -95,6 +95,15 @@ export default async (req) => {
     console.error(`[retell-webhook] lead escalation skipped: ${((e && e.message) || e).toString().slice(0, 100)}`);
   }
 
+  // The company contact line is NOT a customer. Stop here so its calls never
+  // fall through to clinic resolution — otherwise resolveClinicId's "single
+  // activated clinic" fallback would mis-log the call into a real customer's
+  // dashboard AND meter it against their plan minutes (even pausing their line).
+  // Escalation above already handled the lead; there is nothing else to do.
+  if (isCompanyLine(parsed)) {
+    return json({ ok: true, company_line: true, outcome: parsed.outcome });
+  }
+
   // Persist to Supabase (if configured).
   let saved = false;
   // Whether this is the FIRST time we've seen this call. Retell delivers
