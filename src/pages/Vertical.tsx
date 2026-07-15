@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, PhoneCall, ShieldCheck, Clock } from "lucide-react";
+import { ArrowRight, Check, PhoneCall, ShieldCheck, Clock, Phone } from "lucide-react";
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,23 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
                 <Link to="/demo">See live dashboard</Link>
               </Button>
             </div>
+            {v.demoNumber && (
+              <div className="mx-auto mt-8 max-w-md rounded-2xl border border-primary/25 bg-primary/[0.04] px-6 py-5">
+                <p className="text-sm font-semibold text-foreground">
+                  Hear it yourself — call the live demo
+                </p>
+                <a
+                  href={`tel:+1${v.demoNumber.replace(/\D/g, "")}`}
+                  className="mt-1 inline-flex items-center gap-2 text-2xl font-extrabold tracking-tight text-primary hover:underline"
+                >
+                  <Phone className="size-5" />
+                  {v.demoNumber}
+                </a>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Call now and the AI answers exactly like it would for your firm.
+                </p>
+              </div>
+            )}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
               {(v.trust ?? DEFAULT_TRUST).map((label, i) => {
                 const Icon = TRUST_ICONS[i % TRUST_ICONS.length];

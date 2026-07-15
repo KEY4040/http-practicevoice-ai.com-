@@ -51,6 +51,12 @@ export interface Vertical {
    * checkout (default); contract/RFP buyers (assistance lines) use /contact.
    */
   ctaHref?: string;
+  /**
+   * Optional live demo phone number for this vertical. When set, the page shows
+   * a "call it now and hear it" CTA — a prospect dials it and experiences their
+   * own AI receptionist. Display format, e.g. "(803) 770-5067".
+   */
+  demoNumber?: string;
 }
 
 export const VERTICALS: Record<Vertical["slug"], Vertical> = {
@@ -210,6 +216,7 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
       },
     ],
     trust: ["Encrypted in transit & at rest", "Confidential intake", "Answers 24/7"],
+    demoNumber: "(803) 770-5067",
   },
   "home-services": {
     slug: "home-services",
