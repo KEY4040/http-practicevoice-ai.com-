@@ -74,8 +74,11 @@ export function PhoneDemo() {
           </span>
         </div>
 
-        {/* Transcript */}
-        <div className="flex min-h-[300px] flex-col gap-3 bg-muted/40 p-4">
+        {/* Transcript — FIXED height (not min-height) so the looping animation
+            never changes the card's size and shoves the rest of the page up and
+            down while it plays. Overflow is clipped; oldest bubbles scroll off
+            the top like a real chat. */}
+        <div className="flex h-[360px] flex-col gap-3 overflow-hidden bg-muted/40 p-4">
           {SCRIPT.slice(0, visible).map((line, i) => (
             <div
               key={i}
