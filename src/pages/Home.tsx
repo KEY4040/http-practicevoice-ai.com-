@@ -15,6 +15,8 @@ import {
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { PhoneDemo } from "@/components/marketing/PhoneDemo";
+import { AudioDemo } from "@/components/marketing/AudioDemo";
+import { Testimonials } from "@/components/marketing/Testimonials";
 import { MissedRevenueCalculator } from "@/components/marketing/MissedRevenueCalculator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -451,10 +453,12 @@ export default function Home() {
       <main id="main" className="flex-1">
         <Hero />
         <TrustBar />
+        <AudioDemo />
         <Benefits />
         <IndustriesHub />
         <RevenueHighlight />
         <MissedRevenueCalculator />
+        <Testimonials />
         <HowItWorks />
         <FAQ />
         <FinalCTA />
