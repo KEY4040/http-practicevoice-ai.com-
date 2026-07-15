@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { cn } from "@/lib/utils";
+import { PLANS, PLAN_MINUTES } from "@/data/plans";
 
 /* ------------------------------- Hero ----------------------------------- */
 
@@ -284,6 +285,66 @@ function HowItWorks() {
   );
 }
 
+/* --------------------------- Pricing snapshot --------------------------- */
+
+function PricingPeek() {
+  return (
+    <section className="scroll-mt-20 border-y border-border bg-muted/30 py-20 lg:py-24">
+      <div className="container-page">
+        <div className="mx-auto max-w-2xl text-center">
+          <Badge variant="primary" className="mb-4">
+            Simple, no surprises
+          </Badge>
+          <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+            $9.99 to start — then a flat monthly plan
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-balance text-muted-foreground">
+            No per-minute mystery. Every plan includes a set of call-minutes,
+            and you always see the rate before you go a minute over. Cancel
+            anytime.
+          </p>
+        </div>
+
+        <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-3">
+          {PLANS.map((p) => (
+            <div
+              key={p.id}
+              className={cn(
+                "flex flex-col rounded-2xl border bg-card p-7 shadow-card",
+                p.highlighted ? "border-primary ring-1 ring-primary/20" : "border-border"
+              )}
+            >
+              {p.badge && (
+                <Badge variant="primary" className="mb-3 self-start">
+                  {p.badge}
+                </Badge>
+              )}
+              <h3 className="text-lg font-semibold">{p.name}</h3>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold tracking-tight">${p.price}</span>
+                <span className="text-sm text-muted-foreground">{p.period}</span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {PLAN_MINUTES[p.id].toLocaleString()} call-minutes / mo included
+              </p>
+              <Button asChild className="mt-6 w-full" variant={p.highlighted ? "primary" : "outline"}>
+                <Link to="/pricing">Start — $9.99 for 14 days</Link>
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          Want the full breakdown?{" "}
+          <Link to="/pricing" className="font-semibold text-primary hover:underline">
+            See full pricing &amp; features
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+}
+
 /* -------------------------------- FAQ ----------------------------------- */
 
 const faqs = [
@@ -460,6 +521,7 @@ export default function Home() {
         <MissedRevenueCalculator />
         <Testimonials />
         <HowItWorks />
+        <PricingPeek />
         <FAQ />
         <FinalCTA />
       </main>
