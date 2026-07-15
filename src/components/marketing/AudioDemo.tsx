@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
  * fabricated one) and flip DEMO_AUDIO_SRC below to "/demo-call.mp3". Until then
  * the section renders nothing, so the homepage never shows a broken player.
  */
-const DEMO_AUDIO_SRC = ""; // set to "/demo-call.mp3" once the recording is added
+const DEMO_AUDIO_SRC = "/demo-call.wav"; // real recording of the AI taking a live call
 
 export function AudioDemo() {
   if (!DEMO_AUDIO_SRC) return null;
@@ -25,8 +25,9 @@ export function AudioDemo() {
           A real call, answered by the AI
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-balance text-muted-foreground">
-          No script, no actor — this is our AI receptionist taking a live call
-          and booking the appointment. Press play.
+          No script, no actor — this is our AI receptionist taking a real inbound
+          call, calming the caller, and capturing everything the business needs.
+          Press play.
         </p>
         <div className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-card">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
