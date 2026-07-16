@@ -301,9 +301,9 @@ function PricingPeek() {
             $9.99 to start — then a flat monthly plan
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-balance text-muted-foreground">
-            No per-minute mystery. Every plan includes a set of call-minutes,
-            and you always see the rate before you go a minute over. Cancel
-            anytime.
+            No minute math at 2 a.m. Every plan includes a set of call-minutes,
+            and you always see the rate before you go a minute over — no
+            per-minute surprises. Cancel anytime.
           </p>
         </div>
 

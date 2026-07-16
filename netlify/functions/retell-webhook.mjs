@@ -31,6 +31,7 @@ import {
 import { verifySignature, parseCall } from "../shared/retell.mjs";
 import { allowanceMinutes, monthStartIso } from "../shared/entitlement.mjs";
 import { unbindNumber } from "../shared/retell-api.mjs";
+import { sendEmail } from "../shared/email.mjs";
 
 export default async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -371,9 +372,25 @@ async function maybeEscalateCompanyLead(type, parsed, call, sigValid) {
     `Wants: ${val("lead_interest", "interest", "reason") || parsed.reason || "(not given)"}`,
     "— Call them back.",
   ];
-  const result = await sendSms(to, lines.join("\n"));
+  const body = lines.join("\n");
+  const result = await sendSms(to, body);
   if (result.error) console.error("[retell-webhook] owner lead alert failed (see Twilio logs)");
   else console.warn("[retell-webhook] owner lead alert sent");
+
+  // Also email the lead if an owner email + email provider are configured.
+  // Best-effort — never blocks the text; no-ops until RESEND_API_KEY is set.
+  const ownerEmail = process.env.OWNER_ALERT_EMAIL;
+  if (ownerEmail) {
+    try {
+      await sendEmail({
+        to: ownerEmail,
+        subject: "🔵 New lead — PracticeVoice AI",
+        text: body,
+      });
+    } catch {
+      /* email is a nice-to-have; ignore failures */
+    }
+  }
 }
 
 /** Text the patient their appointment confirmation. */
