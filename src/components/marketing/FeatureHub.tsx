@@ -45,12 +45,16 @@ export function FeatureHub() {
           </p>
         </div>
 
-        {/* A showcase graphic was removed here and the file deleted — it had
-            "HIPAA COMPLIANT" baked in (a banned claim; we're HIPAA-ready, not
-            certified) and framed the product as healthcare-only. Re-add only
-            once a corrected graphic (HIPAA-READY + every-business) exists. The
-            native grid below carries the section on its own. */}
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <img
+          src="/showcase-features.jpg"
+          alt="PracticeVoice AI, the AI front desk for any business: AI answers, books appointments, sends texts, same-day go-live, multilingual, revenue dashboard, VIP pass-through, and calendar sync coming soon — HIPAA-ready, secure and reliable."
+          loading="lazy"
+          width={1792}
+          height={1008}
+          className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
+        />
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ Icon, title, body, soon }) => (
             <div
               key={title}
