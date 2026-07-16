@@ -97,17 +97,21 @@ export async function updateAgent(agentId, { voiceId, name, webhookUrl, language
  * Buy a phone number and point inbound calls at the agent. Returns the created
  * number object (its `phone_number` is the E.164 the customer forwards to).
  */
-export async function buyNumber({ areaCode, nickname, agentId }) {
-  // NOTE: do NOT set inbound_webhook_url here. That is a call-START routing
-  // webhook (Retell POSTs it expecting per-call agent overrides), NOT the
-  // call-event sink. Call events (call_ended/call_analyzed) are delivered to
-  // the AGENT's webhook_url, set in createAgent. Setting inbound_webhook_url
-  // pointed at our event handler put inbound calls on the dynamic-routing path.
+export async function buyNumber({ areaCode, nickname, agentId, inboundWebhookUrl }) {
+  // TWO different webhooks, two different jobs:
+  //  - inbound_webhook_url  = call-START routing. Point it at our retell-inbound
+  //    handler so VIP callers get routed straight through the instant they dial,
+  //    before any greeting. (Earlier this was wrongly pointed at the EVENT sink,
+  //    which broke routing — hence it was removed. retell-inbound is the correct
+  //    handler and returns the right { call_inbound: {...} } shape.)
+  //  - the AGENT's webhook_url (set in createAgent) still receives call EVENTS
+  //    (call_ended/call_analyzed) for logging. Leave that untouched.
   return retellFetch("POST", "/create-phone-number", {
     area_code: areaCode,
     toll_free: false,
     nickname,
     inbound_agents: [{ agent_id: agentId, weight: 1 }],
+    ...(inboundWebhookUrl ? { inbound_webhook_url: inboundWebhookUrl } : {}),
   });
 }
 

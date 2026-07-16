@@ -26,6 +26,7 @@ import {
   buyNumber,
   updateLlm,
   updateAgent,
+  updatePhoneNumber,
   deleteAgent,
   deleteLlm,
   pickVoice,
@@ -113,6 +114,10 @@ export default async (req) => {
   const prompt = buildPrompt(clinic);
   const beginMessage = `Thank you for calling ${clinic.name || "us"}. How can I help you today?`;
   const webhookUrl = `${baseUrl(req)}/.netlify/functions/retell-webhook`;
+  // Call-START router: makes VIP Passthrough work for this customer with zero
+  // extra setup — the inbound webhook checks the caller and routes VIPs straight
+  // to the owner's cell before the AI ever speaks.
+  const inboundWebhookUrl = `${baseUrl(req)}/.netlify/functions/retell-inbound`;
 
   try {
     // --- Already has an agent: re-sync brain/voice, and buy a number if the
@@ -139,7 +144,7 @@ export default async (req) => {
               areaCode,
               nickname: `${clinic.name || "PracticeVoice"} line`,
               agentId: clinic.retell_agent_id,
-              webhookUrl,
+              inboundWebhookUrl,
             });
             number = bought.phone_number || null;
             if (number) await sbUpdate("clinics", `id=eq.${clinic.id}`, { retell_number: number });
@@ -147,6 +152,10 @@ export default async (req) => {
             numberError = e.message;
           }
         }
+      } else {
+        // Self-heal: numbers provisioned before VIP existed get the inbound
+        // router now, so VIP Passthrough works for them too. Best-effort.
+        await updatePhoneNumber(number, { inbound_webhook_url: inboundWebhookUrl }).catch(() => {});
       }
       return json({ ok: true, status: "updated", number, ...(numberError ? { numberError } : {}) });
     }
@@ -191,7 +200,7 @@ export default async (req) => {
         areaCode,
         nickname: `${clinic.name || "PracticeVoice"} line`,
         agentId: agent.agent_id,
-        webhookUrl,
+        inboundWebhookUrl,
       });
       number = bought.phone_number || null;
       if (number) await sbUpdate("clinics", `id=eq.${clinic.id}`, { retell_number: number });
