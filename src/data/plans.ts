@@ -2,8 +2,9 @@
  * Single source of truth for pricing plans.
  *
  * `paymentLink` is a Stripe Payment Link — clicking a plan's button sends the
- * customer straight to Stripe's hosted checkout (14-day free trial, then the
- * monthly price). To change a price or link, update it here and in Stripe.
+ * customer straight to Stripe's hosted checkout ($9.99 activation today + a
+ * 14-day trial, then the monthly price). To change a price or link, update it
+ * here and in Stripe.
  */
 
 export type PlanId = "basic" | "professional" | "premium";

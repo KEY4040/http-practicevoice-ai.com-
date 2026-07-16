@@ -357,19 +357,19 @@ function buildRoutes(): Route[] {
 function renderPage(shell: string, route: Route): string {
   let html = shell;
 
-  // 1. Strip the homepage FAQPage from the shared shell for non-home routes so
-  //    it doesn't collide with the route's own FAQ. Keep Organization/WebSite/
-  //    SoftwareApplication (sitewide-correct).
+  // 1. Always strip the shell's homepage FAQPage. Every route that needs an FAQ
+  //    — including home (see faqLd in the "/" route) — injects its own via
+  //    route.jsonLd, so keeping the shell copy just duplicates it. Keep
+  //    Organization/WebSite/SoftwareApplication (sitewide-correct).
   html = html.replace(
     /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
     (m, json) => {
       try {
         const arr = JSON.parse(json.trim());
         if (Array.isArray(arr)) {
-          const kept =
-            route.path === "/"
-              ? arr
-              : arr.filter((n: { ["@type"]?: string }) => n["@type"] !== "FAQPage");
+          const kept = arr.filter(
+            (n: { ["@type"]?: string }) => n["@type"] !== "FAQPage"
+          );
           return `<script type="application/ld+json">${JSON.stringify(kept)}</script>`;
         }
       } catch {

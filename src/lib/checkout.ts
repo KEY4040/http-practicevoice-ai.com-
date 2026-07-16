@@ -23,8 +23,8 @@ export function checkoutUrl(plan: Plan, identity?: CheckoutIdentity): string {
 /**
  * Start the trial / checkout flow for a plan.
  *
- * Sends the customer to Stripe's hosted checkout (14-day free trial, then the
- * monthly price), carrying their identity when known. Falls back to in-app
+ * Sends the customer to Stripe's hosted checkout ($9.99 today + a 14-day trial,
+ * then the monthly price), carrying their identity when known. Falls back to in-app
  * signup only if a plan somehow has no link configured.
  */
 export function startCheckout(

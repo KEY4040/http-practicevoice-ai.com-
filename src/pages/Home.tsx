@@ -359,7 +359,7 @@ const faqs = [
     a: "You forward your existing business line to PracticeVoice AI. A warm, professional AI voice answers on the first ring, understands what the caller needs, books the right appointment or job, and texts a confirmation — day or night.",
   },
   {
-    q: "Is PracticeVoice AI HIPAA compliant?",
+    q: "Is PracticeVoice AI HIPAA-ready?",
     a: "It's built for HIPAA-ready workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans for healthcare practices.",
   },
   {
@@ -519,8 +519,8 @@ export default function Home() {
         <AudioDemo />
         <Benefits />
         <FeatureHub />
-        <VipSection />
         <IndustriesHub />
+        <VipSection />
         <RevenueHighlight />
         <MissedRevenueCalculator />
         <Testimonials />

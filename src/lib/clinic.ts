@@ -116,8 +116,8 @@ export async function updateClinicProfile(
 /**
  * Save the owner's VIP Passthrough settings: the on/off switch, the cell number
  * VIP calls transfer to, and the allow-list of numbers that ring straight
- * through. Numbers are normalized to digits-only before saving so matching at
- * call time is reliable.
+ * through. Numbers are stored as the owner typed them (nice for display);
+ * matching at call time normalizes both sides to the last 10 digits.
  */
 export async function updateVipSettings(
   supabase: SupabaseClient,

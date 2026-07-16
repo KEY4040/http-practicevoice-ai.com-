@@ -246,7 +246,7 @@ It runs on a HIPAA-ready setup, goes live the same day, and starts at $99/mo—n
 
 Your phone is your busiest exam room, and right now a quarter of the patients in it are walking out the door. You don't need your team to work harder—you need a line that never goes unanswered.
 
-Start a [14-day trial for $9.99](/demo) of PracticeVoice AI and go live today. If it recovers even a handful of the calls you're missing this week, it's already paid for itself. Curious about plans first? Check [pricing](/pricing).`,
+Start a [14-day trial for $9.99](/pricing) of PracticeVoice AI and go live today. If it recovers even a handful of the calls you're missing this week, it's already paid for itself. Curious about plans first? Check [pricing](/pricing).`,
   },
   {
     slug: "ai-reception-for-law-firms-never-miss-a-call",
@@ -312,7 +312,7 @@ It's HIPAA-ready, goes live the same day, and starts at $99/mo—no need to repl
 
 In legal intake, the winner is simply whoever picks up. You can keep hoping motivated callers leave a voicemail and wait—or you can guarantee every one of them hears a professional voice the moment they call.
 
-Start a [14-day trial for $9.99](/demo) of PracticeVoice AI and be answering every intake call by end of day. Want to compare plans first? See [pricing](/pricing).`,
+Start a [14-day trial for $9.99](/pricing) of PracticeVoice AI and be answering every intake call by end of day. Want to compare plans first? See [pricing](/pricing).`,
   },
   {
     slug: "real-cost-of-missed-calls-medical-practices",

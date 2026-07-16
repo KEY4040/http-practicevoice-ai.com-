@@ -85,7 +85,7 @@ function SidebarInner({
       }
     : accessState === "trial"
       ? {
-          title: `Free trial · ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left`,
+          title: `Trial · ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left`,
           body: "Choose a plan before it ends to keep your receptionist running.",
           cta: "Choose a plan",
           to: "/billing",
