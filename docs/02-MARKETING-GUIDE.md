@@ -140,7 +140,7 @@ Seeing it books the deal. Don't over-explain the tech.
 
 - **"Will it sound like a robot?"** → "Modern AI voices are warm and natural —
   let me play you one." (Then show the demo.)
-- **"Is it HIPAA compliant?"** → "We're built HIPAA-conscious with encryption
+- **"Is it HIPAA-ready?"** → "We're built for HIPAA-ready workflows with encryption
   and a Business Associate Agreement on qualifying plans." (See the HIPAA page.)
 - **"My staff already answers the phone."** → "Perfect — this catches the calls
   they *can't*: lunch, after hours, when two lines ring at once."

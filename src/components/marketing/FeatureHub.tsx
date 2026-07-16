@@ -45,12 +45,11 @@ export function FeatureHub() {
           </p>
         </div>
 
-        {/* NOTE: the showcase-features.jpg graphic was pulled — it had "HIPAA
-            COMPLIANT" baked in (a banned claim; we're HIPAA-ready, not certified)
-            and framed the product as healthcare-only, which fights the
-            every-business positioning. Re-add only once a corrected graphic
-            (HIPAA-READY + every-business) exists. The native grid below carries
-            the section on its own. */}
+        {/* A showcase graphic was removed here and the file deleted — it had
+            "HIPAA COMPLIANT" baked in (a banned claim; we're HIPAA-ready, not
+            certified) and framed the product as healthcare-only. Re-add only
+            once a corrected graphic (HIPAA-READY + every-business) exists. The
+            native grid below carries the section on its own. */}
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ Icon, title, body, soon }) => (
             <div
