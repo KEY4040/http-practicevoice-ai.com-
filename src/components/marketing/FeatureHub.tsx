@@ -45,7 +45,16 @@ export function FeatureHub() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <img
+          src="/showcase-features.jpg"
+          alt="PracticeVoice AI hub: answers calls, books appointments, sends texts, VIP passthrough, revenue dashboard, multilingual, same-day go-live — with calendar sync and email alerts coming soon."
+          loading="lazy"
+          width={1792}
+          height={1008}
+          className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
+        />
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ Icon, title, body, soon }) => (
             <div
               key={title}

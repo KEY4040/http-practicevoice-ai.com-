@@ -76,9 +76,21 @@ export function PhoneDemo() {
 
         {/* Transcript — FIXED height (not min-height) so the looping animation
             never changes the card's size and shoves the rest of the page up and
-            down while it plays. Overflow is clipped; oldest bubbles scroll off
-            the top like a real chat. */}
-        <div className="flex h-[360px] flex-col gap-3 overflow-hidden bg-muted/40 p-4">
+            down while it plays. Content is pinned to the BOTTOM (justify-end) so
+            the card fills like a real chat and never opens a big empty void at
+            the start of the loop. Overflow is clipped; oldest bubbles scroll off
+            the top. */}
+        <div className="flex h-[360px] flex-col justify-end gap-3 overflow-hidden bg-muted/40 p-4">
+          {/* Never-empty state: a live "connecting" cue before the first line
+              lands, so the card always shows something alive. */}
+          {visible === 0 && !booked && (
+            <div className="flex items-center gap-2 self-start rounded-2xl rounded-bl-sm bg-primary px-3.5 py-3 text-primary-foreground shadow-soft">
+              <span className="size-2 animate-bounce rounded-full bg-white/70 [animation-delay:-0.3s]" />
+              <span className="size-2 animate-bounce rounded-full bg-white/70 [animation-delay:-0.15s]" />
+              <span className="size-2 animate-bounce rounded-full bg-white/70" />
+            </div>
+          )}
+
           {SCRIPT.slice(0, visible).map((line, i) => (
             <div
               key={i}
@@ -94,7 +106,7 @@ export function PhoneDemo() {
           ))}
 
           {booked && (
-            <div className="mt-auto animate-fade-in rounded-xl border border-accent/30 bg-accent/10 p-3.5">
+            <div className="animate-fade-in rounded-xl border border-accent/30 bg-accent/10 p-3.5">
               <div className="flex items-center gap-2 text-accent-hover">
                 <CalendarCheck className="size-4" />
                 <span className="text-sm font-semibold">Appointment booked</span>
