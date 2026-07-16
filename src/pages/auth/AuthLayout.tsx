@@ -53,7 +53,7 @@ export function AuthLayout({
             {[
               { Icon: CalendarCheck, text: "24/7 appointment booking" },
               { Icon: TrendingUp, text: "See the revenue each call books" },
-              { Icon: ShieldCheck, text: "HIPAA-conscious & encrypted" },
+              { Icon: ShieldCheck, text: "HIPAA-ready & encrypted" },
               { Icon: Clock, text: "Live the same day" },
             ].map(({ Icon, text }) => (
               <div key={text} className="flex items-center gap-3 text-primary-foreground/90">

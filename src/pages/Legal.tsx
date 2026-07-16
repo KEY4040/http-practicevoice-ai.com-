@@ -109,7 +109,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
     title: "HIPAA & Security",
     updated: "Last updated: July 9, 2026",
     intro:
-      "We build PracticeVoice AI to support HIPAA-conscious workflows for healthcare practices. This page summarizes our approach.",
+      "We build PracticeVoice AI to support HIPAA-ready workflows for healthcare practices. This page summarizes our approach.",
     sections: [
       {
         heading: "Business Associate Agreement",

@@ -65,7 +65,7 @@ function Hero() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="size-4 text-accent" />
-              HIPAA-conscious &amp; secure
+              HIPAA-ready &amp; secure
             </span>
             <span className="inline-flex items-center gap-1.5">
               <TrendingUp className="size-4 text-accent" />
@@ -89,7 +89,7 @@ function Hero() {
 /* ----------------------------- Trust bar -------------------------------- */
 
 const trustItems = [
-  { Icon: ShieldCheck, label: "HIPAA-conscious" },
+  { Icon: ShieldCheck, label: "HIPAA-ready" },
   { Icon: Lock, label: "Encrypted & secure" },
   { Icon: HeartPulse, label: "Built for every front desk" },
   { Icon: Clock, label: "24/7 availability" },
@@ -358,7 +358,7 @@ const faqs = [
   },
   {
     q: "Is PracticeVoice AI HIPAA compliant?",
-    a: "It's built for HIPAA-conscious workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans for healthcare practices.",
+    a: "It's built for HIPAA-ready workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans for healthcare practices.",
   },
   {
     q: "How long does setup take?",

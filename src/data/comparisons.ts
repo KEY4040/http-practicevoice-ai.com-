@@ -44,7 +44,7 @@ export const COMPARISONS: Record<string, Comparison> = {
       { label: "Text confirmations & reminders", pv: "Included", them: "Varies", pvWins: true },
       { label: "Per-minute overage fees", pv: "None", them: "Yes, common", pvWins: true },
       { label: "Live human warmth", pv: "AI voice (natural)", them: "Real people" },
-      { label: "HIPAA posture", pv: "HIPAA-conscious, BAA available", them: "BAA available" },
+      { label: "HIPAA posture", pv: "HIPAA-ready, BAA available", them: "BAA available" },
     ],
   },
   "answering-service": {
@@ -82,7 +82,7 @@ export const COMPARISONS: Record<string, Comparison> = {
       { label: "Predictable bill", pv: "Yes — flat", them: "Varies with call volume", pvWins: true },
       { label: "Books appointments 24/7", pv: "Yes", them: "Yes" },
       { label: "Revenue dashboard", pv: "Yes — $ per call", them: "No", pvWins: true },
-      { label: "Built for healthcare (HIPAA)", pv: "HIPAA-conscious, BAA available", them: "AI receptionist not positioned as HIPAA — verify", pvWins: true },
+      { label: "Built for healthcare (HIPAA)", pv: "HIPAA-ready, BAA available", them: "AI receptionist not positioned as HIPAA — verify", pvWins: true },
       { label: "Human agents option", pv: "AI only", them: "AI + human available" },
     ],
   },

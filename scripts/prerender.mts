@@ -226,7 +226,7 @@ function buildRoutes(): Route[] {
       faqLd([
         { q: "What is PracticeVoice AI?", a: "PracticeVoice AI is an AI voice receptionist for any business that answers the phone — home services, auto, salons, restaurants, real estate, medical, dental, legal, and community assistance lines. It answers every incoming call, books appointments and service calls around the clock, sends text confirmations, and shows the revenue each call generates." },
         { q: "How does the AI receptionist answer calls?", a: "You forward your existing business line to PracticeVoice AI. A warm, professional AI voice answers on the first ring, understands what the caller needs, books the right appointment or job, and texts a confirmation — day or night." },
-        { q: "Is PracticeVoice AI HIPAA compliant?", a: "PracticeVoice AI is built for HIPAA-conscious workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans." },
+        { q: "Is PracticeVoice AI HIPAA compliant?", a: "PracticeVoice AI is built for HIPAA-ready workflows: data is encrypted in transit and at rest, access is restricted to your authorized team, and a Business Associate Agreement (BAA) is available on qualifying plans." },
         { q: "How long does setup take?", a: "Most businesses are live the same day: forward your number, set your hours and services, and your AI receptionist starts answering and booking calls right away." },
         { q: "How much does PracticeVoice AI cost?", a: "Plans start at $99/month, with Professional at $199/month and Premium at $399/month. Every plan starts at $9.99 for a 14-day trial, and you can cancel anytime." },
         { q: "Which businesses is it built for?", a: "Any business that can't afford to miss a call — home services and trades, auto shops, salons and spas, restaurants, real estate teams, medical, dental, and veterinary offices, law firms, and nonprofit or community assistance lines." },
@@ -338,7 +338,7 @@ function buildRoutes(): Route[] {
   for (const [path, title, description] of [
     ["/privacy", "Privacy Policy — PracticeVoice AI", "How PracticeVoice AI collects, uses, and protects data."],
     ["/terms", "Terms of Service — PracticeVoice AI", "The terms governing use of PracticeVoice AI."],
-    ["/hipaa", "HIPAA & Security — PracticeVoice AI", "PracticeVoice AI's HIPAA-conscious posture: encryption, access control, audit logging, and BAA availability."],
+    ["/hipaa", "HIPAA & Security — PracticeVoice AI", "PracticeVoice AI's HIPAA-ready posture: encryption, access control, audit logging, and BAA availability."],
   ] as const) {
     const name = title.split(" — ")[0];
     routes.push({

@@ -42,7 +42,7 @@ export interface Vertical {
   faqs: VerticalFaq[];
   /**
    * Small trust chips shown on the page. Healthcare/legal verticals surface
-   * "HIPAA-conscious"; broader businesses get generic trust signals instead.
+   * "HIPAA-ready"; broader businesses get generic trust signals instead.
    * Optional — falls back to a sensible default in the page.
    */
   trust?: string[];
@@ -90,8 +90,8 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
         a: "Yes — cleanings, exams, new-patient visits, emergencies, and consults. You set your services, providers, and hours, and the AI books the right slot.",
       },
       {
-        q: "Is it HIPAA-conscious?",
-        a: "PracticeVoice is built for HIPAA-conscious workflows: encrypted in transit and at rest, access restricted to your team, and a BAA available on qualifying plans.",
+        q: "Is it HIPAA-ready?",
+        a: "PracticeVoice is built for HIPAA-ready workflows: encrypted in transit and at rest, access restricted to your team, and a BAA available on qualifying plans.",
       },
       {
         q: "Will it replace my front desk?",
@@ -130,7 +130,7 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
       },
       {
         q: "How does it handle sensitive information?",
-        a: "It's built for HIPAA-conscious workflows — encrypted in transit and at rest, access restricted to your authorized team, with a BAA available on qualifying plans.",
+        a: "It's built for HIPAA-ready workflows — encrypted in transit and at rest, access restricted to your authorized team, with a BAA available on qualifying plans.",
       },
       {
         q: "What about urgent or emergency calls?",

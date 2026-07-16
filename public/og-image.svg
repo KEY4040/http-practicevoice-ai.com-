@@ -27,7 +27,7 @@
   <!-- Pills -->
   <g font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600">
     <rect x="96" y="556" width="256" height="48" rx="24" fill="#1E40AF" />
-    <text x="128" y="587" fill="#ffffff">HIPAA-conscious</text>
+    <text x="128" y="587" fill="#ffffff">HIPAA-ready</text>
     <rect x="372" y="556" width="232" height="48" rx="24" fill="#10B981" />
     <text x="404" y="587" fill="#ffffff">Live same-day</text>
   </g>

@@ -63,7 +63,7 @@ If a vendor can't clearly answer "Do you train your models on our call data?", t
 
 ## Safeguards and Audit Logs You Should Expect
 
-A HIPAA-conscious AI receptionist should have concrete technical protections, not just promises. Look for:
+A HIPAA-ready AI receptionist should have concrete technical protections, not just promises. Look for:
 
 - **Encryption** of data in transit and at rest
 - **Access controls** so only authorized systems and people can reach PHI
@@ -96,13 +96,13 @@ Use this to vet any AI receptionist for your practice:
 - **How are breaches detected and reported,** and within what timeframe?
 - **Can you provide documentation** for our own compliance records?
 
-A trustworthy vendor will welcome these questions and answer them clearly. **PracticeVoice AI** is designed to be HIPAA-conscious from the ground up — with a signed BAA, encryption, and audit logging — so your front-office automation strengthens compliance rather than complicating it.
+A trustworthy vendor will welcome these questions and answer them clearly. **PracticeVoice AI** is designed to be HIPAA-ready from the ground up — with a signed BAA, encryption, and audit logging — so your front-office automation strengthens compliance rather than complicating it.
 
 ## The Bottom Line
 
-An AI receptionist can be a safe, HIPAA-conscious part of your practice — but only if you do the diligence: get a signed BAA, confirm strong safeguards, lock down how your data can (and can't) be used, and keep the documentation to prove it.
+An AI receptionist can be a safe, HIPAA-ready part of your practice — but only if you do the diligence: get a signed BAA, confirm strong safeguards, lock down how your data can (and can't) be used, and keep the documentation to prove it.
 
-Handled correctly, you get the best of both worlds: never miss a patient call, and keep PHI protected. Want to see a HIPAA-conscious AI receptionist in action? [Watch a quick demo](/demo) or [start a 14-day trial for $9.99](/pricing) and bring your compliance questions — we're glad to answer them.`,
+Handled correctly, you get the best of both worlds: never miss a patient call, and keep PHI protected. Want to see a HIPAA-ready AI receptionist in action? [Watch a quick demo](/demo) or [start a 14-day trial for $9.99](/pricing) and bring your compliance questions — we're glad to answer them.`,
   },
   {
     slug: "ai-receptionist-vs-answering-service",
@@ -240,7 +240,7 @@ A good veterinary answering service should:
 - **Answer common questions** (hours, location, refill process) without tying up staff.
 - **Show you the revenue** it recovers, so you're not guessing. PracticeVoice AI includes a dashboard that tracks captured calls and booked appointments.
 
-It runs on a HIPAA-conscious setup, goes live the same day, and starts at $99/mo—no rip-and-replace of your current phone system. See how it works for [veterinary clinics](/veterinary), or [watch the live demo](/demo).
+It runs on a HIPAA-ready setup, goes live the same day, and starts at $99/mo—no rip-and-replace of your current phone system. See how it works for [veterinary clinics](/veterinary), or [watch the live demo](/demo).
 
 ## The Bottom Line
 
@@ -306,7 +306,7 @@ A strong setup should:
 - **Screen out spam and solicitation calls** so your team only sees real prospects.
 - **Show the revenue it captures.** PracticeVoice AI includes a dashboard tracking captured calls and booked consultations, so intake stops being a black box.
 
-It's HIPAA-conscious, goes live the same day, and starts at $99/mo—no need to replace your phone system. See a walkthrough on the [/legal](/legal) page or [book a demo](/demo).
+It's HIPAA-ready, goes live the same day, and starts at $99/mo—no need to replace your phone system. See a walkthrough on the [/legal](/legal) page or [book a demo](/demo).
 
 ## The Bottom Line
 
@@ -376,7 +376,7 @@ A capable system should:
 - **Route urgent calls** to the right person immediately.
 - **Quantify what it recovers.** PracticeVoice AI includes a revenue dashboard so captured calls and booked appointments are visible, not guessed.
 
-It runs on a HIPAA-conscious setup, goes live the same day, and starts at $99/mo—no need to replace your phone system. See the details on [/medical](/medical) or [watch how it works](/demo).
+It runs on a HIPAA-ready setup, goes live the same day, and starts at $99/mo—no need to replace your phone system. See the details on [/medical](/medical) or [watch how it works](/demo).
 
 ## The Bottom Line
 

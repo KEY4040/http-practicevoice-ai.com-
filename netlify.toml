@@ -18,7 +18,7 @@
   to = "/index.html"
   status = 200
 
-# Security headers (defense-in-depth for a HIPAA-conscious product).
+# Security headers (defense-in-depth for a HIPAA-ready product).
 # The connect-src allows Supabase; script/style are kept to self + inline
 # (Vite injects a small inline module) and the Google Fonts hosts used in
 # index.html. Tighten further once you self-host fonts.

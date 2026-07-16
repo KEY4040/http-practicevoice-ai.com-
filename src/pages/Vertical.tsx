@@ -27,7 +27,7 @@ const RELATED_POSTS: Partial<Record<VerticalData["slug"], string[]>> = {
   "assistance-line": ["nonprofit-intake-call-automation", "211-assistance-line-automation"],
 };
 
-const DEFAULT_TRUST = ["Live the same day", "HIPAA-conscious & secure", "Answers 24/7"];
+const DEFAULT_TRUST = ["Live the same day", "HIPAA-ready & secure", "Answers 24/7"];
 const TRUST_ICONS = [Clock, ShieldCheck, PhoneCall];
 
 export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {

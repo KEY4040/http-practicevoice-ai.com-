@@ -164,7 +164,7 @@ export default function Pricing() {
 
             <p className="mt-10 text-center text-sm text-muted-foreground">
               Every plan includes unlimited team members, encrypted call storage,
-              and HIPAA-conscious infrastructure.{" "}
+              and HIPAA-ready infrastructure.{" "}
               <Link
                 to="/contact"
                 className="font-medium text-primary hover:underline"
