@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Check, PhoneCall, ShieldCheck, Clock, Phone } from "lucide-react";
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
+import { AudioDemo } from "@/components/marketing/AudioDemo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -113,6 +114,9 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
             </div>
           </div>
         </section>
+
+        {/* Real recorded call — shown on verticals whose recording fits */}
+        {v.showAudioDemo && <AudioDemo />}
 
         {/* Benefits */}
         <section className="py-20 lg:py-24">

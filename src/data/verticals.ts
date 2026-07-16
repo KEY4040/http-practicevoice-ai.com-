@@ -57,6 +57,12 @@ export interface Vertical {
    * own AI receptionist. Display format, e.g. "(803) 770-5067".
    */
   demoNumber?: string;
+  /**
+   * When true, render the "Hear a real call" audio player on this page. Set on
+   * verticals whose recording matches the audience (e.g. the law-intake call on
+   * /legal) so the proof feels custom-built for that buyer.
+   */
+  showAudioDemo?: boolean;
 }
 
 export const VERTICALS: Record<Vertical["slug"], Vertical> = {
@@ -217,6 +223,7 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
     ],
     trust: ["Encrypted in transit & at rest", "Confidential intake", "Answers 24/7"],
     demoNumber: "(803) 770-5067",
+    showAudioDemo: true,
   },
   "home-services": {
     slug: "home-services",
