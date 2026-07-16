@@ -21,6 +21,9 @@ export interface ClinicRow {
   calendar_connected: boolean | null;
   usage_minutes: number | null;
   usage_suspended: boolean | null;
+  vip_enabled: boolean | null;
+  vip_transfer_to: string | null;
+  vip_numbers: string[] | null;
 }
 
 // Select all columns rather than naming the newer ones — this keeps the app
@@ -106,6 +109,26 @@ export async function updateClinicProfile(
   if (patch.openTime) fields.open_time = patch.openTime;
   if (patch.closeTime) fields.close_time = patch.closeTime;
   if (patch.voice) fields.voice = patch.voice;
+  if (Object.keys(fields).length === 0) return;
+  await supabase.from("clinics").update(fields).eq("id", clinic.id);
+}
+
+/**
+ * Save the owner's VIP Passthrough settings: the on/off switch, the cell number
+ * VIP calls transfer to, and the allow-list of numbers that ring straight
+ * through. Numbers are normalized to digits-only before saving so matching at
+ * call time is reliable.
+ */
+export async function updateVipSettings(
+  supabase: SupabaseClient,
+  patch: { enabled?: boolean; transferTo?: string; numbers?: string[] }
+): Promise<void> {
+  const clinic = await getOrCreateClinic(supabase);
+  if (!clinic) return;
+  const fields: Record<string, unknown> = {};
+  if (patch.enabled != null) fields.vip_enabled = patch.enabled;
+  if (patch.transferTo != null) fields.vip_transfer_to = patch.transferTo.trim() || null;
+  if (patch.numbers) fields.vip_numbers = patch.numbers.map((n) => n.trim()).filter(Boolean);
   if (Object.keys(fields).length === 0) return;
   await supabase.from("clinics").update(fields).eq("id", clinic.id);
 }

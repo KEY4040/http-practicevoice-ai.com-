@@ -15,6 +15,7 @@ import {
   Loader2,
   PhoneCall,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { loadClinicSettings, saveClinicSettings } from "@/lib/clinicSettings";
 import { isSupabaseConfigured, getSupabase } from "@/lib/supabase";
-import { getOrCreateClinic, updateClinicProfile } from "@/lib/clinic";
+import { getOrCreateClinic, updateClinicProfile, updateVipSettings } from "@/lib/clinic";
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { activateAiLine, type ActivateResult } from "@/lib/provision";
@@ -53,6 +54,12 @@ export default function Settings() {
   const [reminderTemplate, setReminderTemplate] = useState(loaded.reminderTemplate);
   const [about, setAbout] = useState(loaded.about);
   const [saved, setSaved] = useState(false);
+
+  // VIP Passthrough: numbers that ring straight through to the owner's cell.
+  const [vipEnabled, setVipEnabled] = useState(false);
+  const [vipTransferTo, setVipTransferTo] = useState("");
+  const [vipNumbers, setVipNumbers] = useState<string[]>([]);
+  const [newVip, setNewVip] = useState("");
 
   // AI line activation state.
   const [aiNumber, setAiNumber] = useState<string | null>(null);
@@ -82,6 +89,9 @@ export default function Settings() {
         if (clinic.close_time) setCloseTime(clinic.close_time.slice(0, 5));
         if (clinic.voice) setVoice(clinic.voice);
         if (clinic.retell_number) setAiNumber(clinic.retell_number);
+        if (typeof clinic.vip_enabled === "boolean") setVipEnabled(clinic.vip_enabled);
+        if (clinic.vip_transfer_to) setVipTransferTo(clinic.vip_transfer_to);
+        if (clinic.vip_numbers && clinic.vip_numbers.length) setVipNumbers(clinic.vip_numbers);
       } catch {
         /* non-fatal — keep local defaults */
       }
@@ -108,6 +118,22 @@ export default function Settings() {
       setServices((prev) => [...prev, s]);
       setNewService("");
     }
+  }
+
+  function addVip() {
+    const digits = newVip.replace(/\D/g, "");
+    const last10 = digits.slice(-10);
+    if (
+      last10.length === 10 &&
+      !vipNumbers.some((n) => n.replace(/\D/g, "").slice(-10) === last10)
+    ) {
+      setVipNumbers((prev) => [...prev, newVip.trim()]);
+      setNewVip("");
+    }
+  }
+
+  function removeVip(n: string) {
+    setVipNumbers((prev) => prev.filter((x) => x !== n));
   }
 
   function toggleDay(day: string) {
@@ -145,7 +171,13 @@ export default function Settings() {
             openTime,
             closeTime,
             voice,
-          });
+          }).then(() =>
+            updateVipSettings(supabase, {
+              enabled: vipEnabled,
+              transferTo: vipTransferTo,
+              numbers: vipNumbers,
+            })
+          );
       })
       .catch(() => {
         /* non-fatal — settings still saved locally */
@@ -553,6 +585,99 @@ export default function Settings() {
               onChange={setReminderTemplate}
               clinicName={clinicName}
             />
+          </div>
+        </Card>
+
+        {/* VIP Passthrough */}
+        <Card className="p-6">
+          <CardHeader className="p-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                <Star className="size-5" />
+              </span>
+              <CardTitle>VIP Passthrough</CardTitle>
+              <Badge variant="primary">Ring straight to you</Badge>
+            </div>
+            <CardDescription className="mt-2">
+              Numbers on this list ring <strong>straight through to your cell</strong> —
+              the AI never picks up for them. Everyone else still gets your AI
+              receptionist. Perfect if you run your business from your phone.
+            </CardDescription>
+          </CardHeader>
+
+          <div className="mt-6 space-y-5">
+            {/* Master switch */}
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={vipEnabled}
+                onChange={(e) => setVipEnabled(e.target.checked)}
+                className="size-4 accent-primary"
+              />
+              <span className="text-sm font-medium">Turn on VIP Passthrough</span>
+            </label>
+
+            {/* Cell to ring */}
+            <div className="space-y-1.5">
+              <Label htmlFor="vip-cell">Ring my cell</Label>
+              <p className="text-xs text-muted-foreground">
+                Where VIP calls get sent. Use your number in +1 format.
+              </p>
+              <Input
+                id="vip-cell"
+                type="tel"
+                value={vipTransferTo}
+                onChange={(e) => setVipTransferTo(e.target.value)}
+                placeholder="+1 555 123 4567"
+              />
+            </div>
+
+            {/* Add numbers, one at a time */}
+            <div className="space-y-1.5">
+              <Label htmlFor="vip-add">VIP numbers</Label>
+              <p className="text-xs text-muted-foreground">
+                Add the people who should always reach you directly — one at a time.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="vip-add"
+                  type="tel"
+                  value={newVip}
+                  onChange={(e) => setNewVip(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addVip();
+                    }
+                  }}
+                  placeholder="(555) 123-4567"
+                />
+                <Button type="button" variant="outline" onClick={addVip}>
+                  <Plus className="size-4" />
+                  Add
+                </Button>
+              </div>
+              {vipNumbers.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {vipNumbers.map((n) => (
+                    <span
+                      key={n}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 py-1 pl-3 pr-1.5 text-sm"
+                    >
+                      {n}
+                      <button
+                        type="button"
+                        onClick={() => removeVip(n)}
+                        aria-label={`Remove ${n}`}
+                        className="grid size-5 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </Card>
 
