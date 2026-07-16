@@ -29,6 +29,12 @@
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
 
 const nat = (s) => String(s || "").replace(/\D/g, "").slice(-10);
+// Normalize any way a customer typed their cell into valid +1 E.164 so a typo
+// (missing +1, spaces, dashes, a stray digit) can never break their transfers.
+const toE164 = (s) => {
+  const ten = nat(s);
+  return ten.length === 10 ? `+1${ten}` : "";
+};
 
 export default async (req) => {
   if (req.method !== "POST") return json({ call_inbound: {} }, 405);
@@ -55,7 +61,7 @@ export default async (req) => {
         const list = Array.isArray(clinic.vip_numbers) ? clinic.vip_numbers : [];
         const isVip = caller.length === 10 && list.some((n) => nat(n) === caller);
         if (isVip) {
-          out.dynamic_variables = { is_vip: "true", vip_cell: clinic.vip_transfer_to };
+          out.dynamic_variables = { is_vip: "true", vip_cell: toE164(clinic.vip_transfer_to) };
           // Optional hard route: send VIPs to a dedicated transfer-only agent so
           // the passthrough never depends on the main agent's judgment.
           if (process.env.VIP_TRANSFER_AGENT_ID) {
