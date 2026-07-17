@@ -155,14 +155,17 @@ function Benefits() {
           </p>
         </div>
 
-        <img
-          src="/showcase-answer.jpg"
-          alt="Before: missed calls go to voicemail and callers hang up. After: PracticeVoice AI picks up before they hang up, books the appointment, and texts a confirmation."
-          loading="lazy"
-          width={1792}
-          height={1008}
-          className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
-        />
+        <picture className="contents">
+          <source srcSet="/showcase-answer.webp" type="image/webp" />
+          <img
+            src="/showcase-answer.jpg"
+            alt="Before: missed calls go to voicemail and callers hang up. After: PracticeVoice AI picks up before they hang up, books the appointment, and texts a confirmation."
+            loading="lazy"
+            width={1792}
+            height={1008}
+            className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
+          />
+        </picture>
 
         <div className="mt-14 grid gap-6 md:grid-cols-3">
           {benefits.map(({ Icon, title, body, accent }) => (

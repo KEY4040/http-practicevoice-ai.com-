@@ -45,14 +45,17 @@ export function FeatureHub() {
           </p>
         </div>
 
-        <img
-          src="/showcase-features.jpg"
-          alt="PracticeVoice AI, the AI front desk for any business: AI answers, books appointments, sends texts, same-day go-live, multilingual, revenue dashboard, VIP pass-through, and calendar sync coming soon — HIPAA-ready, secure and reliable."
-          loading="lazy"
-          width={1792}
-          height={1008}
-          className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
-        />
+        <picture className="contents">
+          <source srcSet="/showcase-features.webp" type="image/webp" />
+          <img
+            src="/showcase-features.jpg"
+            alt="PracticeVoice AI, the AI front desk for any business: AI answers, books appointments, sends texts, same-day go-live, multilingual, revenue dashboard, VIP pass-through, and calendar sync coming soon — HIPAA-ready, secure and reliable."
+            loading="lazy"
+            width={1792}
+            height={1008}
+            className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
+          />
+        </picture>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ Icon, title, body, soon }) => (

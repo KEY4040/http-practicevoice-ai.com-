@@ -28,14 +28,17 @@ export function VipSection() {
           </p>
         </div>
 
-        <img
-          src="/showcase-vip.jpg"
-          alt="VIP Passthrough: a VIP contact list where Mom, top clients, and partners ring straight to your cell, while unknown callers are answered by the AI receptionist that books the appointment."
-          loading="lazy"
-          width={1792}
-          height={1008}
-          className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
-        />
+        <picture className="contents">
+          <source srcSet="/showcase-vip.webp" type="image/webp" />
+          <img
+            src="/showcase-vip.jpg"
+            alt="VIP Passthrough: a VIP contact list where Mom, top clients, and partners ring straight to your cell, while unknown callers are answered by the AI receptionist that books the appointment."
+            loading="lazy"
+            width={1792}
+            height={1008}
+            className="mx-auto mt-12 w-full max-w-4xl rounded-2xl border border-border shadow-elevated"
+          />
+        </picture>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg">

@@ -24,13 +24,37 @@ import { formatCurrency, timeAgo, initials } from "@/lib/utils";
 
 const ICONS = [PhoneCall, CalendarCheck, TrendingUp, MoonStar];
 
+const HONORIFICS = new Set(["dr", "dr.", "mr", "mr.", "mrs", "mrs.", "ms", "ms.", "prof", "prof.", "miss"]);
+
+/**
+ * Format the owner's name for the greeting so the UI stays grammatically clean
+ * no matter how they typed it. "dr patel" -> "Dr. Patel", "sarah" -> "Sarah".
+ * When the first word is an honorific we keep the surname too so it reads like a
+ * real title ("Dr. Patel", not a bare "Dr"). Falls back to a friendly "there".
+ */
+function greetingName(name: string | undefined | null): string {
+  const cap = (w: string) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w);
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "there";
+  const first = parts[0].toLowerCase();
+  if (HONORIFICS.has(first) && parts[1]) {
+    const title = first.endsWith(".") ? cap(parts[0]) : `${cap(parts[0])}.`;
+    return `${title} ${cap(parts[1])}`;
+  }
+  return cap(parts[0]);
+}
+
 export default function Dashboard() {
   useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
   const { base } = useDemoView();
   const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue, aiNumber, usageMinutes, usageSuspended } =
     useDashboardData();
-  const firstName = user?.name?.split(" ")[0] ?? (isDemo ? "Dr. Patel" : "there");
+  // In demo mode always greet as the demo persona (Dr. Patel) so a signed-in
+  // owner previewing /demo never sees their real name pinned over the sample
+  // dental data — the "crossing streams" an investor flagged. In their own
+  // connected dashboard we greet them by their real, cleanly-formatted name.
+  const firstName = isDemo ? "Dr. Patel" : greetingName(user?.name);
   const recent = calls.slice(0, 5);
   const hasCalls = calls.length > 0;
 
