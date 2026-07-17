@@ -34,7 +34,7 @@ function formatDuration(sec: number): string {
 
 export default function CallDetail() {
   const { id } = useParams<{ id: string }>();
-  const { base } = useDemoView();
+  const { base, q } = useDemoView();
   const { loading, error, call } = useCall(id);
   useDocumentMeta({
     title: call ? `${call.caller} · Call detail` : "Call detail",
@@ -65,7 +65,7 @@ export default function CallDetail() {
               Retry
             </Button>
             <Button asChild>
-              <Link to={`${base}/calls`}>Back to call history</Link>
+              <Link to={`${base}/calls${q}`}>Back to call history</Link>
             </Button>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function CallDetail() {
             This call may have been removed.
           </p>
           <Button asChild className="mt-6">
-            <Link to={`${base}/calls`}>Back to call history</Link>
+            <Link to={`${base}/calls${q}`}>Back to call history</Link>
           </Button>
         </div>
       </DashboardLayout>
@@ -93,7 +93,7 @@ export default function CallDetail() {
     <DashboardLayout>
       <div className="mx-auto max-w-4xl space-y-6">
         <Link
-          to={`${base}/calls`}
+          to={`${base}/calls${q}`}
           className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />

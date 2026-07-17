@@ -25,14 +25,16 @@ interface NavEntry {
   end: boolean;
 }
 
-function navFor(base: string, demo: boolean): NavEntry[] {
+function navFor(base: string, demo: boolean, q = ""): NavEntry[] {
+  // q carries ?industry= so the demo keeps one industry story across pages.
+  // NavLink's active state matches on pathname only, so the query is safe here.
   const items: NavEntry[] = [
-    { label: "Dashboard", to: base, Icon: LayoutDashboard, end: true },
-    { label: "Call History", to: `${base}/calls`, Icon: PhoneCall, end: false },
+    { label: "Dashboard", to: `${base}${q}`, Icon: LayoutDashboard, end: true },
+    { label: "Call History", to: `${base}/calls${q}`, Icon: PhoneCall, end: false },
   ];
   // Settings needs a real account — hide it in the public demo.
   if (!demo) {
-    items.push({ label: "Settings", to: `${base}/settings`, Icon: Settings, end: false });
+    items.push({ label: "Settings", to: `${base}/settings${q}`, Icon: Settings, end: false });
   }
   return items;
 }
@@ -73,8 +75,8 @@ function SidebarInner({
   trialDaysLeft?: number;
 }) {
   const { user, signOut } = useAuth();
-  const { demo, base } = useDemoView();
-  const items = navFor(base, demo);
+  const { demo, base, q } = useDemoView();
+  const items = navFor(base, demo, q);
 
   const card = demo
     ? {

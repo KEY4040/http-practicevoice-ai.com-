@@ -20,6 +20,7 @@ import { useDemoView } from "@/context/DemoView";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { type Metric } from "@/data/mockData";
+import { getDemoDataset } from "@/data/demoDatasets";
 import { formatCurrency, timeAgo, initials } from "@/lib/utils";
 
 const ICONS = [PhoneCall, CalendarCheck, TrendingUp, MoonStar];
@@ -47,14 +48,15 @@ function greetingName(name: string | undefined | null): string {
 export default function Dashboard() {
   useDocumentMeta({ title: "Dashboard", noindex: true });
   const { user } = useAuth();
-  const { base } = useDemoView();
+  const { base, q, industry } = useDemoView();
   const { loading, isDemo, error, calls, metrics, callsOverTime, revenueByType, totalRevenue, aiNumber, usageMinutes, usageSuspended } =
     useDashboardData();
-  // In demo mode always greet as the demo persona (Dr. Patel) so a signed-in
-  // owner previewing /demo never sees their real name pinned over the sample
-  // dental data — the "crossing streams" an investor flagged. In their own
-  // connected dashboard we greet them by their real, cleanly-formatted name.
-  const firstName = isDemo ? "Dr. Patel" : greetingName(user?.name);
+  // In demo mode always greet as the selected industry's demo persona (e.g.
+  // "Dr. Patel" for dental, "Ms. Hale" for legal) so a signed-in owner
+  // previewing /demo never sees their real name pinned over sample data — the
+  // "crossing streams" an investor flagged. In their own connected dashboard we
+  // greet them by their real, cleanly-formatted name.
+  const firstName = isDemo ? getDemoDataset(industry).personaName : greetingName(user?.name);
   const recent = calls.slice(0, 5);
   const hasCalls = calls.length > 0;
 
@@ -74,7 +76,7 @@ export default function Dashboard() {
             </p>
           </div>
           <Button asChild variant="outline">
-            <Link to={`${base}/calls`}>
+            <Link to={`${base}/calls${q}`}>
               View all calls
               <ArrowRight />
             </Link>
@@ -184,7 +186,7 @@ export default function Dashboard() {
                   </CardDescription>
                 </div>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to={`${base}/calls`}>See all</Link>
+                  <Link to={`${base}/calls${q}`}>See all</Link>
                 </Button>
               </CardHeader>
               {hasCalls ? (
@@ -192,7 +194,7 @@ export default function Dashboard() {
                   {recent.map((call) => (
                     <Link
                       key={call.id}
-                      to={`${base}/calls/${call.id}`}
+                      to={`${base}/calls/${call.id}${q}`}
                       className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
                     >
                       <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">

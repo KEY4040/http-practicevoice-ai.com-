@@ -21,15 +21,8 @@ import {
   type CallsOverTimePoint,
   type RevenueByType,
 } from "@/lib/dashboardData";
-import {
-  metrics as mockMetrics,
-  calls as mockCalls,
-  callsOverTime as mockCallsOverTime,
-  revenueByType as mockRevenueByType,
-  getCallById,
-  type Call,
-  type Metric,
-} from "@/data/mockData";
+import { type Call, type Metric } from "@/data/mockData";
+import { getDemoDataset, getDemoCallById } from "@/data/demoDatasets";
 
 export interface DashboardData {
   loading: boolean;
@@ -55,17 +48,21 @@ function sumRevenue(calls: Call[]): number {
 
 export function useDashboardData(): DashboardData {
   // The public /demo view forces mock data even when Supabase is configured.
-  const demo = isDemoMode || useDemoView().demo;
+  // In the demo, ?industry= selects the matching dataset (legal, home-services,
+  // …) so call history and revenue tell one consistent story; default = dental.
+  const { demo: demoView, industry } = useDemoView();
+  const demo = isDemoMode || demoView;
+  const ds = getDemoDataset(industry);
   const [state, setState] = useState<DashboardData>({
     loading: !demo,
     isDemo: demo,
     error: null,
-    calls: demo ? mockCalls : [],
-    metrics: demo ? mockMetrics : [],
-    callsOverTime: demo ? mockCallsOverTime : [],
-    revenueByType: demo ? mockRevenueByType : [],
-    totalRevenue: demo ? mockRevenueByType.reduce((s, r) => s + r.value, 0) : 0,
-    aiNumber: demo ? "+1 (555) 012-3456" : null,
+    calls: demo ? ds.calls : [],
+    metrics: demo ? ds.metrics : [],
+    callsOverTime: demo ? ds.callsOverTime : [],
+    revenueByType: demo ? ds.revenueByType : [],
+    totalRevenue: demo ? ds.revenueByType.reduce((s, r) => s + r.value, 0) : 0,
+    aiNumber: demo ? ds.aiNumber : null,
     usageMinutes: demo ? 128 : 0,
     usageSuspended: false,
   });
@@ -124,16 +121,17 @@ export interface CallDetailData {
 
 /** Load a single call for the detail page (mock in demo mode, DB otherwise). */
 export function useCall(id: string | undefined): CallDetailData {
-  const demo = isDemoMode || useDemoView().demo;
+  const { demo: demoView, industry } = useDemoView();
+  const demo = isDemoMode || demoView;
   const [state, setState] = useState<CallDetailData>({
     loading: !demo,
     error: null,
-    call: demo && id ? getCallById(id) ?? null : null,
+    call: demo && id ? getDemoCallById(industry, id) ?? null : null,
   });
 
   useEffect(() => {
     if (demo) {
-      setState({ loading: false, error: null, call: id ? getCallById(id) ?? null : null });
+      setState({ loading: false, error: null, call: id ? getDemoCallById(industry, id) ?? null : null });
       return;
     }
     if (!id) {
@@ -164,7 +162,7 @@ export function useCall(id: string | undefined): CallDetailData {
     return () => {
       active = false;
     };
-  }, [id, demo]);
+  }, [id, demo, industry]);
 
   return state;
 }

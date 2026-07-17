@@ -82,7 +82,10 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link to="/demo">See live dashboard</Link>
+                {/* Carry the industry into the demo so a legal/home-services/etc.
+                    buyer sees matching call history + revenue (falls back to the
+                    dental default for verticals without a dedicated dataset). */}
+                <Link to={`/demo?industry=${v.slug}`}>See live dashboard</Link>
               </Button>
             </div>
             {v.demoNumber && (
@@ -219,7 +222,7 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link to="/demo">See the demo</Link>
+                  <Link to={`/demo?industry=${v.slug}`}>See the demo</Link>
                 </Button>
               </div>
             </div>

@@ -29,7 +29,7 @@ function formatDuration(sec: number): string {
 export default function CallHistory() {
   useDocumentMeta({ title: "Call History", noindex: true });
   const navigate = useNavigate();
-  const { base } = useDemoView();
+  const { base, q } = useDemoView();
   const { loading, error, calls } = useDashboardData();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CallOutcome | "all">("all");
@@ -128,14 +128,14 @@ export default function CallHistory() {
               {filtered.map((call) => (
                 <tr
                   key={call.id}
-                  onClick={() => navigate(`${base}/calls/${call.id}`)}
+                  onClick={() => navigate(`${base}/calls/${call.id}${q}`)}
                   className="group cursor-pointer transition-colors hover:bg-muted/40"
                 >
                   <td className="px-6 py-4">
                     {/* The row itself navigates on click; this link is the
                         keyboard-accessible focus target for the row. */}
                     <Link
-                      to={`${base}/calls/${call.id}`}
+                      to={`${base}/calls/${call.id}${q}`}
                       onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
@@ -180,7 +180,7 @@ export default function CallHistory() {
         {/* Mobile list */}
         <div className="space-y-3 md:hidden">
           {filtered.map((call) => (
-            <Link key={call.id} to={`${base}/calls/${call.id}`}>
+            <Link key={call.id} to={`${base}/calls/${call.id}${q}`}>
               <Card className="flex items-center gap-3 p-4">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                   {call.caller === "Unknown Caller" ? "?" : initials(call.caller)}
