@@ -7,46 +7,90 @@ interface Line {
   text: string;
 }
 
-const SCRIPT: Line[] = [
-  { speaker: "ai", text: "Thanks for calling Bayview Dental, this is Ava. How can I help?" },
-  { speaker: "caller", text: "Hi, I'd like to book a cleaning for next week." },
-  { speaker: "ai", text: "Of course! I have Tuesday at 10 AM with Dr. Patel. Does that work?" },
-  { speaker: "caller", text: "That's perfect, thank you." },
-  { speaker: "ai", text: "You're all set — I'll text a confirmation now. 💙" },
+interface Scenario {
+  /** Label for the booking-confirmed card ("Appointment booked", "Job booked"…). */
+  bookedTitle: string;
+  /** One-line detail under the confirmation. */
+  bookedDetail: string;
+  script: Line[];
+}
+
+// The hero rotates through industries so any visitor — a dental office, a law
+// firm, a home-services crew — sees a call that looks like theirs. "Ava" (the
+// AI) is constant; only the business and the job change.
+const SCENARIOS: Scenario[] = [
+  {
+    bookedTitle: "Appointment booked",
+    bookedDetail: "Cleaning · Tue 10:00 AM · Dr. Patel — confirmation sent by SMS",
+    script: [
+      { speaker: "ai", text: "Thanks for calling Bayview Dental, this is Ava. How can I help?" },
+      { speaker: "caller", text: "Hi, I'd like to book a cleaning for next week." },
+      { speaker: "ai", text: "Of course! I have Tuesday at 10 AM with Dr. Patel. Does that work?" },
+      { speaker: "caller", text: "That's perfect, thank you." },
+      { speaker: "ai", text: "You're all set — I'll text a confirmation now. 💙" },
+    ],
+  },
+  {
+    bookedTitle: "Consult booked",
+    bookedDetail: "Injury consult · Thu 2:00 PM · Ms. Hale — confirmation sent by SMS",
+    script: [
+      { speaker: "ai", text: "Thank you for calling Morgan & Hale Law, this is Ava. How can I help?" },
+      { speaker: "caller", text: "I was in a car accident — do I have a case?" },
+      { speaker: "ai", text: "I'm sorry that happened. I can book a free consult with Ms. Hale, Thursday at 2. Okay?" },
+      { speaker: "caller", text: "Yes, please book it." },
+      { speaker: "ai", text: "Done — I'll text a confirmation and what to bring. 💙" },
+    ],
+  },
+  {
+    bookedTitle: "Job booked",
+    bookedDetail: "AC repair · Today 2:00–4:00 PM · Tech Danny — confirmation sent by SMS",
+    script: [
+      { speaker: "ai", text: "Thanks for calling Summit Home Services, this is Ava. How can I help?" },
+      { speaker: "caller", text: "My AC quit and it's 95 degrees out." },
+      { speaker: "ai", text: "Let's get you cooled down — I have a tech open today, 2 to 4. Want it?" },
+      { speaker: "caller", text: "Yes, send someone please." },
+      { speaker: "ai", text: "You're booked — I'll text your arrival window now. 💙" },
+    ],
+  },
 ];
 
 /**
  * Auto-playing "live call" simulation for the hero. Reveals one message at a
- * time, then a booking-confirmed card, then loops. Purely presentational.
+ * time, then a booking-confirmed card, then advances to the next industry
+ * scenario and repeats. Purely presentational.
  */
 export function PhoneDemo() {
+  const [scenario, setScenario] = useState(0);
   const [visible, setVisible] = useState(0);
   const [booked, setBooked] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  useEffect(() => {
-    function run() {
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-      setVisible(0);
-      setBooked(false);
+  const current = SCENARIOS[scenario];
 
-      SCRIPT.forEach((_, i) => {
-        timers.current.push(
-          setTimeout(() => setVisible(i + 1), 1100 + i * 1600)
-        );
-      });
-      timers.current.push(
-        setTimeout(() => setBooked(true), 1100 + SCRIPT.length * 1600)
-      );
-      // Loop
-      timers.current.push(
-        setTimeout(run, 1100 + SCRIPT.length * 1600 + 3200)
-      );
-    }
-    run();
+  useEffect(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setVisible(0);
+    setBooked(false);
+
+    const { script } = current;
+    script.forEach((_, i) => {
+      timers.current.push(setTimeout(() => setVisible(i + 1), 1100 + i * 1600));
+    });
+    timers.current.push(
+      setTimeout(() => setBooked(true), 1100 + script.length * 1600)
+    );
+    // Hand off to the next industry scenario; changing `scenario` re-runs this
+    // effect, which resets and plays the next call.
+    timers.current.push(
+      setTimeout(
+        () => setScenario((s) => (s + 1) % SCENARIOS.length),
+        1100 + script.length * 1600 + 3200
+      )
+    );
+
     return () => timers.current.forEach(clearTimeout);
-  }, []);
+  }, [scenario, current]);
 
   return (
     // Decorative, auto-playing simulation — hide from assistive tech so a
@@ -91,7 +135,7 @@ export function PhoneDemo() {
             </div>
           )}
 
-          {SCRIPT.slice(0, visible).map((line, i) => (
+          {current.script.slice(0, visible).map((line, i) => (
             <div
               key={i}
               className={cn(
@@ -109,10 +153,10 @@ export function PhoneDemo() {
             <div className="animate-fade-in rounded-xl border border-accent/30 bg-accent/10 p-3.5">
               <div className="flex items-center gap-2 text-accent-hover">
                 <CalendarCheck className="size-4" />
-                <span className="text-sm font-semibold">Appointment booked</span>
+                <span className="text-sm font-semibold">{current.bookedTitle}</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Cleaning · Tue 10:00 AM · Dr. Patel — confirmation sent by SMS
+                {current.bookedDetail}
               </p>
             </div>
           )}
