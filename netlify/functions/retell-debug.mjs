@@ -34,8 +34,9 @@ export default async (req) => {
     env: {
       supabase: hasSupabase(),
       retell_api_key: Boolean(process.env.RETELL_API_KEY),
-      // The isolation switch. If true, the webhook is NOT verifying signatures.
-      allow_unsigned_retell: process.env.ALLOW_UNSIGNED_RETELL === "true",
+      // Retell webhook signatures are ALWAYS enforced now — there is no bypass
+      // flag. Unsigned/forged requests are rejected outright.
+      signature_enforced: true,
       default_clinic_id: Boolean(process.env.DEFAULT_CLINIC_ID),
       twilio: Boolean(
         process.env.TWILIO_ACCOUNT_SID &&

@@ -43,24 +43,17 @@ export default async (req) => {
   const signature =
     req.headers.get("x-retell-signature") || req.headers.get("x-retell-signature-256");
 
-  // Verify the request is genuinely from Retell. A VALID signature always
-  // processes and is fully secure — so once RETELL_API_KEY matches the key
-  // Retell signs with, we're protected no matter what the bypass flag says.
-  // ALLOW_UNSIGNED_RETELL only rescues the case where the signature does NOT
-  // verify (wrong/missing key), and it logs loudly so it's never silent. Remove
-  // that env var once the log shows a signed call verifying.
+  // Verify the request is genuinely from Retell. Signatures are ALWAYS enforced:
+  // there is no bypass flag. An unsigned, wrongly-signed, or unconfigured request
+  // is rejected outright, so a forged webhook can never reach the code below.
+  // RETELL_API_KEY must match the key Retell signs with.
   const sigValid = Boolean(apiKey && signature && verifySignature(raw, signature, apiKey));
   if (!sigValid) {
-    if (process.env.ALLOW_UNSIGNED_RETELL === "true") {
-      console.warn(
-        `[retell-webhook] signature NOT verified (${!apiKey ? "no key" : !signature ? "no signature header" : "mismatch"}) — processing anyway due to ALLOW_UNSIGNED_RETELL. Remove this env var once a real call verifies.`
-      );
-    } else if (!apiKey) {
+    if (!apiKey) {
       console.error("[retell-webhook] RETELL_API_KEY not set — rejecting.");
       return json({ ok: false, error: "webhook_not_configured" }, 401);
-    } else {
-      return json({ ok: false, error: "bad_signature" }, 401);
     }
+    return json({ ok: false, error: "bad_signature" }, 401);
   }
 
   let event;
@@ -139,10 +132,10 @@ export default async (req) => {
   }
 
   // Confirmation text — only on a NEW booking, so a redelivered/retried webhook
-  // never texts the patient twice. CRITICAL: require a VERIFIED signature to
-  // send SMS. While ALLOW_UNSIGNED_RETELL is on, an attacker could POST a forged
-  // "booked" event to make us text an arbitrary number from our Twilio line;
-  // gating on sigValid closes that even before the bypass flag is removed.
+  // never texts the patient twice. The signature was already verified above
+  // (unsigned requests are rejected), so a forged "booked" event can never reach
+  // here to trigger an SMS from our Twilio line. sigValid is kept as an explicit
+  // belt-and-suspenders guard.
   if (sigValid && isNew && parsed.appointment && parsed.appointment.patientPhone) {
     await sendConfirmation(parsed);
   }
@@ -341,9 +334,9 @@ async function maybeEscalateCompanyLead(type, parsed, call, sigValid) {
   if (type !== "call_analyzed") return; // fires once + carries analysis data
   if (!isCompanyLine(parsed)) return;
   // Same trust gate as the confirmation text: only send on a verified Retell
-  // signature (unless the bypass flag is explicitly on) so a forged event can't
-  // spam the owner's phone.
-  if (!sigValid && process.env.ALLOW_UNSIGNED_RETELL !== "true") return;
+  // signature so a forged event can't spam the owner's phone. (Unsigned requests
+  // are already rejected upstream; this is defense-in-depth.)
+  if (!sigValid) return;
   const to = process.env.OWNER_ALERT_PHONE;
   if (!to) return;
 
