@@ -127,7 +127,10 @@ export default function Pricing() {
                   </div>
 
                   <Button
-                    className="mt-6"
+                    // Full-width; on narrow phones let the long label wrap to two
+                    // lines (auto height) instead of forcing the card wider than
+                    // the screen. Restore the crisp single-line lg look at sm+.
+                    className="mt-6 h-auto w-full whitespace-normal py-3 leading-tight sm:h-12 sm:whitespace-nowrap sm:py-0"
                     variant={plan.highlighted ? "primary" : "outline"}
                     size="lg"
                     data-plan={plan.id}
