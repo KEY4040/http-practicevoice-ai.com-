@@ -122,7 +122,10 @@ export async function getAgent(agentId) {
 
 /** List the most recent calls Retell has on record (diagnostics). */
 export async function listCalls({ limit = 10 } = {}) {
-  return retellFetch("POST", "/v2/list-calls", { limit, sort_order: "descending" });
+  // v3 replaced the deprecated POST /v2/list-calls (removed 06/15/2026). v3
+  // returns unified pagination: { items, pagination_key, has_more } instead of
+  // a top-level array — callers read `items`.
+  return retellFetch("POST", "/v3/list-calls", { limit, sort_order: "descending" });
 }
 
 /** Read a phone number's config (to confirm its agent binding). */

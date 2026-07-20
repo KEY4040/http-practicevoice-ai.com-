@@ -142,7 +142,8 @@ export default async (req) => {
     }
     try {
       const calls = await listCalls({ limit: 10 });
-      const arr = Array.isArray(calls) ? calls : calls?.calls || [];
+      // v3 returns { items, ... }; keep the legacy shapes as fallbacks.
+      const arr = calls?.items || (Array.isArray(calls) ? calls : calls?.calls) || [];
       retell.calls = {
         total_on_record: arr.length,
         recent: arr.slice(0, 10).map((c) => ({
