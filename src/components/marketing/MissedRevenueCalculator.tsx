@@ -69,15 +69,15 @@ export function MissedRevenueCalculator() {
 
         <div className="mx-auto mt-12 grid max-w-4xl gap-6 lg:grid-cols-[1.1fr_1fr]">
           {/* Inputs */}
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8">
+          <div className="min-w-0 rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8">
             <div className="space-y-7">
               {FIELDS.map((f) => (
                 <div key={f.key}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label htmlFor={f.key} className="text-sm font-medium text-muted-foreground">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <label htmlFor={f.key} className="min-w-0 text-sm font-medium text-muted-foreground">
                       {f.label}
                     </label>
-                    <span className="text-sm font-bold tabular-nums text-foreground">
+                    <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
                       {f.prefix}
                       {values[f.key].toLocaleString("en-US")}
                       {f.suffix}
@@ -107,11 +107,11 @@ export function MissedRevenueCalculator() {
           </div>
 
           {/* Result */}
-          <div className="flex flex-col justify-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary to-[hsl(224_76%_32%)] p-6 text-center text-primary-foreground shadow-elevated sm:p-8">
+          <div className="flex min-w-0 flex-col justify-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary to-[hsl(224_76%_32%)] p-6 text-center text-primary-foreground shadow-elevated sm:p-8">
             <p className="text-sm font-medium text-primary-foreground/80">
               You could be recovering
             </p>
-            <p className="mt-2 text-5xl font-extrabold tracking-tight tabular-nums sm:text-6xl">
+            <p className="mt-2 text-4xl font-extrabold tracking-tight tabular-nums sm:text-5xl lg:text-6xl">
               {formatCurrency(perMonth)}
             </p>
             <p className="mt-1 text-sm text-primary-foreground/80">per month</p>

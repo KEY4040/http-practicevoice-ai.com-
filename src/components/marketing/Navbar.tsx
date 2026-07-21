@@ -21,7 +21,7 @@ export function Navbar() {
       <nav className="container-page flex h-16 items-center justify-between">
         <Logo />
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-1 lg:flex">
           {links.map((l) => (
             <a
               key={l.label}
@@ -33,7 +33,7 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           <Button asChild variant="ghost" size="sm">
             <Link to="/login">Log in</Link>
           </Button>
@@ -43,7 +43,7 @@ export function Navbar() {
         </div>
 
         <button
-          className="grid size-10 place-items-center rounded-lg text-foreground md:hidden"
+          className="grid size-10 place-items-center rounded-lg text-foreground lg:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
           aria-expanded={open}
@@ -57,7 +57,7 @@ export function Navbar() {
       <div
         id="mobile-menu"
         className={cn(
-          "grid overflow-hidden border-t border-border transition-all duration-300 md:hidden",
+          "grid overflow-hidden border-t border-border transition-all duration-300 lg:hidden",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr] border-transparent"
         )}
       >

@@ -12,6 +12,23 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Canonical-domain 301: the no-hyphen alias (practicevoiceai.com) permanently
+# redirects to the hyphenated primary (practicevoice-ai.com), path-preserving,
+# so search engines never see duplicate content and all SEO authority flows to
+# one domain. Placed ABOVE the SPA fallback because Netlify matches top-down and
+# these must win for the alias host. Belt-and-suspenders alongside Netlify's
+# primary-domain setting.
+[[redirects]]
+  from = "https://practicevoiceai.com/*"
+  to = "https://practicevoice-ai.com/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "https://www.practicevoiceai.com/*"
+  to = "https://practicevoice-ai.com/:splat"
+  status = 301
+  force = true
+
 # SPA fallback so client-side routes (React Router) resolve on refresh / deep links.
 [[redirects]]
   from = "/*"
