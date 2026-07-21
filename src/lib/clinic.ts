@@ -24,6 +24,10 @@ export interface ClinicRow {
   vip_enabled: boolean | null;
   vip_transfer_to: string | null;
   vip_numbers: string[] | null;
+  cal_api_key: string | null;
+  cal_event_type_id: number | null;
+  cal_timezone: string | null;
+  calendar_provider: string | null;
 }
 
 // Select all columns rather than naming the newer ones — this keeps the app
@@ -129,6 +133,33 @@ export async function updateVipSettings(
   if (patch.enabled != null) fields.vip_enabled = patch.enabled;
   if (patch.transferTo != null) fields.vip_transfer_to = patch.transferTo.trim() || null;
   if (patch.numbers) fields.vip_numbers = patch.numbers.map((n) => n.trim()).filter(Boolean);
+  if (Object.keys(fields).length === 0) return;
+  await supabase.from("clinics").update(fields).eq("id", clinic.id);
+}
+
+/**
+ * Save the owner's Cal.com calendar connection: their API key, the event-type
+ * ID the AI books, and the timezone (matched to their Cal.com to avoid the
+ * off-by-hours bug). This is what makes the AI book into THEIR real calendar.
+ * Provisioning reads these to attach the booking tools to their agent.
+ */
+export async function updateCalendarSettings(
+  supabase: SupabaseClient,
+  patch: { apiKey?: string; eventTypeId?: number | null; timezone?: string }
+): Promise<void> {
+  const clinic = await getOrCreateClinic(supabase);
+  if (!clinic) return;
+  const fields: Record<string, unknown> = {};
+  if (patch.apiKey != null) {
+    const key = patch.apiKey.trim();
+    fields.cal_api_key = key || null;
+    // Mark connected only when a key is present; clearing it disconnects.
+    fields.calendar_provider = key ? "cal.com" : null;
+  }
+  if (patch.eventTypeId !== undefined) {
+    fields.cal_event_type_id = Number.isFinite(patch.eventTypeId) ? patch.eventTypeId : null;
+  }
+  if (patch.timezone != null) fields.cal_timezone = patch.timezone.trim() || null;
   if (Object.keys(fields).length === 0) return;
   await supabase.from("clinics").update(fields).eq("id", clinic.id);
 }
