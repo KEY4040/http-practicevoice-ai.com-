@@ -27,7 +27,12 @@ import { Badge } from "@/components/ui/badge";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { loadClinicSettings, saveClinicSettings } from "@/lib/clinicSettings";
 import { isSupabaseConfigured, getSupabase } from "@/lib/supabase";
-import { getOrCreateClinic, updateClinicProfile, updateVipSettings } from "@/lib/clinic";
+import {
+  getOrCreateClinic,
+  updateClinicProfile,
+  updateVipSettings,
+  updateCalendarSettings,
+} from "@/lib/clinic";
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { activateAiLine, type ActivateResult } from "@/lib/provision";
@@ -61,6 +66,12 @@ export default function Settings() {
   const [vipNumbers, setVipNumbers] = useState<string[]>([]);
   const [newVip, setNewVip] = useState("");
 
+  // Calendar booking (Cal.com): the AI books real appointments into the owner's
+  // own calendar. They paste their Cal.com API key + event-type id + timezone.
+  const [calApiKey, setCalApiKey] = useState("");
+  const [calEventTypeId, setCalEventTypeId] = useState("");
+  const [calTimezone, setCalTimezone] = useState("");
+
   // AI line activation state.
   const [aiNumber, setAiNumber] = useState<string | null>(null);
   const [activating, setActivating] = useState(false);
@@ -92,6 +103,9 @@ export default function Settings() {
         if (typeof clinic.vip_enabled === "boolean") setVipEnabled(clinic.vip_enabled);
         if (clinic.vip_transfer_to) setVipTransferTo(clinic.vip_transfer_to);
         if (clinic.vip_numbers && clinic.vip_numbers.length) setVipNumbers(clinic.vip_numbers);
+        if (clinic.cal_api_key) setCalApiKey(clinic.cal_api_key);
+        if (clinic.cal_event_type_id) setCalEventTypeId(String(clinic.cal_event_type_id));
+        if (clinic.cal_timezone) setCalTimezone(clinic.cal_timezone);
       } catch {
         /* non-fatal — keep local defaults */
       }
@@ -171,13 +185,23 @@ export default function Settings() {
             openTime,
             closeTime,
             voice,
-          }).then(() =>
-            updateVipSettings(supabase, {
-              enabled: vipEnabled,
-              transferTo: vipTransferTo,
-              numbers: vipNumbers,
-            })
-          );
+          })
+            .then(() =>
+              updateVipSettings(supabase, {
+                enabled: vipEnabled,
+                transferTo: vipTransferTo,
+                numbers: vipNumbers,
+              })
+            )
+            .then(() =>
+              updateCalendarSettings(supabase, {
+                apiKey: calApiKey,
+                eventTypeId: calEventTypeId.replace(/\D/g, "")
+                  ? Number(calEventTypeId.replace(/\D/g, ""))
+                  : null,
+                timezone: calTimezone,
+              })
+            );
       })
       .catch(() => {
         /* non-fatal — settings still saved locally */
@@ -677,6 +701,76 @@ export default function Settings() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Calendar booking (Cal.com) */}
+        <Card className="p-6">
+          <CardHeader className="p-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                <Calendar className="size-5" />
+              </span>
+              <CardTitle>Calendar booking</CardTitle>
+              {calApiKey.trim() && calEventTypeId.replace(/\D/g, "") ? (
+                <Badge variant="success">Connected</Badge>
+              ) : (
+                <Badge variant="primary">Books into your calendar</Badge>
+              )}
+            </div>
+            <CardDescription className="mt-2">
+              Connect your <strong>Cal.com</strong> so your AI books real
+              appointments straight into your calendar during the call. Free Cal.com
+              account works. After connecting, hit{" "}
+              <strong>Re-sync my AI</strong> above so it takes effect.
+            </CardDescription>
+          </CardHeader>
+
+          <div className="mt-6 space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="cal-key">Cal.com API key</Label>
+              <p className="text-xs text-muted-foreground">
+                In Cal.com: Settings → Developer → API Keys → add one. Kept private.
+              </p>
+              <Input
+                id="cal-key"
+                type="password"
+                autoComplete="off"
+                value={calApiKey}
+                onChange={(e) => setCalApiKey(e.target.value)}
+                placeholder="cal_live_…"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="cal-event">Event type ID</Label>
+              <p className="text-xs text-muted-foreground">
+                Open your event type in Cal.com — the number in its web address
+                (…/event-types/<strong>123456</strong>).
+              </p>
+              <Input
+                id="cal-event"
+                type="text"
+                inputMode="numeric"
+                value={calEventTypeId}
+                onChange={(e) => setCalEventTypeId(e.target.value)}
+                placeholder="123456"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="cal-tz">Timezone</Label>
+              <p className="text-xs text-muted-foreground">
+                Match your Cal.com timezone so bookings land at the right time.
+              </p>
+              <Input
+                id="cal-tz"
+                type="text"
+                value={calTimezone}
+                onChange={(e) => setCalTimezone(e.target.value)}
+                placeholder="America/New_York"
+              />
             </div>
           </div>
         </Card>

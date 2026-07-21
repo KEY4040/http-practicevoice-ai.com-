@@ -47,14 +47,48 @@ async function retellFetch(method, path, body) {
   return data;
 }
 
+/**
+ * Retell `general_tools` for Cal.com booking, built from a clinic's saved
+ * calendar connection. Returns [] when no calendar is connected (agent simply
+ * has no booking tools). Schema verified against Retell's TypeScript SDK: both
+ * tools require type/name/cal_api_key/event_type_id; timezone + description are
+ * optional. This is what makes each customer's AI book into THEIR own calendar.
+ */
+export function calTools(clinic) {
+  const apiKey = clinic?.cal_api_key;
+  const eventTypeId = clinic?.cal_event_type_id;
+  if (!apiKey || !eventTypeId) return [];
+  const tz = clinic?.cal_timezone || null;
+  const base = {
+    cal_api_key: apiKey,
+    event_type_id: Number(eventTypeId),
+    ...(tz ? { timezone: tz } : {}),
+  };
+  return [
+    {
+      type: "check_availability_cal",
+      name: "check_availability_cal",
+      description: "When the caller asks about times, check the calendar and offer open slots.",
+      ...base,
+    },
+    {
+      type: "book_appointment_cal",
+      name: "book_appointment_cal",
+      description: "When the caller picks a time, book it on the calendar.",
+      ...base,
+    },
+  ];
+}
+
 /** Create the response engine (the prompt/brain). Returns { llm_id }. */
-export async function createLlm({ prompt, beginMessage }) {
+export async function createLlm({ prompt, beginMessage, generalTools }) {
   return retellFetch("POST", "/create-retell-llm", {
     start_speaker: "agent",
     model: DEFAULT_MODEL,
     model_temperature: 0.2,
     general_prompt: prompt,
     begin_message: beginMessage,
+    ...(generalTools && generalTools.length ? { general_tools: generalTools } : {}),
   });
 }
 
@@ -72,10 +106,14 @@ export async function createAgent({ llmId, voiceId, name, webhookUrl }) {
   });
 }
 
-export async function updateLlm(llmId, { prompt, beginMessage }) {
+export async function updateLlm(llmId, { prompt, beginMessage, generalTools }) {
   const patch = {};
   if (prompt != null) patch.general_prompt = prompt;
   if (beginMessage != null) patch.begin_message = beginMessage;
+  // Passing general_tools REPLACES the tool set — so a re-sync attaches the
+  // booking tools when a calendar is connected, and removes them when it's
+  // disconnected (empty array). Only pass it when explicitly provided.
+  if (generalTools != null) patch.general_tools = generalTools;
   if (!Object.keys(patch).length) return null;
   return retellFetch("PATCH", `/update-retell-llm/${llmId}`, patch);
 }
