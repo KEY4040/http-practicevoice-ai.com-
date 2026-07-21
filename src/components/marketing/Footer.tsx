@@ -54,7 +54,7 @@ export function Footer() {
 
         {columns.map((col) => (
           <div key={col.title}>
-            <h4 className="text-sm font-semibold text-foreground">{col.title}</h4>
+            <h3 className="text-sm font-semibold text-foreground">{col.title}</h3>
             <ul className="mt-4 space-y-3">
               {col.links.map((l) => {
                 // Plain in-app routes use <Link>; hash targets (/#how) and

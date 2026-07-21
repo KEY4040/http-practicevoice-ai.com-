@@ -25,7 +25,7 @@ export function Logo({
           invert ? "text-white" : "text-foreground"
         )}
       >
-        PracticeVoice<span className="text-accent"> AI</span>
+        PracticeVoice<span className="text-[#047857]"> AI</span>
       </span>
     </Link>
   );

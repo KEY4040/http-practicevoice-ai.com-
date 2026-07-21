@@ -11,6 +11,10 @@ import { Badge } from "@/components/ui/badge";
  * the homepage never shows a broken player.
  */
 const DEMO_AUDIO_SRC = "/demo-call.wav"; // real recording of the AI taking a live call
+// Known length of the demo file, so the player shows the right time before the
+// audio is fetched — the audio is preload="none" (loads only on Play) to keep
+// its weight out of the initial page load / Speed Index.
+const DEMO_DURATION_SEC = 80;
 
 function fmt(s: number) {
   if (!Number.isFinite(s)) return "0:00";
@@ -23,7 +27,7 @@ export function AudioDemo() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(DEMO_DURATION_SEC);
 
   if (!DEMO_AUDIO_SRC) return null;
 
@@ -103,7 +107,7 @@ export function AudioDemo() {
         <audio
           ref={audioRef}
           src={DEMO_AUDIO_SRC}
-          preload="metadata"
+          preload="none"
           onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
           onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
           onEnded={() => setPlaying(false)}

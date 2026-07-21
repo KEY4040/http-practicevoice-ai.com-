@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Check, ArrowRight, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
@@ -9,13 +9,12 @@ import { useJsonLd, breadcrumbLd } from "@/hooks/useJsonLd";
 import { PLANS, type Plan } from "@/data/plans";
 
 const SITE = "https://practicevoice-ai.com";
-import { startCheckout } from "@/lib/checkout";
+import { checkoutUrl } from "@/lib/checkout";
 import { isBillingEnabled } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 export default function Pricing() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   useDocumentMeta({
     title: "Pricing — PracticeVoice AI",
@@ -54,15 +53,16 @@ export default function Pricing() {
     ]),
   ]);
 
-  function handleCta(plan: Plan) {
-    if (isBillingEnabled) {
-      // Billing enforced: send them to create/confirm an account first so the
-      // trial ties to it (logged in -> Billing; logged out -> Signup).
-      navigate(user ? "/billing" : `/signup?plan=${plan.id}`);
-      return;
-    }
-    // Open beta: straight to the plan's Stripe Payment Link.
-    startCheckout(plan, navigate);
+  // Where each plan's CTA points — returned as a real href so the button is a
+  // genuine anchor (crawlable, middle-clickable, open-in-new-tab). Billing-
+  // enforced accounts go to Billing/Signup; open beta goes straight to the
+  // plan's Stripe link (with the signed-in identity when known).
+  function ctaHref(plan: Plan): string {
+    if (isBillingEnabled) return user ? "/billing" : `/signup?plan=${plan.id}`;
+    return (
+      checkoutUrl(plan, { userId: user?.id, email: user?.email }) ||
+      `/signup?plan=${plan.id}`
+    );
   }
 
   return (
@@ -126,18 +126,27 @@ export default function Pricing() {
                     </span>
                   </div>
 
+                  {/* Real anchor (asChild) — a genuine link, not a JS-only
+                      button, so it's crawlable / middle-clickable. Full-width;
+                      wraps to two lines on narrow phones, single line at sm+. */}
                   <Button
-                    // Full-width; on narrow phones let the long label wrap to two
-                    // lines (auto height) instead of forcing the card wider than
-                    // the screen. Restore the crisp single-line lg look at sm+.
+                    asChild
                     className="mt-6 h-auto w-full whitespace-normal py-3 leading-tight sm:h-12 sm:whitespace-nowrap sm:py-0"
                     variant={plan.highlighted ? "primary" : "outline"}
                     size="lg"
                     data-plan={plan.id}
-                    onClick={() => handleCta(plan)}
                   >
-                    {plan.cta}
-                    {plan.highlighted && <ArrowRight />}
+                    {/^https?:/.test(ctaHref(plan)) ? (
+                      <a href={ctaHref(plan)}>
+                        {plan.cta}
+                        {plan.highlighted && <ArrowRight />}
+                      </a>
+                    ) : (
+                      <Link to={ctaHref(plan)}>
+                        {plan.cta}
+                        {plan.highlighted && <ArrowRight />}
+                      </Link>
+                    )}
                   </Button>
 
                   <ul className="mt-8 space-y-3.5">
