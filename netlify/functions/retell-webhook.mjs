@@ -136,8 +136,12 @@ export default async (req) => {
   // (unsigned requests are rejected), so a forged "booked" event can never reach
   // here to trigger an SMS from our Twilio line. sigValid is kept as an explicit
   // belt-and-suspenders guard.
-  if (sigValid && isNew && parsed.appointment && parsed.appointment.patientPhone) {
-    await sendConfirmation(parsed);
+  if (sigValid && isNew && parsed.appointment) {
+    // Text the patient their confirmation (needs a phone; no-ops until A2P/Twilio
+    // is live). Independently, always email the owner so a booking record reaches
+    // them today — email needs no carrier registration.
+    if (parsed.appointment.patientPhone) await sendConfirmation(parsed);
+    await notifyOwnerBooking(parsed);
   }
 
   return json({ ok: true, saved, isNew, outcome: parsed.outcome });
@@ -401,6 +405,60 @@ async function sendConfirmation(parsed) {
   const result = await sendSms(appt.patientPhone, body);
   // Log the failure without the patient's phone number (PHI).
   if (result.error) console.error("[retell-webhook] confirmation SMS failed (see Twilio logs)");
+}
+
+/**
+ * Notify the practice owner that the AI just booked an appointment.
+ *
+ * Emails OWNER_ALERT_EMAIL (works today — no carrier/A2P registration needed) and
+ * also texts OWNER_ALERT_PHONE if set (best-effort; delivers once the Twilio line
+ * is A2P-registered). Both are optional and fail soft — a notification problem
+ * must never break webhook processing or the patient confirmation.
+ */
+async function notifyOwnerBooking(parsed) {
+  const appt = parsed.appointment;
+  const clinic = await clinicName_(parsed);
+  const when =
+    appt.whenText ||
+    (appt.scheduledFor
+      ? new Date(appt.scheduledFor).toLocaleString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "the scheduled time");
+  const body = [
+    "🟢 NEW APPOINTMENT — booked by your AI receptionist",
+    `Practice: ${clinic}`,
+    `Patient: ${appt.patientName || parsed.callerName || "(not given)"}`,
+    `Phone: ${appt.patientPhone || parsed.callerPhone || "(not given)"}`,
+    `Service: ${appt.type || "Appointment"}`,
+    `When: ${when}`,
+    `Provider: ${appt.provider || "Our team"}`,
+  ].join("\n");
+
+  const ownerEmail = process.env.OWNER_ALERT_EMAIL;
+  if (ownerEmail) {
+    try {
+      await sendEmail({
+        to: ownerEmail,
+        subject: `🟢 New appointment — ${clinic}`,
+        text: body,
+      });
+    } catch {
+      /* email is best-effort; never block on it */
+    }
+  }
+
+  const ownerPhone = process.env.OWNER_ALERT_PHONE;
+  if (ownerPhone) {
+    const result = await sendSms(ownerPhone, body);
+    if (result.error) {
+      console.error("[retell-webhook] owner booking alert SMS failed (see Twilio logs)");
+    }
+  }
 }
 
 /** Best-effort clinic display name for the SMS (env override → DB → generic). */
