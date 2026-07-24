@@ -71,6 +71,10 @@ export default function Settings() {
   const [reminderTemplate, setReminderTemplate] = useState(loaded.reminderTemplate);
   const [about, setAbout] = useState(loaded.about);
   const [saved, setSaved] = useState(false);
+  // Optional override for where booking alerts are emailed. Blank = use the
+  // account email (userEmail). Lets a customer whose signup email is personal
+  // point alerts at a professional inbox.
+  const [alertEmail, setAlertEmail] = useState("");
 
   // VIP Passthrough: numbers that ring straight through to the owner's cell.
   const [vipEnabled, setVipEnabled] = useState(false);
@@ -116,6 +120,7 @@ export default function Settings() {
         if (clinic.close_time) setCloseTime(clinic.close_time.slice(0, 5));
         if (clinic.voice) setVoice(clinic.voice);
         if (clinic.retell_number) setAiNumber(clinic.retell_number);
+        if (clinic.alert_email) setAlertEmail(clinic.alert_email);
         if (typeof clinic.vip_enabled === "boolean") setVipEnabled(clinic.vip_enabled);
         if (clinic.vip_transfer_to) setVipTransferTo(clinic.vip_transfer_to);
         if (clinic.vip_numbers && clinic.vip_numbers.length) setVipNumbers(clinic.vip_numbers);
@@ -203,6 +208,7 @@ export default function Settings() {
             openTime,
             closeTime,
             voice,
+            alertEmail,
           })
             .then(() =>
               updateVipSettings(supabase, {
@@ -648,18 +654,38 @@ export default function Settings() {
             </div>
             <CardDescription className="mt-2">
               Every appointment your AI books is emailed to you the moment it
-              happens — no setup needed. Alerts go to your account email
-              {userEmail ? (
-                <>
-                  : <strong>{userEmail}</strong>.
-                </>
-              ) : (
-                "."
-              )}
+              happens — no setup needed.
             </CardDescription>
           </CardHeader>
+
+          <div className="mt-6 space-y-1.5">
+            <Label htmlFor="alert-email">Send alerts to</Label>
+            <div className="relative max-w-md">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="alert-email"
+                type="email"
+                autoComplete="off"
+                value={alertEmail}
+                onChange={(e) => setAlertEmail(e.target.value)}
+                className="pl-9"
+                placeholder={userEmail || "you@yourbusiness.com"}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Leave blank to use your account email
+              {userEmail ? (
+                <>
+                  {" "}
+                  (<strong>{userEmail}</strong>)
+                </>
+              ) : null}
+              . Prefer a front-desk or business inbox? Enter it here.
+            </p>
+          </div>
+
           <div className="mt-6">
-            <SendTestEmail email={userEmail} />
+            <SendTestEmail email={alertEmail.trim() || userEmail} />
           </div>
         </Card>
 

@@ -116,15 +116,17 @@ async function reNotifyPendingBookings(nowMs) {
     const cutoff = new Date(nowMs - 26 * 3600 * 1000).toISOString();
     const rows = await sbSelect(
       "appointments",
-      `select=id,patient_name,patient_phone,type,provider,scheduled_for,clinics(name,owner_id)` +
+      `select=id,patient_name,patient_phone,type,provider,scheduled_for,clinics(name,owner_id,alert_email)` +
         `&owner_notified=eq.false&created_at=gte.${encodeURIComponent(cutoff)}&limit=100`
     );
     for (const a of rows) {
       const clinicName = a.clinics?.name || "our office";
       const ownerId = a.clinics?.owner_id || null;
-      const ownerEmail = ownerId
-        ? await getAuthUserEmail(ownerId)
-        : process.env.OWNER_ALERT_EMAIL;
+      const override = (a.clinics?.alert_email || "").trim();
+      // Same precedence as the live webhook: per-clinic override, then the
+      // owner's account email, then the global fallback.
+      const ownerEmail =
+        override || (ownerId ? await getAuthUserEmail(ownerId) : process.env.OWNER_ALERT_EMAIL);
       if (!ownerEmail) {
         // No address to reach — mark notified so this row isn't retried forever.
         await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {

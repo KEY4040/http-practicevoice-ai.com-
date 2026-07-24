@@ -76,6 +76,7 @@ alter table public.clinics add column if not exists cal_api_key text;
 alter table public.clinics add column if not exists cal_event_type_id bigint;
 alter table public.clinics add column if not exists cal_timezone text;
 alter table public.clinics add column if not exists calendar_provider text;
+alter table public.clinics add column if not exists alert_email text;
 
 -- Calls ---------------------------------------------------------------------
 create type public.call_outcome as enum ('booked', 'escalated', 'missed', 'info');
@@ -222,7 +223,8 @@ revoke update on public.clinics from authenticated;
 grant update (
   name, phone, about, services, open_days, open_time, close_time, voice,
   vip_enabled, vip_transfer_to, vip_numbers,
-  cal_api_key, cal_event_type_id, cal_timezone, calendar_provider
+  cal_api_key, cal_event_type_id, cal_timezone, calendar_provider,
+  alert_email
 ) on public.clinics to authenticated;
 
 -- Same reasoning for INSERT/DELETE: an owner may CREATE their clinic (owner_id +
