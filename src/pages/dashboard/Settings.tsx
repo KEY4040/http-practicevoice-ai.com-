@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Building2,
@@ -17,6 +17,12 @@ import {
   PhoneCall,
   Sparkles,
   Star,
+  ExternalLink,
+  KeyRound,
+  Globe,
+  CheckCircle2,
+  CalendarCheck,
+  Pencil,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -750,75 +756,16 @@ export default function Settings() {
           </div>
         </Card>
 
-        {/* Calendar booking (Cal.com) */}
-        <Card className="p-6">
-          <CardHeader className="p-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
-                <Calendar className="size-5" />
-              </span>
-              <CardTitle>Calendar booking</CardTitle>
-              {calConnected || (calApiKey.trim() && calEventTypeId.replace(/\D/g, "")) ? (
-                <Badge variant="success">Connected</Badge>
-              ) : (
-                <Badge variant="primary">Books into your calendar</Badge>
-              )}
-            </div>
-            <CardDescription className="mt-2">
-              Connect your <strong>Cal.com</strong> so your AI books real
-              appointments straight into your calendar during the call. A free
-              Cal.com account works. After connecting, hit{" "}
-              <strong>Save settings</strong> and it takes effect right away.
-            </CardDescription>
-          </CardHeader>
-
-          <div className="mt-6 space-y-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="cal-key">Cal.com API key</Label>
-              <p className="text-xs text-muted-foreground">
-                In Cal.com: Settings → Developer → API Keys → add one. Kept private.
-              </p>
-              <Input
-                id="cal-key"
-                type="password"
-                autoComplete="off"
-                value={calApiKey}
-                onChange={(e) => setCalApiKey(e.target.value)}
-                placeholder={calConnected ? "•••••••• saved — enter a new key to replace" : "cal_live_…"}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="cal-event">Event type ID</Label>
-              <p className="text-xs text-muted-foreground">
-                Open your event type in Cal.com — the number in its web address
-                (…/event-types/<strong>123456</strong>).
-              </p>
-              <Input
-                id="cal-event"
-                type="text"
-                inputMode="numeric"
-                value={calEventTypeId}
-                onChange={(e) => setCalEventTypeId(e.target.value)}
-                placeholder="123456"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="cal-tz">Timezone</Label>
-              <p className="text-xs text-muted-foreground">
-                Match your Cal.com timezone so bookings land at the right time.
-              </p>
-              <Input
-                id="cal-tz"
-                type="text"
-                value={calTimezone}
-                onChange={(e) => setCalTimezone(e.target.value)}
-                placeholder="America/New_York"
-              />
-            </div>
-          </div>
-        </Card>
+        {/* Calendar booking (Cal.com) — premium guided walkthrough */}
+        <CalendarConnect
+          calConnected={calConnected}
+          calApiKey={calApiKey}
+          setCalApiKey={setCalApiKey}
+          calEventTypeId={calEventTypeId}
+          setCalEventTypeId={setCalEventTypeId}
+          calTimezone={calTimezone}
+          setCalTimezone={setCalTimezone}
+        />
 
         {/* Sticky save bar */}
         <div className="sticky bottom-4 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/90 p-4 shadow-elevated backdrop-blur">
@@ -965,6 +912,285 @@ function SendTestEmail({ email }: { email: string | null }) {
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * CalendarConnect — a premium, guided walkthrough for connecting a Cal.com
+ * calendar so the AI books real appointments. Instead of raw "API key" fields,
+ * it presents a numbered stepper (create account → paste key → pick the
+ * appointment → confirm timezone) that lights up green as each step is done, and
+ * collapses into a clean "connected" summary once set. The underlying values are
+ * the same three fields the backend expects — this is pure presentation.
+ */
+function CalendarConnect({
+  calConnected,
+  calApiKey,
+  setCalApiKey,
+  calEventTypeId,
+  setCalEventTypeId,
+  calTimezone,
+  setCalTimezone,
+}: {
+  calConnected: boolean;
+  calApiKey: string;
+  setCalApiKey: (v: string) => void;
+  calEventTypeId: string;
+  setCalEventTypeId: (v: string) => void;
+  calTimezone: string;
+  setCalTimezone: (v: string) => void;
+}) {
+  const [accountOpened, setAccountOpened] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  const hasKey = calApiKey.trim().length > 0;
+  const hasEvent = calEventTypeId.replace(/\D/g, "").length > 0;
+  const hasTz = calTimezone.trim().length > 0;
+  // "Connected" = saved in the DB already, or all fields filled in this session.
+  const connected = calConnected || (hasKey && hasEvent && hasTz);
+
+  // Show the celebratory summary once connected — unless the owner chose to edit.
+  if (connected && !editing) {
+    return (
+      <Card className="overflow-hidden border-accent/30">
+        <div className="flex flex-col gap-4 bg-accent/[0.05] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent-hover">
+              <CalendarCheck className="size-6" />
+            </span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold">Your calendar is connected</p>
+                <Badge variant="success">Live</Badge>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your AI books real appointments straight into your Cal.com
+                calendar during the call.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                {hasEvent && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 font-medium">
+                    <Calendar className="size-3.5 text-muted-foreground" />
+                    Appointment #{calEventTypeId.replace(/\D/g, "")}
+                  </span>
+                )}
+                {hasTz && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 font-medium">
+                    <Globe className="size-3.5 text-muted-foreground" />
+                    {calTimezone}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setEditing(true)}
+            className="shrink-0"
+          >
+            <Pencil className="size-4" />
+            Update
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  const doneCount = [accountOpened || connected, hasKey || calConnected, hasEvent, hasTz].filter(
+    Boolean
+  ).length;
+
+  return (
+    <Card className="overflow-hidden">
+      {/* Gradient hero header */}
+      <div className="relative border-b border-border bg-gradient-to-br from-primary/[0.06] via-card to-accent/[0.06] p-6">
+        <div className="flex items-start gap-4">
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary shadow-soft">
+            <Calendar className="size-6" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold tracking-tight">
+                Book into your calendar
+              </h3>
+              <Badge variant="primary">Optional</Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Let your AI drop real appointments straight into your calendar
+              while it's still on the call. Four quick steps — no coding, all
+              free.
+            </p>
+          </div>
+        </div>
+        {/* Progress meter */}
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-500"
+              style={{ width: `${(doneCount / 4) * 100}%` }}
+            />
+          </div>
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            {doneCount} of 4
+          </span>
+        </div>
+      </div>
+
+      {/* Stepper */}
+      <ol className="p-6">
+        <Step
+          n={1}
+          done={accountOpened || connected}
+          title="Create a free Cal.com account"
+          subtitle="Takes about a minute. Already have one? Just tick over and move on."
+        >
+          <a
+            href="https://cal.com/signup"
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => setAccountOpened(true)}
+          >
+            <Button type="button" variant="outline">
+              <ExternalLink className="size-4" />
+              Open Cal.com
+            </Button>
+          </a>
+        </Step>
+
+        <Step
+          n={2}
+          done={hasKey || calConnected}
+          icon={<KeyRound className="size-3.5 text-muted-foreground" />}
+          title="Paste your connection key"
+          subtitle="In Cal.com: Settings → Developer → API Keys → Add. Copy it here. We keep it private and never show it again."
+        >
+          <Input
+            id="cal-key"
+            type="password"
+            autoComplete="off"
+            value={calApiKey}
+            onChange={(e) => setCalApiKey(e.target.value)}
+            placeholder={
+              calConnected ? "•••••••• saved — paste a new key to replace" : "cal_live_…"
+            }
+          />
+        </Step>
+
+        <Step
+          n={3}
+          done={hasEvent}
+          icon={<Calendar className="size-3.5 text-muted-foreground" />}
+          title="Choose which appointment to book"
+          subtitle="Open your event type in Cal.com — the number at the end of its web address is the ID."
+        >
+          <Input
+            id="cal-event"
+            type="text"
+            inputMode="numeric"
+            value={calEventTypeId}
+            onChange={(e) => setCalEventTypeId(e.target.value)}
+            placeholder="e.g. 123456"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Example: cal.com/event-types/
+            <span className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+              123456
+            </span>
+          </p>
+        </Step>
+
+        <Step
+          n={4}
+          done={hasTz}
+          isLast
+          icon={<Globe className="size-3.5 text-muted-foreground" />}
+          title="Confirm your timezone"
+          subtitle="So bookings land at the right local time."
+        >
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="cal-tz"
+              type="text"
+              value={calTimezone}
+              onChange={(e) => setCalTimezone(e.target.value)}
+              placeholder="America/New_York"
+              className="sm:max-w-xs"
+            />
+            <Button
+              type="button"
+              variant="subtle"
+              onClick={() => {
+                try {
+                  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                  if (tz) setCalTimezone(tz);
+                } catch {
+                  /* ignore — they can type it */
+                }
+              }}
+            >
+              Detect mine
+            </Button>
+          </div>
+        </Step>
+      </ol>
+
+      {/* Footer reassurance */}
+      <div className="flex items-start gap-2 border-t border-border bg-muted/30 px-6 py-4">
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent-hover" />
+        <p className="text-xs text-muted-foreground">
+          Done? Hit <strong>Save settings</strong> below and your AI starts
+          booking on the very next call.
+        </p>
+      </div>
+    </Card>
+  );
+}
+
+/** One row of the calendar-connect stepper: numbered indicator + content. */
+function Step({
+  n,
+  done,
+  title,
+  subtitle,
+  icon,
+  isLast,
+  children,
+}: {
+  n: number;
+  done: boolean;
+  title: string;
+  subtitle: string;
+  icon?: ReactNode;
+  isLast?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <li className={cn("relative flex gap-4", isLast ? "pb-0" : "pb-7")}>
+      {/* connector line to the next step */}
+      {!isLast && (
+        <span className="absolute left-4 top-9 bottom-0 w-px -translate-x-1/2 bg-border" />
+      )}
+      {/* numbered / checked indicator */}
+      <span
+        className={cn(
+          "relative z-10 grid size-8 shrink-0 place-items-center rounded-full border-2 text-sm font-semibold transition-colors",
+          done
+            ? "border-accent bg-accent text-accent-foreground"
+            : "border-border bg-card text-muted-foreground"
+        )}
+      >
+        {done ? <Check className="size-4" /> : n}
+      </span>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <div className="flex items-center gap-1.5">
+          <h4 className="text-sm font-semibold">{title}</h4>
+          {icon}
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+        <div className="mt-3">{children}</div>
+      </div>
+    </li>
   );
 }
 
