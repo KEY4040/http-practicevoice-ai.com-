@@ -110,6 +110,9 @@ export default async (req) => {
   // at-least-once (and our own 500s trigger retries), so we only text the
   // patient / insert the appointment on the first delivery.
   let isNew = true;
+  // Whether THIS delivery is the one that first recorded the booking — gates the
+  // patient confirmation + owner alert so they fire exactly once (see persistCall).
+  let appointmentIsNew = false;
   // Hoisted so the booking notification below can route to THIS clinic's owner.
   let clinicId = null;
   if (hasSupabase()) {
@@ -123,6 +126,7 @@ export default async (req) => {
       const res = await persistCall(clinicId, parsed);
       saved = res.saved;
       isNew = res.isNew;
+      appointmentIsNew = res.appointmentIsNew;
       // Meter the minute and pause the line if it crossed the plan's allowance —
       // best-effort, never fails the webhook (money protection, not correctness).
       try {
@@ -137,14 +141,20 @@ export default async (req) => {
       console.error(`[retell-webhook] persist failed: ${msg}`);
       return json({ ok: false, error: "persist_failed" }, 500);
     }
+  } else {
+    // No database to dedupe against — best-effort: a booking-carrying event
+    // (call_analyzed) fires the confirmation once. Retries may repeat, but with
+    // no DB there is nothing to track anyway.
+    appointmentIsNew = Boolean(parsed.appointment);
   }
 
-  // Confirmation text — only on a NEW booking, so a redelivered/retried webhook
-  // never texts the patient twice. The signature was already verified above
+  // Confirmation text — only when THIS delivery first recorded the booking, so a
+  // redelivered/retried webhook (or the second of Retell's call_ended/call_analyzed
+  // pair) never texts the patient twice. The signature was already verified above
   // (unsigned requests are rejected), so a forged "booked" event can never reach
   // here to trigger an SMS from our Twilio line. sigValid is kept as an explicit
   // belt-and-suspenders guard.
-  if (sigValid && isNew && parsed.appointment) {
+  if (sigValid && appointmentIsNew && parsed.appointment) {
     // Text the patient their confirmation (needs a phone; no-ops until A2P/Twilio
     // is live). Independently, always email the owner so a booking record reaches
     // them today — email needs no carrier registration.
@@ -220,9 +230,11 @@ async function resolveClinicId(parsed) {
 }
 
 /**
- * Insert the call row (idempotent on retell_call_id) and, only on first sight,
- * the appointment. Returns { saved, isNew } so the caller can avoid re-texting
- * the patient on a redelivered webhook.
+ * Insert the call row (idempotent on retell_call_id) and record the appointment
+ * the first time booking data appears. Returns { saved, isNew, appointmentIsNew }:
+ * `isNew` gates once-per-call work like usage metering; `appointmentIsNew` gates
+ * the patient confirmation + owner alert so they fire exactly once when the
+ * booking is first seen (regardless of which Retell event carried it).
  */
 async function persistCall(clinicId, parsed) {
   // Detect a redelivery BEFORE the upsert so we know whether to add the
@@ -255,20 +267,43 @@ async function persistCall(clinicId, parsed) {
     parsed.retellCallId ? { onConflict: "retell_call_id" } : undefined
   );
 
-  // Only create the appointment on the first delivery — otherwise a retry would
-  // add a duplicate row (and duplicate 24h reminders).
-  if (parsed.appointment && callRow?.id && isNew) {
-    await sbInsert("appointments", {
-      clinic_id: clinicId,
-      call_id: callRow.id,
-      patient_name: parsed.appointment.patientName,
-      patient_phone: parsed.appointment.patientPhone,
-      type: parsed.appointment.type,
-      provider: parsed.appointment.provider,
-      scheduled_for: parsed.appointment.scheduledFor ?? undefined,
-    });
+  // Record the appointment when booking data is present — keyed to the CALL, not
+  // to call-row novelty. Retell delivers the booking on call_analyzed, which
+  // arrives AFTER call_ended already created the row; gating on "first sight of
+  // the call" would drop EVERY booking (call_ended has no booking, call_analyzed
+  // is no longer "new"). We record it the first time a booking actually appears
+  // and report whether it was newly created, so the confirmation + owner alert
+  // fire exactly once. A unique constraint on appointments.call_id (migration
+  // 2026-07-24) makes this idempotent across both events and any webhook retry.
+  let appointmentIsNew = false;
+  if (parsed.appointment && callRow?.id) {
+    const existingAppt = await sbSelect(
+      "appointments",
+      `select=id&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
+    );
+    if (existingAppt.length === 0) {
+      try {
+        await sbInsert("appointments", {
+          clinic_id: clinicId,
+          call_id: callRow.id,
+          patient_name: parsed.appointment.patientName,
+          patient_phone: parsed.appointment.patientPhone,
+          type: parsed.appointment.type,
+          provider: parsed.appointment.provider,
+          scheduled_for: parsed.appointment.scheduledFor ?? undefined,
+        });
+        appointmentIsNew = true;
+      } catch (e) {
+        // Lost a race with the sibling event (unique call_id violation) — the
+        // appointment is already recorded, so this delivery is NOT the one that
+        // fires the alerts. Never fail the webhook over it.
+        console.error(
+          `[retell-webhook] appointment already recorded for this call: ${((e && e.message) || e).toString().slice(0, 80)}`
+        );
+      }
+    }
   }
-  return { saved: true, isNew };
+  return { saved: true, isNew, appointmentIsNew };
 }
 
 /**

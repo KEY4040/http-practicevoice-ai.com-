@@ -18,17 +18,37 @@
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
+import { verifySignature } from "../shared/retell.mjs";
 
 const nat = (s) => String(s || "").replace(/\D/g, "").slice(-10);
 
 export default async (req) => {
   if (req.method !== "POST") return json({ is_vip: false }, 405);
 
+  // Read the RAW body first — the signature is computed over these exact bytes.
+  const raw = await req.text();
+
+  // The safe response, also returned whenever the request can't be authenticated,
+  // so the owner's transfer number is never handed to an unauthenticated caller.
+  const safe = { is_vip: false, transfer_number: null };
+
+  // Authenticate: Retell signs its requests with x-retell-signature (HMAC-SHA256).
+  // On any failure we return `safe` — never the transfer number.
+  const apiKey = process.env.RETELL_API_KEY;
+  const signature =
+    req.headers.get("x-retell-signature") || req.headers.get("x-retell-signature-256");
+  const authed = Boolean(apiKey && signature && verifySignature(raw, signature, apiKey));
+
   let body = {};
   try {
-    body = JSON.parse(await req.text());
+    body = JSON.parse(raw);
   } catch {
-    return json({ is_vip: false });
+    return json(safe);
+  }
+
+  if (!authed) {
+    if (!apiKey) console.error("[vip-check] RETELL_API_KEY not set — treating caller as non-VIP.");
+    return json(safe);
   }
 
   // Retell posts { call: {...}, name, args }. Be liberal about where the fields
