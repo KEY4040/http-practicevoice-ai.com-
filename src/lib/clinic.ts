@@ -31,6 +31,9 @@ export interface ClinicRow {
   cal_event_type_id: number | null;
   cal_timezone: string | null;
   calendar_provider: string | null;
+  // Optional override for where booking alerts are emailed. Null = use the
+  // owner's account email (the default). Not a secret — safe in the browser.
+  alert_email: string | null;
 }
 
 // Explicit column list — every field the browser needs, and NOTHING secret.
@@ -59,6 +62,7 @@ const CLINIC_COLUMNS = [
   "cal_event_type_id",
   "cal_timezone",
   "calendar_provider",
+  "alert_email",
 ].join(",");
 
 /**
@@ -125,6 +129,7 @@ export async function updateClinicProfile(
     openTime?: string;
     closeTime?: string;
     voice?: string;
+    alertEmail?: string;
   }
 ): Promise<void> {
   const clinic = await getOrCreateClinic(supabase, { name: patch.name, phone: patch.phone });
@@ -138,6 +143,8 @@ export async function updateClinicProfile(
   if (patch.openTime) fields.open_time = patch.openTime;
   if (patch.closeTime) fields.close_time = patch.closeTime;
   if (patch.voice) fields.voice = patch.voice;
+  // Empty string clears the override (fall back to the account email).
+  if (patch.alertEmail != null) fields.alert_email = patch.alertEmail.trim() || null;
   if (Object.keys(fields).length === 0) return;
   await supabase.from("clinics").update(fields).eq("id", clinic.id);
 }

@@ -522,8 +522,12 @@ async function ownerEmailForClinic(clinicId) {
   try {
     const rows = await sbSelect(
       "clinics",
-      `select=owner_id&id=eq.${encodeURIComponent(clinicId)}&limit=1`
+      `select=owner_id,alert_email&id=eq.${encodeURIComponent(clinicId)}&limit=1`
     );
+    // 1) An explicit per-clinic override wins (a professional inbox the owner set).
+    const override = (rows[0]?.alert_email || "").trim();
+    if (override) return override;
+    // 2) Otherwise the owner's own account email (zero-setup default).
     const ownerId = rows[0]?.owner_id;
     if (ownerId) {
       const email = await getAuthUserEmail(ownerId);
