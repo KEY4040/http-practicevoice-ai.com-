@@ -18,6 +18,7 @@
 
 import { getUserId, bearer, isEntitled } from "../shared/auth.mjs";
 import { sbSelect } from "../shared/supabase.mjs";
+import { sendSms } from "../shared/sms.mjs";
 
 const digits = (s) => String(s || "").replace(/\D/g, "");
 
@@ -68,36 +69,16 @@ export default async (req) => {
     return json({ ok: false, error: "test_texts_go_to_your_own_number_only" }, 403);
   }
 
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_PHONE_NUMBER;
-
-  // Not configured yet — succeed as a simulation so the front end can explain
-  // clearly rather than showing a scary error.
-  if (!sid || !token || !from) {
+  // Send via the shared helper — it carries the 8s timeout and E.164
+  // normalization, and no-ops cleanly ({ simulated }) until Twilio is configured.
+  const result = await sendSms(to, body);
+  if (result.simulated) {
     return json({ ok: true, simulated: true, reason: "twilio_not_configured" });
   }
-
-  const params = new URLSearchParams({ To: to, From: from, Body: body });
-  const auth = Buffer.from(`${sid}:${token}`).toString("base64");
-
-  const res = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    }
-  );
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return json({ ok: false, error: data.message ?? "twilio_error" }, res.status);
+  if (result.error) {
+    return json({ ok: false, error: result.error }, 502);
   }
-  return json({ ok: true, sent: true, sid: data.sid });
+  return json({ ok: true, sent: true, sid: result.sid });
 };
 
 function json(obj, status = 200) {

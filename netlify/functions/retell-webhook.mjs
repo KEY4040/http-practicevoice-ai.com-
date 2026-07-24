@@ -514,13 +514,17 @@ async function notifyOwnerBooking(parsed, clinicId) {
   const ownerEmail = await ownerEmailForClinic(clinicId);
   if (ownerEmail) {
     try {
-      await sendEmail({
+      const r = await sendEmail({
         to: ownerEmail,
         subject: `🟢 New appointment — ${clinic}`,
         text: body,
       });
-    } catch {
-      /* email is best-effort; never block on it */
+      // sendEmail returns { error } rather than throwing — surface it so a bad
+      // sending domain / Resend outage is visible instead of a silently dropped
+      // booking alert. Still best-effort: we never block the webhook on it.
+      if (r?.error) console.error(`[retell-webhook] owner booking email failed: ${r.error}`);
+    } catch (e) {
+      console.error(`[retell-webhook] owner booking email threw: ${((e && e.message) || e).toString().slice(0, 80)}`);
     }
   }
 
