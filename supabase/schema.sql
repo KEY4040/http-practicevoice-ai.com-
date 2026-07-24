@@ -112,7 +112,9 @@ create unique index if not exists calls_retell_call_id_key
 create table public.appointments (
   id            uuid primary key default gen_random_uuid(),
   clinic_id     uuid not null references public.clinics (id) on delete cascade,
-  call_id       uuid references public.calls (id) on delete set null,
+  -- At most one appointment per call: makes the webhook's booking write
+  -- idempotent across Retell's call_ended/call_analyzed events and retries.
+  call_id       uuid unique references public.calls (id) on delete set null,
   patient_name  text,
   -- The patient's number, copied onto the appointment so the reminder job can
   -- text them without having to join back through the call.
@@ -192,6 +194,19 @@ create policy "Owners manage their clinics"
   to authenticated
   using (owner_id = auth.uid())
   with check (owner_id = auth.uid());
+
+-- COLUMN-LEVEL lockdown: the policy above is row-scoped but not column-scoped, so
+-- an owner could otherwise PATCH server-managed columns from the browser (zero
+-- their usage meter to bypass the plan cap, or collide retell_agent_id/number
+-- with another tenant to divert PHI). Restrict the authenticated role to only the
+-- owner-editable settings columns. service_role (server) has BYPASSRLS + full
+-- privileges and is unaffected.
+revoke update on public.clinics from authenticated;
+grant update (
+  name, phone, about, services, open_days, open_time, close_time, voice,
+  vip_enabled, vip_transfer_to, vip_numbers,
+  cal_api_key, cal_event_type_id, cal_timezone, calendar_provider
+) on public.clinics to authenticated;
 
 create policy "Owners access their clinic calls"
   on public.calls for all

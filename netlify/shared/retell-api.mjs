@@ -175,23 +175,25 @@ export async function getPhoneNumber(phoneNumber) {
  * Find a phone number already bound (inbound) to this agent, if any. Makes
  * provisioning idempotent: if a prior buy succeeded at Retell but its DB write
  * failed, we REUSE that number instead of buying — and billing for — a second
- * one. Returns the E.164 string or null. Best-effort: null on any API error.
+ * one.
+ *
+ * Returns the E.164 string, or null when the agent genuinely has no number.
+ * FAILS CLOSED: it lets a list/API error PROPAGATE rather than returning null,
+ * so the caller aborts the purchase instead of buying a duplicate number when it
+ * couldn't confirm none exists. Callers wrap the buy in try/catch and surface the
+ * error, so the owner simply retries — no second billable number.
  */
 export async function findAgentNumber(agentId) {
   if (!agentId) return null;
-  try {
-    const list = await retellFetch("GET", "/list-phone-numbers");
-    const arr = Array.isArray(list) ? list : list?.items || [];
-    const match = arr.find((n) => {
-      const inbound =
-        n.inbound_agent_id ||
-        (Array.isArray(n.inbound_agents) && n.inbound_agents[0]?.agent_id);
-      return inbound && inbound === agentId;
-    });
-    return match?.phone_number || null;
-  } catch {
-    return null;
-  }
+  const list = await retellFetch("GET", "/list-phone-numbers");
+  const arr = Array.isArray(list) ? list : list?.items || [];
+  const match = arr.find((n) => {
+    const inbound =
+      n.inbound_agent_id ||
+      (Array.isArray(n.inbound_agents) && n.inbound_agents[0]?.agent_id);
+    return inbound && inbound === agentId;
+  });
+  return match?.phone_number || null;
 }
 
 /**
