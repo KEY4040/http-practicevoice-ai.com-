@@ -17,15 +17,10 @@ import {
   sendSms,
   renderTemplate,
   DEFAULT_REMINDER_TEMPLATE,
+  DEFAULT_CONFIRMATION_TEMPLATE,
 } from "../shared/sms.mjs";
 import { sendEmail } from "../shared/email.mjs";
-import {
-  hasRetell,
-  deleteNumber,
-  deleteAgent,
-  deleteLlm,
-  rebindNumber,
-} from "../shared/retell-api.mjs";
+import { hasRetell, teardownRetell, rebindNumber } from "../shared/retell-api.mjs";
 import { allowanceMinutes, monthStartIso } from "../shared/entitlement.mjs";
 
 export const config = { schedule: "@hourly" };
@@ -95,15 +90,11 @@ async function sweepExpiredTesters(nowIso) {
       );
       const clinic = clinics[0];
       if (!clinic) continue; // nothing provisioned (or already reclaimed)
-      if (clinic.retell_number) await deleteNumber(clinic.retell_number).catch(() => {});
-      if (clinic.retell_agent_id) await deleteAgent(clinic.retell_agent_id).catch(() => {});
-      if (clinic.retell_llm_id) await deleteLlm(clinic.retell_llm_id).catch(() => {});
-      await sbUpdate("clinics", `id=eq.${clinic.id}`, {
-        retell_number: null,
-        retell_agent_id: null,
-        retell_llm_id: null,
-      });
-      torn += 1;
+      // Clear only the references whose delete succeeded; a failed one stays for
+      // the next sweep to retry, so a still-billing number is never orphaned.
+      const cleared = await teardownRetell(clinic);
+      if (Object.keys(cleared).length) await sbUpdate("clinics", `id=eq.${clinic.id}`, cleared);
+      if (cleared.retell_number === null) torn += 1;
       console.log(`[send-reminders] reclaimed expired tester line for clinic ${clinic.id}`);
     }
   } catch (e) {
@@ -181,6 +172,45 @@ async function reNotifyPendingBookings(nowMs) {
   return sent;
 }
 
+/**
+ * Re-drive PATIENT confirmation texts that never went out — the durable backstop
+ * for the webhook's confirmation SMS (mirrors reNotifyPendingBookings for the
+ * owner alert). Finds recent appointments still flagged confirmation_sent=false
+ * with a patient phone, re-texts, and flips the flag only on a real send. No-ops
+ * cleanly while Twilio/A2P isn't live (simulated sends never flip the flag).
+ */
+async function reDriveConfirmations(nowMs) {
+  let sent = 0;
+  try {
+    const cutoff = new Date(nowMs - 26 * 3600 * 1000).toISOString();
+    const rows = await sbSelect(
+      "appointments",
+      `select=id,patient_name,patient_phone,type,provider,scheduled_for,clinics(name)` +
+        `&confirmation_sent=eq.false&patient_phone=not.is.null&created_at=gte.${encodeURIComponent(cutoff)}&limit=100`
+    );
+    const template = process.env.SMS_CONFIRMATION_TEMPLATE || DEFAULT_CONFIRMATION_TEMPLATE;
+    for (const a of rows) {
+      const body = renderTemplate(template, {
+        patient_name: a.patient_name || "there",
+        clinic_name: a.clinics?.name || "our office",
+        service: a.type || "your appointment",
+        appointment_time: formatWhen(a.scheduled_for),
+        provider: a.provider || "our team",
+      });
+      const r = await sendSms(a.patient_phone, body);
+      if (r?.sent) {
+        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
+          confirmation_sent: true,
+        }).catch(() => {});
+        sent += 1;
+      }
+    }
+  } catch (e) {
+    console.error("[send-reminders] confirmation re-drive sweep failed (non-fatal):", e.message);
+  }
+  return sent;
+}
+
 export default async () => {
   if (!hasSupabase()) {
     console.log("[send-reminders] Supabase not configured yet — nothing to do.");
@@ -192,9 +222,11 @@ export default async () => {
   await sweepExpiredTesters(new Date(now).toISOString());
   // Un-pause lines that reset (new month) or upgraded back under their allowance.
   await resumeUnderLimitLines(monthStartIso(now));
-  // Durable backstop: re-drive any booking alert that never reached the owner
-  // (send failed / the webhook function was killed after the appointment saved).
+  // Durable backstop: re-drive any booking alert that never reached the owner,
+  // and any patient confirmation text that never went out (send failed / the
+  // webhook function was killed after the appointment saved).
   await reNotifyPendingBookings(now);
+  await reDriveConfirmations(now);
   const windowStart = new Date(now + 23 * 3600 * 1000).toISOString();
   const windowEnd = new Date(now + 25 * 3600 * 1000).toISOString();
 

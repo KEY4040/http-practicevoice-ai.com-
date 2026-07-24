@@ -21,12 +21,7 @@
 import { hasSupabase, sbSelect, sbInsert, sbUpdate } from "../shared/supabase.mjs";
 import { verifyStripeSignature } from "../shared/stripe.mjs";
 import { planKeyFromPrice } from "../shared/entitlement.mjs";
-import {
-  hasRetell,
-  deleteNumber,
-  deleteAgent,
-  deleteLlm,
-} from "../shared/retell-api.mjs";
+import { hasRetell, teardownRetell } from "../shared/retell-api.mjs";
 
 /**
  * Tear down a canceled/expired customer's provisioned Retell line so their
@@ -49,14 +44,10 @@ async function teardownForCustomer(customerId) {
     );
     const clinic = clinics[0];
     if (!clinic) return;
-    if (clinic.retell_number) await deleteNumber(clinic.retell_number).catch(() => {});
-    if (clinic.retell_agent_id) await deleteAgent(clinic.retell_agent_id).catch(() => {});
-    if (clinic.retell_llm_id) await deleteLlm(clinic.retell_llm_id).catch(() => {});
-    await sbUpdate("clinics", `id=eq.${clinic.id}`, {
-      retell_number: null,
-      retell_agent_id: null,
-      retell_llm_id: null,
-    });
+    // Clear only the references whose delete actually succeeded; a failed delete
+    // stays in the DB for the hourly sweep to retry (never orphan a billing line).
+    const cleared = await teardownRetell(clinic);
+    if (Object.keys(cleared).length) await sbUpdate("clinics", `id=eq.${clinic.id}`, cleared);
     console.log(`[stripe-webhook] tore down Retell line for clinic ${clinic.id}`);
   } catch (e) {
     console.error("[stripe-webhook] teardown failed (non-fatal):", e.message);

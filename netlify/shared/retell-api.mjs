@@ -313,6 +313,29 @@ export async function deleteLlm(llmId) {
 }
 
 /**
+ * Tear down a clinic's Retell resources (number → agent → llm) and return ONLY
+ * the DB columns whose delete actually SUCCEEDED (as {col: null}). A transiently
+ * failed delete is left in the DB so the next hourly sweep retries it — so a
+ * still-billing number is never orphaned by nulling its reference too early.
+ */
+export async function teardownRetell(clinic) {
+  const cleared = {};
+  const step = async (id, fn, col) => {
+    if (!id) return;
+    try {
+      await fn(id);
+      cleared[col] = null;
+    } catch (e) {
+      console.error(`[retell] ${col} teardown failed (retry next sweep): ${((e && e.message) || e).toString().slice(0, 80)}`);
+    }
+  };
+  await step(clinic?.retell_number, deleteNumber, "retell_number");
+  await step(clinic?.retell_agent_id, deleteAgent, "retell_agent_id");
+  await step(clinic?.retell_llm_id, deleteLlm, "retell_llm_id");
+  return cleared;
+}
+
+/**
  * Pick a voice_id matching the requested tone, from the live catalog so we
  * never hardcode a stale id. Ava and Grace are BOTH female but must map to
  * DISTINCT voices (else "choose your voice" is a lie). Falls back to a
