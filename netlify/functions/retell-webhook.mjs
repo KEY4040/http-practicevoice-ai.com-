@@ -473,7 +473,7 @@ async function sendConfirmation(parsed) {
   const clinicName = await clinicName_(parsed);
   const template = process.env.SMS_CONFIRMATION_TEMPLATE || DEFAULT_CONFIRMATION_TEMPLATE;
   const body = renderTemplate(template, {
-    patient_name: parsed.callerName || "there",
+    patient_name: appt.patientName || parsed.callerName || "there",
     clinic_name: clinicName,
     service: appt.type || "your appointment",
     appointment_time: appt.whenText || "the scheduled time",

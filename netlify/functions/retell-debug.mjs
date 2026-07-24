@@ -23,10 +23,13 @@ import { hasRetell, getAgent, listCalls, getPhoneNumber } from "../shared/retell
 export default async (req) => {
   if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
 
-  // Detailed view (business names, phone numbers, Retell config, self-probe)
-  // is only exposed with the debug token. Without it, callers get harmless
-  // aggregates (health check) — no config or PII leaks on the public URL.
+  // EVERYTHING beyond a bare liveness ping requires the debug token: config
+  // booleans, customer/clinic counts, call counts, and Retell state are all
+  // business signal, so none of it is exposed on the unauthenticated public URL.
   const detailed = debugAuthorized(req);
+  if (!detailed) {
+    return json({ ok: true, now: new Date().toISOString(), authenticated: false });
+  }
 
   const out = {
     ok: true,

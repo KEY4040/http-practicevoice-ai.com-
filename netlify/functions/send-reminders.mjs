@@ -217,6 +217,23 @@ export default async () => {
   let sent = 0;
 
   for (const appt of due) {
+    // CLAIM the reminder atomically BEFORE sending: flip reminder_sent false->true
+    // and only proceed if THIS run won the flip. A concurrent run or a retry can
+    // never also send. If the send then fails, we roll the flag back so it's
+    // retried next hour — so we never double-text and never silently drop one.
+    let claimed = [];
+    try {
+      claimed = await sbUpdate(
+        "appointments",
+        `id=eq.${encodeURIComponent(appt.id)}&reminder_sent=eq.false`,
+        { reminder_sent: true }
+      );
+    } catch (err) {
+      console.error(`[send-reminders] claim failed for ${appt.id}:`, err);
+      continue;
+    }
+    if (!claimed.length) continue; // already claimed/sent by another run
+
     const body = renderTemplate(template, {
       patient_name: appt.patient_name || "there",
       clinic_name: appt.clinics?.name || "our office",
@@ -226,24 +243,16 @@ export default async () => {
     });
 
     const result = await sendSms(appt.patient_phone, body);
-    if (result.error) {
-      console.error(`[send-reminders] SMS failed for ${appt.id}:`, result.error);
-      continue; // leave reminder_sent false so it retries next hour
-    }
-    if (result.simulated) {
-      // Twilio isn't configured yet — do NOT mark as reminded, otherwise these
-      // patients would be silently skipped once Twilio is connected.
+    if (result.error || result.simulated) {
+      // Nothing actually went out (Twilio error, or not configured yet) — roll
+      // the claim back so this reminder is retried on the next run.
+      if (result.error) console.error(`[send-reminders] SMS failed for ${appt.id}:`, result.error);
+      await sbUpdate("appointments", `id=eq.${encodeURIComponent(appt.id)}`, {
+        reminder_sent: false,
+      }).catch((err) => console.error(`[send-reminders] rollback failed for ${appt.id}:`, err));
       continue;
     }
-    // A real text went out — mark it so we only remind once.
-    try {
-      await sbUpdate("appointments", `id=eq.${encodeURIComponent(appt.id)}`, {
-        reminder_sent: true,
-      });
-      sent += 1;
-    } catch (err) {
-      console.error(`[send-reminders] mark failed for ${appt.id}:`, err);
-    }
+    sent += 1;
   }
 
   console.log(`[send-reminders] ${due.length} due, ${sent} reminded.`);
