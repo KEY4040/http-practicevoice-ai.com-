@@ -80,6 +80,72 @@ export function calTools(clinic) {
   ];
 }
 
+/**
+ * Post-call extraction schema attached to EVERY provisioned agent. Retell's LLM
+ * fills these after each call; the webhook's parseCall reads them from
+ * call_analysis.custom_analysis_data to decide whether an appointment was booked
+ * (and to capture its details, escalation, and lead info). Without this, a
+ * freshly provisioned agent returns an empty custom_analysis_data, so NO
+ * appointment row / confirmation / owner alert / reminder ever fires — the whole
+ * booking pipeline goes dark. Field names MUST match what parseCall reads.
+ * (Schema verified against Retell's create-agent API: {type,name,description}.)
+ */
+export const POST_CALL_ANALYSIS = [
+  {
+    type: "boolean",
+    name: "appointment_booked",
+    description:
+      "True ONLY if an appointment was actually scheduled during this call — the caller agreed to a specific date/time. False if no appointment was made, or it was cancelled/rescheduled-away.",
+  },
+  {
+    type: "string",
+    name: "appointment_type",
+    description:
+      "The type of appointment or service booked, e.g. 'cleaning', 'consultation', 'AC repair'. Empty if none.",
+  },
+  {
+    type: "string",
+    name: "appointment_time",
+    description:
+      "The appointment time in plain spoken words, e.g. 'Friday at 9:00 AM'. Empty if none.",
+  },
+  {
+    type: "string",
+    name: "appointment_datetime",
+    description:
+      "The booked appointment date and time in ISO 8601 format, e.g. 2026-07-25T09:00:00. Empty if none.",
+  },
+  {
+    type: "string",
+    name: "provider",
+    description:
+      "The staff member / provider the appointment is with, if mentioned, e.g. 'Dr. Patel'. Empty if none.",
+  },
+  {
+    type: "string",
+    name: "patient_name",
+    description: "The caller's full name if given. Empty if not provided.",
+  },
+  {
+    type: "boolean",
+    name: "escalated",
+    description:
+      "True if the caller had an urgent issue or emergency that should be escalated to a human right away.",
+  },
+  {
+    type: "string",
+    name: "reason",
+    description:
+      "A short phrase describing why the caller called, e.g. 'toothache', 'book cleaning', 'billing question'.",
+  },
+  {
+    type: "number",
+    name: "revenue",
+    description:
+      "Estimated dollar value of the booked appointment/job if it can be reasonably inferred, otherwise 0.",
+  },
+];
+
 /** Create the response engine (the prompt/brain). Returns { llm_id }. */
 export async function createLlm({ prompt, beginMessage, generalTools }) {
   return retellFetch("POST", "/create-retell-llm", {
@@ -102,6 +168,9 @@ export async function createAgent({ llmId, voiceId, name, webhookUrl }) {
     // own language (English, Spanish, and more) automatically — no per-customer
     // setup. (Verified against Retell SDK: the exact literal is "multi".)
     language: "multi",
+    // Extraction schema so the webhook can detect bookings on THIS agent (see
+    // POST_CALL_ANALYSIS). Without it the booking pipeline is dark.
+    post_call_analysis_data: POST_CALL_ANALYSIS,
     ...(webhookUrl ? { webhook_url: webhookUrl } : {}),
   });
 }
@@ -127,7 +196,9 @@ export async function updateAgent(agentId, { voiceId, name, webhookUrl, language
   if (webhookUrl) patch.webhook_url = webhookUrl;
   // Upgrade older agents to multilingual on re-activation.
   if (language) patch.language = language;
-  if (!Object.keys(patch).length) return null;
+  // Self-heal: ensure the post-call extraction schema is present so booking
+  // detection works on agents provisioned before it existed. Idempotent.
+  patch.post_call_analysis_data = POST_CALL_ANALYSIS;
   return retellFetch("PATCH", `/update-agent/${agentId}`, patch);
 }
 

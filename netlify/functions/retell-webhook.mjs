@@ -563,7 +563,10 @@ async function notifyOwnerBooking(parsed, clinicId) {
       // sending domain / Resend outage is visible instead of a silently dropped
       // booking alert.
       if (r?.error) console.error(`[retell-webhook] owner booking email failed: ${r.error}`);
-      else delivered = true;
+      else if (r?.sent) delivered = true;
+      // r.simulated (Resend not configured) is NOT a delivery — leave delivered
+      // false so the alert is retried once email is set up, instead of being
+      // marked done with nothing actually sent.
     } catch (e) {
       console.error(`[retell-webhook] owner booking email threw: ${((e && e.message) || e).toString().slice(0, 80)}`);
     }
