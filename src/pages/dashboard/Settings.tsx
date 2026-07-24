@@ -10,6 +10,7 @@ import {
   Plus,
   X,
   Mic,
+  Mail,
   MessageSquareText,
   Send,
   Loader2,
@@ -35,13 +36,18 @@ import {
 } from "@/lib/clinic";
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
+import { sendTestEmail, type TestEmailResult } from "@/lib/testEmail";
 import { activateAiLine, type ActivateResult } from "@/lib/provision";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function Settings() {
   useDocumentMeta({ title: "Clinic Setup", noindex: true });
+  // The owner's account email — where booking alerts are sent automatically.
+  const { user } = useAuth();
+  const userEmail = user?.email ?? null;
   // Read persisted settings once so everything the owner set sticks between visits.
   const [loaded] = useState(loadClinicSettings);
   const [clinicName, setClinicName] = useState(loaded.clinicName);
@@ -620,6 +626,33 @@ export default function Settings() {
           </div>
         </Card>
 
+        {/* Email alerts — every booking is emailed to the owner automatically. */}
+        <Card className="p-6">
+          <CardHeader className="p-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                <Mail className="size-5" />
+              </span>
+              <CardTitle>Email alerts</CardTitle>
+              <Badge variant="success">On</Badge>
+            </div>
+            <CardDescription className="mt-2">
+              Every appointment your AI books is emailed to you the moment it
+              happens — no setup needed. Alerts go to your account email
+              {userEmail ? (
+                <>
+                  : <strong>{userEmail}</strong>.
+                </>
+              ) : (
+                "."
+              )}
+            </CardDescription>
+          </CardHeader>
+          <div className="mt-6">
+            <SendTestEmail email={userEmail} />
+          </div>
+        </Card>
+
         {/* VIP Passthrough */}
         <Card className="p-6">
           <CardHeader className="p-0">
@@ -870,6 +903,60 @@ function SendTestText() {
           {result.status === "sent"
             ? `Sent ✓ Check ${toE164(to)} for the text.`
             : describeSmsResult(result)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * "Send a test email" button — POSTs to the send-test-email Function, which mails
+ * a sample booking alert to the owner's own account inbox so they can confirm
+ * alerts arrive. Recipient is resolved server-side (never sent from the client).
+ */
+function SendTestEmail({ email }: { email: string | null }) {
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<TestEmailResult | null>(null);
+
+  async function send() {
+    setSending(true);
+    setResult(null);
+    const r = await sendTestEmail();
+    setSending(false);
+    setResult(r);
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-muted/30 p-4">
+      <p className="text-sm font-medium">Send a test email</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Send a sample booking alert to {email || "your inbox"} to confirm it
+        arrives (check spam too).
+      </p>
+      <div className="mt-3">
+        <Button type="button" onClick={send} disabled={sending}>
+          {sending ? <Loader2 className="animate-spin" /> : <Send />}
+          Send test email
+        </Button>
+      </div>
+      {result && (
+        <p
+          className={cn(
+            "mt-2.5 text-xs",
+            result.status === "sent"
+              ? "font-medium text-accent-hover"
+              : result.status === "error"
+                ? "text-destructive"
+                : "text-muted-foreground"
+          )}
+        >
+          {result.status === "sent"
+            ? `Sent ✓ Check ${result.to || "your inbox"} (and spam).`
+            : result.status === "not_configured"
+              ? "Add your Resend key in Netlify to send for real."
+              : result.status === "demo"
+                ? "Demo — email would send once deployed."
+                : result.message ?? "Could not send"}
         </p>
       )}
     </div>
