@@ -164,9 +164,11 @@ async function reNotifyPendingBookings(nowMs) {
         subject: `🟢 New appointment — ${clinicName}`,
         text: body,
       });
-      // Flip the flag unless the send explicitly errored — an error leaves it
-      // false so the next hourly run retries.
-      if (!r?.error) {
+      // Flip the flag only on a real send. An error OR a simulated result (Resend
+      // not configured) leaves it false so the next hourly run retries once email
+      // is actually working — a booking alert is never marked done with nothing
+      // sent.
+      if (r?.sent) {
         await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
           owner_notified: true,
         }).catch(() => {});
