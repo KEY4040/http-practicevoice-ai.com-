@@ -66,6 +66,28 @@ export async function sbInsert(table, row, { onConflict } = {}) {
   return Array.isArray(rows) ? rows[0] ?? null : rows;
 }
 
+/**
+ * Look up a Supabase Auth user's email by id, via the service-role admin API.
+ * Used to route each customer's notifications to the address they signed up
+ * with — no per-customer configuration required. Returns null on any failure
+ * (missing config, unknown id, network) so callers can fall back cleanly.
+ */
+export async function getAuthUserEmail(userId) {
+  if (!hasSupabase() || !userId) return null;
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, "");
+    const res = await fetch(
+      `${base}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
+      withTimeout({ headers: baseHeaders() })
+    );
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.email || null;
+  } catch {
+    return null;
+  }
+}
+
 /** PATCH rows matching `query` (raw PostgREST filter). Returns updated rows. */
 export async function sbUpdate(table, query, patch) {
   if (!hasSupabase()) return [];
