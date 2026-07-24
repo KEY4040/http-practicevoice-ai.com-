@@ -110,9 +110,11 @@ export default async (req) => {
   // at-least-once (and our own 500s trigger retries), so we only text the
   // patient / insert the appointment on the first delivery.
   let isNew = true;
-  // Whether THIS delivery is the one that first recorded the booking — gates the
-  // patient confirmation + owner alert so they fire exactly once (see persistCall).
-  let appointmentIsNew = false;
+  // The saved appointment's id + whether the owner has already been alerted.
+  let appointmentId = null;
+  let ownerNotified = false;
+  // Whether THIS delivery should attempt the confirmation + owner alert.
+  let needsNotify = false;
   // Hoisted so the booking notification below can route to THIS clinic's owner.
   let clinicId = null;
   if (hasSupabase()) {
@@ -126,7 +128,10 @@ export default async (req) => {
       const res = await persistCall(clinicId, parsed);
       saved = res.saved;
       isNew = res.isNew;
-      appointmentIsNew = res.appointmentIsNew;
+      appointmentId = res.appointmentId;
+      ownerNotified = res.ownerNotified;
+      // Notify while the booking exists but hasn't reached the owner yet.
+      needsNotify = Boolean(appointmentId && !ownerNotified);
       // Meter the minute and pause the line if it crossed the plan's allowance —
       // best-effort, never fails the webhook (money protection, not correctness).
       try {
@@ -142,24 +147,29 @@ export default async (req) => {
       return json({ ok: false, error: "persist_failed" }, 500);
     }
   } else {
-    // No database to dedupe against — best-effort: a booking-carrying event
-    // (call_analyzed) fires the confirmation once. Retries may repeat, but with
-    // no DB there is nothing to track anyway.
-    appointmentIsNew = Boolean(parsed.appointment);
+    // No database to track against — best-effort: a booking-carrying event
+    // (call_analyzed) fires the confirmation once.
+    needsNotify = Boolean(parsed.appointment);
   }
 
-  // Confirmation text — only when THIS delivery first recorded the booking, so a
-  // redelivered/retried webhook (or the second of Retell's call_ended/call_analyzed
-  // pair) never texts the patient twice. The signature was already verified above
-  // (unsigned requests are rejected), so a forged "booked" event can never reach
-  // here to trigger an SMS from our Twilio line. sigValid is kept as an explicit
-  // belt-and-suspenders guard.
-  if (sigValid && appointmentIsNew && parsed.appointment) {
-    // Text the patient their confirmation (needs a phone; no-ops until A2P/Twilio
-    // is live). Independently, always email the owner so a booking record reaches
-    // them today — email needs no carrier registration.
+  // Confirmation + owner alert — fired until the owner is actually notified.
+  // Gating on owner_notified (not call novelty) makes delivery RETRIABLE: if a
+  // send fails or the function is killed after the appointment is saved, the next
+  // delivery — or the hourly send-reminders sweep — re-sends instead of dropping
+  // it. Signature already verified above, so a forged booking can't reach here.
+  if (sigValid && needsNotify && parsed.appointment) {
     if (parsed.appointment.patientPhone) await sendConfirmation(parsed);
-    await notifyOwnerBooking(parsed, clinicId);
+    const notified = await notifyOwnerBooking(parsed, clinicId);
+    // Flip owner_notified only once the owner is actually reached, so a failed
+    // send is retried rather than lost. (No appointmentId = no-DB path: nothing
+    // to persist.)
+    if (notified && appointmentId) {
+      await sbUpdate(
+        "appointments",
+        `id=eq.${encodeURIComponent(appointmentId)}`,
+        { owner_notified: true }
+      ).catch(() => {});
+    }
   }
 
   return json({ ok: true, saved, isNew, outcome: parsed.outcome });
@@ -231,10 +241,11 @@ async function resolveClinicId(parsed) {
 
 /**
  * Insert the call row (idempotent on retell_call_id) and record the appointment
- * the first time booking data appears. Returns { saved, isNew, appointmentIsNew }:
- * `isNew` gates once-per-call work like usage metering; `appointmentIsNew` gates
- * the patient confirmation + owner alert so they fire exactly once when the
- * booking is first seen (regardless of which Retell event carried it).
+ * the first time booking data appears. Returns { saved, isNew, appointmentId,
+ * ownerNotified }: `isNew` gates once-per-call work like usage metering;
+ * `appointmentId` + `ownerNotified` let the caller fire the confirmation + owner
+ * alert and RETRY until the owner is actually reached (gated on owner_notified,
+ * not call novelty, so a failed send is never silently lost).
  */
 async function persistCall(clinicId, parsed) {
   // Detect a redelivery BEFORE the upsert so we know whether to add the
@@ -275,15 +286,22 @@ async function persistCall(clinicId, parsed) {
   // and report whether it was newly created, so the confirmation + owner alert
   // fire exactly once. A unique constraint on appointments.call_id (migration
   // 2026-07-24) makes this idempotent across both events and any webhook retry.
-  let appointmentIsNew = false;
+  // Return the appointment's id + whether the owner has already been alerted, so
+  // the caller can fire the confirmation/owner alert and RETRY until it actually
+  // reaches the owner (gated on owner_notified, not call novelty).
+  let appointmentId = null;
+  let ownerNotified = false;
   if (parsed.appointment && callRow?.id) {
-    const existingAppt = await sbSelect(
+    const existing = await sbSelect(
       "appointments",
-      `select=id&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
+      `select=id,owner_notified&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
     );
-    if (existingAppt.length === 0) {
+    if (existing.length) {
+      appointmentId = existing[0].id;
+      ownerNotified = existing[0].owner_notified === true;
+    } else {
       try {
-        await sbInsert("appointments", {
+        const row = await sbInsert("appointments", {
           clinic_id: clinicId,
           call_id: callRow.id,
           patient_name: parsed.appointment.patientName,
@@ -292,18 +310,34 @@ async function persistCall(clinicId, parsed) {
           provider: parsed.appointment.provider,
           scheduled_for: parsed.appointment.scheduledFor ?? undefined,
         });
-        appointmentIsNew = true;
+        appointmentId = row?.id ?? null;
       } catch (e) {
-        // Lost a race with the sibling event (unique call_id violation) — the
-        // appointment is already recorded, so this delivery is NOT the one that
-        // fires the alerts. Never fail the webhook over it.
-        console.error(
-          `[retell-webhook] appointment already recorded for this call: ${((e && e.message) || e).toString().slice(0, 80)}`
+        // ONLY a unique(call_id) violation is expected here — the sibling event
+        // (call_ended/call_analyzed) or a retry raced us to the insert. Re-read
+        // the winner's row. ANY OTHER error (transient DB failure) is rethrown so
+        // the webhook 500s and Retell redelivers — otherwise a hiccup would
+        // permanently drop the booking (no appointment, no alert, no reminder).
+        if (!isDuplicateError(e)) throw e;
+        const after = await sbSelect(
+          "appointments",
+          `select=id,owner_notified&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
         );
+        appointmentId = after[0]?.id ?? null;
+        ownerNotified = after[0]?.owner_notified === true;
       }
     }
   }
-  return { saved: true, isNew, appointmentIsNew };
+  return { saved: true, isNew, appointmentId, ownerNotified };
+}
+
+/**
+ * True when a Supabase insert error is a unique-constraint violation (safe to
+ * treat as "already recorded") rather than a transient failure (which must be
+ * retried). PostgREST returns 409 / SQLSTATE 23505 for a duplicate key.
+ */
+function isDuplicateError(e) {
+  const m = ((e && e.message) || String(e)).toLowerCase();
+  return m.includes("409") || m.includes("23505") || m.includes("duplicate");
 }
 
 /**
@@ -511,8 +545,14 @@ async function notifyOwnerBooking(parsed, clinicId) {
     `Provider: ${appt.provider || "Our team"}`,
   ].join("\n");
 
+  // `delivered` gates the owner_notified flag in the caller: only flip it true
+  // once the owner has actually been reached, so a failed send is retried (next
+  // delivery or the hourly sweep) rather than silently lost. Nothing-to-send
+  // (no email configured) counts as delivered so we don't retry forever.
+  let delivered = true;
   const ownerEmail = await ownerEmailForClinic(clinicId);
   if (ownerEmail) {
+    delivered = false;
     try {
       const r = await sendEmail({
         to: ownerEmail,
@@ -521,13 +561,16 @@ async function notifyOwnerBooking(parsed, clinicId) {
       });
       // sendEmail returns { error } rather than throwing — surface it so a bad
       // sending domain / Resend outage is visible instead of a silently dropped
-      // booking alert. Still best-effort: we never block the webhook on it.
+      // booking alert.
       if (r?.error) console.error(`[retell-webhook] owner booking email failed: ${r.error}`);
+      else delivered = true;
     } catch (e) {
       console.error(`[retell-webhook] owner booking email threw: ${((e && e.message) || e).toString().slice(0, 80)}`);
     }
   }
 
+  // SMS is a best-effort extra channel (delivers once A2P is live); it does not
+  // gate the notified flag — email is the reliable channel we track.
   const ownerPhone = process.env.OWNER_ALERT_PHONE;
   if (ownerPhone) {
     const result = await sendSms(ownerPhone, body);
@@ -535,6 +578,8 @@ async function notifyOwnerBooking(parsed, clinicId) {
       console.error("[retell-webhook] owner booking alert SMS failed (see Twilio logs)");
     }
   }
+
+  return delivered;
 }
 
 /** Best-effort clinic display name for the SMS (env override → DB → generic). */

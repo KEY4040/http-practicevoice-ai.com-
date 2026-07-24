@@ -66,6 +66,16 @@ alter table public.clinics add column if not exists about text;
 alter table public.clinics add column if not exists usage_minutes numeric(10, 2) not null default 0;
 alter table public.clinics add column if not exists usage_period_start timestamptz;
 alter table public.clinics add column if not exists usage_suspended boolean not null default false;
+-- VIP passthrough + Cal.com calendar columns (added by later migrations). Listed
+-- here so a fresh run of this file has them BEFORE the column-level GRANT below
+-- references them.
+alter table public.clinics add column if not exists vip_enabled boolean not null default false;
+alter table public.clinics add column if not exists vip_transfer_to text;
+alter table public.clinics add column if not exists vip_numbers text[] default '{}';
+alter table public.clinics add column if not exists cal_api_key text;
+alter table public.clinics add column if not exists cal_event_type_id bigint;
+alter table public.clinics add column if not exists cal_timezone text;
+alter table public.clinics add column if not exists calendar_provider text;
 
 -- Calls ---------------------------------------------------------------------
 create type public.call_outcome as enum ('booked', 'escalated', 'missed', 'info');
@@ -124,6 +134,10 @@ create table public.appointments (
   scheduled_for timestamptz,
   -- Set true once the 24h reminder text has gone out, so it only sends once.
   reminder_sent boolean not null default false,
+  -- Set true once the owner has actually been alerted about the booking. The
+  -- alert fires until this flips, and the hourly sweep re-drives any that never
+  -- reached the owner — so a send failure can't drop a booking alert.
+  owner_notified boolean not null default false,
   created_at    timestamptz not null default now()
 );
 
@@ -207,6 +221,19 @@ grant update (
   vip_enabled, vip_transfer_to, vip_numbers,
   cal_api_key, cal_event_type_id, cal_timezone, calendar_provider
 ) on public.clinics to authenticated;
+
+-- Same reasoning for INSERT/DELETE: an owner may CREATE their clinic (owner_id +
+-- name + phone only) but must not be able to DELETE + re-INSERT it to reset the
+-- usage meter or set their own retell bindings. service_role is unaffected.
+revoke insert, delete on public.clinics from authenticated;
+grant insert (owner_id, name, phone) on public.clinics to authenticated;
+
+-- No two clinics can share a Retell binding (blocks call diversion via a
+-- colliding retell_number / retell_agent_id).
+create unique index if not exists clinics_retell_number_key
+  on public.clinics (retell_number) where retell_number is not null;
+create unique index if not exists clinics_retell_agent_id_key
+  on public.clinics (retell_agent_id) where retell_agent_id is not null;
 
 create policy "Owners access their clinic calls"
   on public.calls for all

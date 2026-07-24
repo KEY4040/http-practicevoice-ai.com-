@@ -12,12 +12,13 @@
  *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
  *   SMS_REMINDER_TEMPLATE (optional custom wording)
  */
-import { hasSupabase, sbSelect, sbUpdate } from "../shared/supabase.mjs";
+import { hasSupabase, sbSelect, sbUpdate, getAuthUserEmail } from "../shared/supabase.mjs";
 import {
   sendSms,
   renderTemplate,
   DEFAULT_REMINDER_TEMPLATE,
 } from "../shared/sms.mjs";
+import { sendEmail } from "../shared/email.mjs";
 import {
   hasRetell,
   deleteNumber,
@@ -111,6 +112,73 @@ async function sweepExpiredTesters(nowIso) {
   return torn;
 }
 
+/**
+ * Re-drive booking alerts that never reached the owner — the durable backstop for
+ * the webhook's owner alert. Finds recent appointments still flagged
+ * owner_notified=false and emails the clinic owner (routed to their own signup
+ * email), flipping the flag once the send succeeds (or when there's no address to
+ * reach, so it stops retrying). Bounded to the last ~26h. Best-effort, non-fatal.
+ */
+async function reNotifyPendingBookings(nowMs) {
+  let sent = 0;
+  try {
+    const cutoff = new Date(nowMs - 26 * 3600 * 1000).toISOString();
+    const rows = await sbSelect(
+      "appointments",
+      `select=id,patient_name,patient_phone,type,provider,scheduled_for,clinics(name,owner_id)` +
+        `&owner_notified=eq.false&created_at=gte.${encodeURIComponent(cutoff)}&limit=100`
+    );
+    for (const a of rows) {
+      const clinicName = a.clinics?.name || "our office";
+      const ownerId = a.clinics?.owner_id || null;
+      const ownerEmail = ownerId
+        ? await getAuthUserEmail(ownerId)
+        : process.env.OWNER_ALERT_EMAIL;
+      if (!ownerEmail) {
+        // No address to reach — mark notified so this row isn't retried forever.
+        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
+          owner_notified: true,
+        }).catch(() => {});
+        continue;
+      }
+      const when = a.scheduled_for
+        ? new Date(a.scheduled_for).toLocaleString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })
+        : "the scheduled time";
+      const body = [
+        "🟢 NEW APPOINTMENT — booked by your AI receptionist",
+        `Practice: ${clinicName}`,
+        `Patient: ${a.patient_name || "(not given)"}`,
+        `Phone: ${a.patient_phone || "(not given)"}`,
+        `Service: ${a.type || "Appointment"}`,
+        `When: ${when}`,
+        `Provider: ${a.provider || "Our team"}`,
+      ].join("\n");
+      const r = await sendEmail({
+        to: ownerEmail,
+        subject: `🟢 New appointment — ${clinicName}`,
+        text: body,
+      });
+      // Flip the flag unless the send explicitly errored — an error leaves it
+      // false so the next hourly run retries.
+      if (!r?.error) {
+        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
+          owner_notified: true,
+        }).catch(() => {});
+        sent += 1;
+      }
+    }
+  } catch (e) {
+    console.error("[send-reminders] booking re-notify sweep failed (non-fatal):", e.message);
+  }
+  return sent;
+}
+
 export default async () => {
   if (!hasSupabase()) {
     console.log("[send-reminders] Supabase not configured yet — nothing to do.");
@@ -122,6 +190,9 @@ export default async () => {
   await sweepExpiredTesters(new Date(now).toISOString());
   // Un-pause lines that reset (new month) or upgraded back under their allowance.
   await resumeUnderLimitLines(monthStartIso(now));
+  // Durable backstop: re-drive any booking alert that never reached the owner
+  // (send failed / the webhook function was killed after the appointment saved).
+  await reNotifyPendingBookings(now);
   const windowStart = new Date(now + 23 * 3600 * 1000).toISOString();
   const windowEnd = new Date(now + 25 * 3600 * 1000).toISOString();
 
