@@ -138,6 +138,9 @@ create table public.appointments (
   -- alert fires until this flips, and the hourly sweep re-drives any that never
   -- reached the owner — so a send failure can't drop a booking alert.
   owner_notified boolean not null default false,
+  -- Independent flag for the patient's confirmation SMS, so it can't re-send on
+  -- every redelivery just because the owner email hasn't delivered yet.
+  confirmation_sent boolean not null default false,
   created_at    timestamptz not null default now()
 );
 

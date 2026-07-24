@@ -110,11 +110,12 @@ export default async (req) => {
   // at-least-once (and our own 500s trigger retries), so we only text the
   // patient / insert the appointment on the first delivery.
   let isNew = true;
-  // The saved appointment's id + whether the owner has already been alerted.
+  // The saved appointment + its two INDEPENDENT delivery flags: the patient's
+  // confirmation SMS and the owner's alert each track their own send, so one
+  // channel failing (or not yet configured) never re-fires or blocks the other.
   let appointmentId = null;
   let ownerNotified = false;
-  // Whether THIS delivery should attempt the confirmation + owner alert.
-  let needsNotify = false;
+  let confirmationSent = false;
   // Hoisted so the booking notification below can route to THIS clinic's owner.
   let clinicId = null;
   if (hasSupabase()) {
@@ -130,8 +131,7 @@ export default async (req) => {
       isNew = res.isNew;
       appointmentId = res.appointmentId;
       ownerNotified = res.ownerNotified;
-      // Notify while the booking exists but hasn't reached the owner yet.
-      needsNotify = Boolean(appointmentId && !ownerNotified);
+      confirmationSent = res.confirmationSent;
       // Meter the minute and pause the line if it crossed the plan's allowance —
       // best-effort, never fails the webhook (money protection, not correctness).
       try {
@@ -146,29 +146,33 @@ export default async (req) => {
       console.error(`[retell-webhook] persist failed: ${msg}`);
       return json({ ok: false, error: "persist_failed" }, 500);
     }
-  } else {
-    // No database to track against — best-effort: a booking-carrying event
-    // (call_analyzed) fires the confirmation once.
-    needsNotify = Boolean(parsed.appointment);
   }
 
-  // Confirmation + owner alert — fired until the owner is actually notified.
-  // Gating on owner_notified (not call novelty) makes delivery RETRIABLE: if a
-  // send fails or the function is killed after the appointment is saved, the next
-  // delivery — or the hourly send-reminders sweep — re-sends instead of dropping
-  // it. Signature already verified above, so a forged booking can't reach here.
-  if (sigValid && needsNotify && parsed.appointment) {
-    if (parsed.appointment.patientPhone) await sendConfirmation(parsed);
-    const notified = await notifyOwnerBooking(parsed, clinicId);
-    // Flip owner_notified only once the owner is actually reached, so a failed
-    // send is retried rather than lost. (No appointmentId = no-DB path: nothing
-    // to persist.)
-    if (notified && appointmentId) {
-      await sbUpdate(
-        "appointments",
-        `id=eq.${encodeURIComponent(appointmentId)}`,
-        { owner_notified: true }
-      ).catch(() => {});
+  // Patient confirmation + owner alert — each fired until ITS OWN flag flips, so
+  // delivery is RETRIABLE (a failed/unconfigured send retries on the next
+  // delivery or the hourly sweep) and the two channels are fully independent (the
+  // owner email not delivering can never re-text the patient). Signature was
+  // verified above, so a forged booking can't reach here. With no DB (appointment
+  // id null) both fire once, best-effort.
+  if (sigValid && parsed.appointment) {
+    const wantConfirm = appointmentId ? !confirmationSent : true;
+    if (wantConfirm && parsed.appointment.patientPhone) {
+      const sent = await sendConfirmation(parsed);
+      if (sent && appointmentId) {
+        await sbUpdate("appointments", `id=eq.${encodeURIComponent(appointmentId)}`, {
+          confirmation_sent: true,
+        }).catch(() => {});
+      }
+    }
+
+    const wantOwner = appointmentId ? !ownerNotified : true;
+    if (wantOwner) {
+      const notified = await notifyOwnerBooking(parsed, clinicId);
+      if (notified && appointmentId) {
+        await sbUpdate("appointments", `id=eq.${encodeURIComponent(appointmentId)}`, {
+          owner_notified: true,
+        }).catch(() => {});
+      }
     }
   }
 
@@ -291,14 +295,16 @@ async function persistCall(clinicId, parsed) {
   // reaches the owner (gated on owner_notified, not call novelty).
   let appointmentId = null;
   let ownerNotified = false;
+  let confirmationSent = false;
   if (parsed.appointment && callRow?.id) {
     const existing = await sbSelect(
       "appointments",
-      `select=id,owner_notified&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
+      `select=id,owner_notified,confirmation_sent&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
     );
     if (existing.length) {
       appointmentId = existing[0].id;
       ownerNotified = existing[0].owner_notified === true;
+      confirmationSent = existing[0].confirmation_sent === true;
     } else {
       try {
         const row = await sbInsert("appointments", {
@@ -320,14 +326,15 @@ async function persistCall(clinicId, parsed) {
         if (!isDuplicateError(e)) throw e;
         const after = await sbSelect(
           "appointments",
-          `select=id,owner_notified&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
+          `select=id,owner_notified,confirmation_sent&call_id=eq.${encodeURIComponent(callRow.id)}&limit=1`
         );
         appointmentId = after[0]?.id ?? null;
         ownerNotified = after[0]?.owner_notified === true;
+        confirmationSent = after[0]?.confirmation_sent === true;
       }
     }
   }
-  return { saved: true, isNew, appointmentId, ownerNotified };
+  return { saved: true, isNew, appointmentId, ownerNotified, confirmationSent };
 }
 
 /**
@@ -377,9 +384,23 @@ async function enforceUsage(clinicId, parsed, isNew) {
     allowance = allowanceMinutes(subs[0]);
   }
   if (allowance > 0 && used >= allowance && !clinic.usage_suspended && clinic.retell_number) {
-    await unbindNumber(clinic.retell_number).catch(() => {});
-    await sbUpdate("clinics", `id=eq.${encodeURIComponent(clinicId)}`, { usage_suspended: true });
-    console.warn(`[retell-webhook] paused clinic ${clinicId}: used ${used.toFixed(0)}/${allowance} min`);
+    // Only mark the line suspended if the detach ACTUALLY succeeded. If it fails
+    // transiently (Retell hiccup), leave usage_suspended false so the NEXT call
+    // retries the detach — otherwise the DB would believe the line is paused
+    // while it keeps answering (and billing) uncapped until the month resets.
+    let detached = false;
+    try {
+      await unbindNumber(clinic.retell_number);
+      detached = true;
+    } catch (e) {
+      console.error(
+        `[retell-webhook] pause detach failed for clinic ${clinicId} (retries next call): ${((e && e.message) || e).toString().slice(0, 80)}`
+      );
+    }
+    if (detached) {
+      await sbUpdate("clinics", `id=eq.${encodeURIComponent(clinicId)}`, { usage_suspended: true });
+      console.warn(`[retell-webhook] paused clinic ${clinicId}: used ${used.toFixed(0)}/${allowance} min`);
+    }
   }
 }
 
@@ -482,6 +503,9 @@ async function sendConfirmation(parsed) {
   const result = await sendSms(appt.patientPhone, body);
   // Log the failure without the patient's phone number (PHI).
   if (result.error) console.error("[retell-webhook] confirmation SMS failed (see Twilio logs)");
+  // True only on a real send — a simulated (Twilio not configured) or errored
+  // result leaves confirmation_sent false so it retries once SMS is live.
+  return Boolean(result.sent);
 }
 
 /**
