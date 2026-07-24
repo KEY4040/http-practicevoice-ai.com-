@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && npm run prerender",
-    "prerender": "tsx scripts/prerender.mts || true",
+    "prerender": "tsx scripts/prerender.mts",
     "preview": "vite preview",
     "test": "node --import tsx --test tests/*.test.ts",
     "lint": "eslint ."
