@@ -23,18 +23,43 @@ export interface ClinicRow {
   usage_suspended: boolean | null;
   vip_enabled: boolean | null;
   vip_transfer_to: string | null;
+  // NOTE: cal_api_key is deliberately NOT read into the browser — it's a live
+  // third-party credential. The client only needs to know a calendar is
+  // connected (calendar_provider / calendar_connected); the raw key stays
+  // server-side, where provisioning reads it with the service-role key.
   vip_numbers: string[] | null;
-  cal_api_key: string | null;
   cal_event_type_id: number | null;
   cal_timezone: string | null;
   calendar_provider: string | null;
 }
 
-// Select all columns rather than naming the newer ones — this keeps the app
-// working even if the database predates the retell_number/retell_agent_id
-// columns (PostgREST errors on a named column that doesn't exist, but "*" is
-// safe). Re-running supabase/schema.sql adds those columns when convenient.
-const CLINIC_COLUMNS = "*";
+// Explicit column list — every field the browser needs, and NOTHING secret.
+// cal_api_key (a live Cal.com credential) is intentionally excluded so it can
+// never be exfiltrated from the client by an XSS/extension. All columns below
+// exist once the standard migrations are applied.
+const CLINIC_COLUMNS = [
+  "id",
+  "owner_id",
+  "name",
+  "phone",
+  "services",
+  "open_days",
+  "open_time",
+  "close_time",
+  "voice",
+  "retell_number",
+  "retell_agent_id",
+  "retell_llm_id",
+  "about",
+  "usage_minutes",
+  "usage_suspended",
+  "vip_enabled",
+  "vip_transfer_to",
+  "vip_numbers",
+  "cal_event_type_id",
+  "cal_timezone",
+  "calendar_provider",
+].join(",");
 
 /**
  * Fetch the signed-in owner's clinic, creating one on first use so the rest of
@@ -58,7 +83,7 @@ export async function getOrCreateClinic(
     .limit(1)
     .maybeSingle();
   if (existing.error) throw existing.error;
-  if (existing.data) return existing.data as ClinicRow;
+  if (existing.data) return existing.data as unknown as ClinicRow;
 
   const created = await supabase
     .from("clinics")
@@ -78,10 +103,10 @@ export async function getOrCreateClinic(
       .eq("owner_id", uid)
       .limit(1)
       .maybeSingle();
-    if (retry.data) return retry.data as ClinicRow;
+    if (retry.data) return retry.data as unknown as ClinicRow;
     throw created.error;
   }
-  return created.data as ClinicRow;
+  return created.data as unknown as ClinicRow;
 }
 
 /**

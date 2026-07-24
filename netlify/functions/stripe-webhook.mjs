@@ -20,6 +20,7 @@
  */
 import { hasSupabase, sbSelect, sbInsert, sbUpdate } from "../shared/supabase.mjs";
 import { verifyStripeSignature } from "../shared/stripe.mjs";
+import { planKeyFromPrice } from "../shared/entitlement.mjs";
 import {
   hasRetell,
   deleteNumber,
@@ -135,7 +136,11 @@ export default async (req) => {
         const periodEnd = obj.current_period_end
           ? new Date(obj.current_period_end * 1000).toISOString()
           : null;
-        const plan = obj.items?.data?.[0]?.price?.nickname ?? null;
+        // Store the canonical plan KEY resolved from the price amount (stable),
+        // not the raw nickname — a renamed Stripe price must never silently cap a
+        // paying customer's allowance.
+        const priceObj = obj.items?.data?.[0]?.price ?? null;
+        const plan = priceObj ? planKeyFromPrice(priceObj) : null;
         // Match the row we created at checkout by its Stripe customer id.
         await sbUpdate(
           "subscriptions",

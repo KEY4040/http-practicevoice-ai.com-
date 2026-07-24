@@ -24,6 +24,7 @@ import {
   createLlm,
   createAgent,
   buyNumber,
+  findAgentNumber,
   updateLlm,
   updateAgent,
   updatePhoneNumber,
@@ -157,13 +158,20 @@ export default async (req) => {
           numberError = "Add a valid US practice phone number, then activate again.";
         } else {
           try {
-            const bought = await buyNumber({
-              areaCode,
-              nickname: `${clinic.name || "PracticeVoice"} line`,
-              agentId: clinic.retell_agent_id,
-              inboundWebhookUrl,
-            });
-            number = bought.phone_number || null;
+            // Reconcile FIRST: a prior buy may have succeeded at Retell while its
+            // DB write failed, leaving retell_number null. Reuse that number
+            // instead of buying — and billing for — a second one.
+            number =
+              (await findAgentNumber(clinic.retell_agent_id)) ||
+              (
+                await buyNumber({
+                  areaCode,
+                  nickname: `${clinic.name || "PracticeVoice"} line`,
+                  agentId: clinic.retell_agent_id,
+                  inboundWebhookUrl,
+                })
+              ).phone_number ||
+              null;
             if (number) await sbUpdate("clinics", `id=eq.${clinic.id}`, { retell_number: number });
           } catch (e) {
             numberError = e.message;
@@ -213,13 +221,20 @@ export default async (req) => {
     let number = null;
     let numberError = null;
     try {
-      const bought = await buyNumber({
-        areaCode,
-        nickname: `${clinic.name || "PracticeVoice"} line`,
-        agentId: agent.agent_id,
-        inboundWebhookUrl,
-      });
-      number = bought.phone_number || null;
+      // Reconcile FIRST (idempotency): if this agent somehow already has a number
+      // bound at Retell — e.g. a prior attempt bought one but its DB write failed —
+      // reuse it rather than buying a second billable number.
+      number =
+        (await findAgentNumber(agent.agent_id)) ||
+        (
+          await buyNumber({
+            areaCode,
+            nickname: `${clinic.name || "PracticeVoice"} line`,
+            agentId: agent.agent_id,
+            inboundWebhookUrl,
+          })
+        ).phone_number ||
+        null;
       if (number) await sbUpdate("clinics", `id=eq.${clinic.id}`, { retell_number: number });
     } catch (e) {
       numberError = e.message;

@@ -71,6 +71,10 @@ export default function Settings() {
   const [calApiKey, setCalApiKey] = useState("");
   const [calEventTypeId, setCalEventTypeId] = useState("");
   const [calTimezone, setCalTimezone] = useState("");
+  // Whether a calendar is already connected in the DB. The API key itself is
+  // never sent to the browser (it's a secret), so we track connection state
+  // separately and leave the key field blank unless the owner is changing it.
+  const [calConnected, setCalConnected] = useState(false);
 
   // AI line activation state.
   const [aiNumber, setAiNumber] = useState<string | null>(null);
@@ -103,7 +107,9 @@ export default function Settings() {
         if (typeof clinic.vip_enabled === "boolean") setVipEnabled(clinic.vip_enabled);
         if (clinic.vip_transfer_to) setVipTransferTo(clinic.vip_transfer_to);
         if (clinic.vip_numbers && clinic.vip_numbers.length) setVipNumbers(clinic.vip_numbers);
-        if (clinic.cal_api_key) setCalApiKey(clinic.cal_api_key);
+        // The key is never fetched to the browser; connection state comes from
+        // calendar_provider. The field stays blank until the owner enters a new key.
+        setCalConnected(Boolean(clinic.calendar_provider));
         if (clinic.cal_event_type_id) setCalEventTypeId(String(clinic.cal_event_type_id));
         if (clinic.cal_timezone) setCalTimezone(clinic.cal_timezone);
       } catch {
@@ -195,7 +201,9 @@ export default function Settings() {
             )
             .then(() =>
               updateCalendarSettings(supabase, {
-                apiKey: calApiKey,
+                // Only send the key when the owner actually typed one — a blank
+                // field means "unchanged", so we must NOT clear the stored key.
+                apiKey: calApiKey.trim() ? calApiKey : undefined,
                 eventTypeId: calEventTypeId.replace(/\D/g, "")
                   ? Number(calEventTypeId.replace(/\D/g, ""))
                   : null,
@@ -713,7 +721,7 @@ export default function Settings() {
                 <Calendar className="size-5" />
               </span>
               <CardTitle>Calendar booking</CardTitle>
-              {calApiKey.trim() && calEventTypeId.replace(/\D/g, "") ? (
+              {calConnected || (calApiKey.trim() && calEventTypeId.replace(/\D/g, "")) ? (
                 <Badge variant="success">Connected</Badge>
               ) : (
                 <Badge variant="primary">Books into your calendar</Badge>
@@ -739,7 +747,7 @@ export default function Settings() {
                 autoComplete="off"
                 value={calApiKey}
                 onChange={(e) => setCalApiKey(e.target.value)}
-                placeholder="cal_live_…"
+                placeholder={calConnected ? "•••••••• saved — enter a new key to replace" : "cal_live_…"}
               />
             </div>
 

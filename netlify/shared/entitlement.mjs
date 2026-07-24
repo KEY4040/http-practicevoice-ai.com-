@@ -20,6 +20,27 @@ export function planKeyFromName(name) {
 }
 
 /**
+ * Amount actually charged (in cents) -> plan key. The amount is far more stable
+ * than a human-editable price nickname: renaming a Stripe price is common and
+ * used to silently cap a paying customer at the lowest tier; changing the amount
+ * is rare and deliberate. Prices: Basic $99, Professional $199, Premium $399.
+ */
+export const PLAN_AMOUNTS = { 9900: "basic", 19900: "professional", 39900: "premium" };
+
+/**
+ * Resolve a plan key from a Stripe price object, most-stable signal first:
+ * unit_amount -> lookup_key -> nickname. Falls back to "basic" so a live paid
+ * line is never left with zero allowance.
+ */
+export function planKeyFromPrice(price) {
+  if (!price) return "basic";
+  if (price.unit_amount && PLAN_AMOUNTS[price.unit_amount]) {
+    return PLAN_AMOUNTS[price.unit_amount];
+  }
+  return planKeyFromName(price.lookup_key || price.nickname || "");
+}
+
+/**
  * Included minutes for a subscription row this period.
  *   - tester account (tester_days set): full Premium bucket, so a controlled
  *     tester can exercise everything.
