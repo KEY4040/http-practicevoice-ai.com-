@@ -8,10 +8,17 @@
  *
  * Env:
  *   GEMINI_API_KEY   the generation API key (required to generate for real)
+ *   GEMINIAPIKEY     accepted as an alias (some hosts/keyboards make the
+ *                    underscore form hard to enter) — either name works
  *   GEMINI_MODEL     optional model override (default: gemini-2.0-flash)
  */
 
 const DEFAULT_MODEL = "gemini-2.0-flash";
+
+/** The generation key, under either accepted env name. */
+function apiKey() {
+  return process.env.GEMINI_API_KEY || process.env.GEMINIAPIKEY || "";
+}
 
 // The exact system instruction that shapes every generated script. Kept here
 // (server-side) so it can never be seen or altered from the browser.
@@ -29,7 +36,7 @@ Output Requirements:
 Do not include any filler text, introductory remarks, or markdown outside of the script itself. Output ONLY the raw script.`;
 
 export function hasGemini() {
-  return Boolean(process.env.GEMINI_API_KEY);
+  return Boolean(apiKey());
 }
 
 /** Build the (pure) request body for the generation API. Exported for testing. */
@@ -60,7 +67,7 @@ export function cleanScript(text) {
  * Returns { text } on success, { simulated:true } if unconfigured, or { error }.
  */
 export async function generateReceptionistScript({ businessName, industry }) {
-  const key = process.env.GEMINI_API_KEY;
+  const key = apiKey();
   if (!key) return { simulated: true };
 
   const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
