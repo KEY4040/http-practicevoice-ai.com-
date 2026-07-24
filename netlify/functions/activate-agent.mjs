@@ -204,9 +204,14 @@ export default async (req) => {
           }
         }
       } else {
-        // Self-heal: numbers provisioned before VIP existed get the inbound
-        // router now, so VIP Passthrough works for them too. Best-effort.
-        await updatePhoneNumber(number, { inbound_webhook_url: inboundWebhookUrl }).catch(() => {});
+        // Self-heal on every re-sync: (1) point the number's inbound routing at
+        // OUR handler (VIP passthrough), and (2) RE-BIND it to this clinic's agent
+        // so a number that drifted onto another agent (manual Retell edits) always
+        // answers with the dashboard's AI again. Best-effort.
+        await updatePhoneNumber(number, {
+          inbound_webhook_url: inboundWebhookUrl,
+          inbound_agents: [{ agent_id: clinic.retell_agent_id, weight: 1 }],
+        }).catch(() => {});
       }
       return json({ ok: true, status: "updated", number, ...(numberError ? { numberError } : {}) });
     }
