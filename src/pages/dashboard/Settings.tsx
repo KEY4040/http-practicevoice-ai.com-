@@ -222,9 +222,16 @@ export default function Settings() {
       });
   }
 
-  function onSave(e: FormEvent) {
+  async function onSave(e: FormEvent) {
     e.preventDefault();
-    void persist();
+    // One clear action: save the settings, and if the AI line is already live,
+    // push those changes to the AI too (re-sync) — so there's no separate
+    // "Re-sync" button to think about. First-time activation stays its own button.
+    if (aiNumber) {
+      await onActivate();
+    } else {
+      await persist();
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -285,21 +292,17 @@ export default function Settings() {
                 </>
               )}
 
-              <div className="mt-4">
-                <Button
-                  type="button"
-                  onClick={onActivate}
-                  disabled={activating}
-                  variant={aiNumber ? "outline" : "primary"}
-                >
-                  {activating ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <Sparkles className="size-4" />
-                  )}
-                  {aiNumber ? "Re-sync my AI with these settings" : "Activate my AI line"}
-                </Button>
-              </div>
+              {/* First-time activation only. Once the line is live, there's no
+                  separate re-sync button — "Save settings" (bottom bar) saves AND
+                  pushes the changes to the AI, so there's one clear action. */}
+              {!aiNumber && (
+                <div className="mt-4">
+                  <Button type="button" onClick={onActivate} disabled={activating} variant="primary">
+                    {activating ? <Loader2 className="animate-spin" /> : <Sparkles className="size-4" />}
+                    Activate my AI line
+                  </Button>
+                </div>
+              )}
 
               {activateResult && activateResult.status === "needs_card" && (
                 <p className="mt-2.5 text-xs text-foreground">
@@ -390,7 +393,8 @@ export default function Settings() {
                 id="about"
                 value={about}
                 onChange={(e) => setAbout(e.target.value)}
-                rows={4}
+                rows={12}
+                className="min-h-[16rem]"
                 placeholder="What you do, what you sell, prices, common questions, anything the AI should know when it answers. Example: We sell rubber feet, grommets, and washers. Free shipping over $50. Minimum order 20 pieces."
               />
               <p className="text-xs text-muted-foreground">
@@ -570,7 +574,7 @@ export default function Settings() {
           </CardHeader>
           <div className="space-y-6 px-6 pb-6">
             <div className="space-y-1.5">
-              <Label htmlFor="twilio">Your Twilio phone number</Label>
+              <Label htmlFor="twilio">Your text-message number</Label>
               <div className="relative max-w-xs">
                 <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -582,8 +586,8 @@ export default function Settings() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                The number texts are sent from. Connect it in Netlify with your
-                Twilio keys to start sending.
+                The number your patients' confirmations and reminders are sent
+                from.
               </p>
             </div>
 
@@ -762,9 +766,9 @@ export default function Settings() {
             </div>
             <CardDescription className="mt-2">
               Connect your <strong>Cal.com</strong> so your AI books real
-              appointments straight into your calendar during the call. Free Cal.com
-              account works. After connecting, hit{" "}
-              <strong>Re-sync my AI</strong> above so it takes effect.
+              appointments straight into your calendar during the call. A free
+              Cal.com account works. After connecting, hit{" "}
+              <strong>Save settings</strong> and it takes effect right away.
             </CardDescription>
           </CardHeader>
 
@@ -828,8 +832,9 @@ export default function Settings() {
               "Changes apply to your AI receptionist instantly."
             )}
           </p>
-          <Button type="submit" size="lg">
-            Save settings
+          <Button type="submit" size="lg" disabled={activating}>
+            {activating && <Loader2 className="animate-spin" />}
+            {activating ? "Saving…" : "Save settings"}
           </Button>
         </div>
       </form>
@@ -873,7 +878,7 @@ function SendTestText() {
     <div className="rounded-xl border border-border bg-muted/30 p-4">
       <p className="text-sm font-medium">Send a test text</p>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        Text your own phone to confirm Twilio is set up correctly.
+        Text your own phone to confirm your text messaging is set up correctly.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Input
