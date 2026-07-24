@@ -43,6 +43,7 @@ import {
 import { SMS_VARIABLES, renderTemplate, sampleVars } from "@/lib/smsTemplates";
 import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { sendTestEmail, type TestEmailResult } from "@/lib/testEmail";
+import { generateScript } from "@/lib/generateScript";
 import { activateAiLine, type ActivateResult } from "@/lib/provision";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,12 @@ export default function Settings() {
   const [reminderTemplate, setReminderTemplate] = useState(loaded.reminderTemplate);
   const [about, setAbout] = useState(loaded.about);
   const [saved, setSaved] = useState(false);
+  // "Instant AI Receptionist" generator: industry input + progress/error state.
+  // Industry is a generation input only (not persisted) — the drafted script it
+  // produces is what gets saved (into `about`).
+  const [industry, setIndustry] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
   // Optional override for where booking alerts are emailed. Blank = use the
   // account email (userEmail). Lets a customer whose signup email is personal
   // point alerts at a professional inbox.
@@ -147,6 +154,30 @@ export default function Settings() {
     if (result.number) setAiNumber(result.number);
     setActivateResult(result);
     setActivating(false);
+  }
+
+  async function onGenerate() {
+    setGenError(null);
+    const name = clinicName.trim();
+    const ind = industry.trim();
+    if (!name || !ind) {
+      setGenError("Add your business name and industry first.");
+      return;
+    }
+    setGenerating(true);
+    const r = await generateScript(name, ind);
+    setGenerating(false);
+    if (r.status === "ok" && r.script) {
+      setAbout(r.script);
+    } else if (r.status === "missing") {
+      setGenError(r.message ?? "Add your business name and industry first.");
+    } else if (r.status === "not_configured") {
+      setGenError("The script writer is being set up — please try again shortly.");
+    } else if (r.status === "demo") {
+      setGenError("This will work once the site finishes deploying.");
+    } else {
+      setGenError(r.message ?? "Couldn't write your script just now — please try again.");
+    }
   }
 
   function addService() {
@@ -401,6 +432,52 @@ export default function Settings() {
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="about">Tell your AI about your business</Label>
+
+              {/* Instant generator — writes a first draft from name + industry. */}
+              <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.05] to-accent/[0.04] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1 space-y-1">
+                    <Label htmlFor="industry" className="text-xs font-medium">
+                      Your industry
+                    </Label>
+                    <Input
+                      id="industry"
+                      value={industry}
+                      onChange={(e) => setIndustry(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void onGenerate();
+                        }
+                      }}
+                      placeholder="e.g. Dental, HVAC, Law firm, Salon"
+                      className="bg-background"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={onGenerate}
+                    disabled={generating || !clinicName.trim() || !industry.trim()}
+                    className="shrink-0"
+                  >
+                    {generating ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Sparkles className="size-4" />
+                    )}
+                    Instant AI Receptionist
+                  </Button>
+                </div>
+                <p className="mt-2.5 text-xs text-muted-foreground">
+                  Enter your business name (above) and industry — we'll write your
+                  AI's script in seconds. Edit it however you like afterward.
+                </p>
+                {genError && (
+                  <p className="mt-2 text-xs text-destructive">{genError}</p>
+                )}
+              </div>
+
               <Textarea
                 id="about"
                 value={about}
