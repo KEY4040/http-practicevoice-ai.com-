@@ -70,15 +70,35 @@ const CANDIDATE_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-fl
  * generateContent. Returns a bare id ("gemini-2.0-flash") or null. Pure/tested.
  */
 export function pickModelName(models) {
+  return pickModels(models)[0] || null;
+}
+
+/**
+ * Return a PRIORITIZED list of usable model ids (bare, "models/" stripped) from a
+ * ListModels response — generateContent-capable only, flash/cheap first. We try
+ * several because an alias like "gemini-2.0-flash" can 404 for a key while its
+ * pinned sibling "gemini-2.0-flash-001" works; trying the account's real names
+ * (both aliases and versioned) is what makes generation actually go through.
+ * Bounded to a handful so we never fan out over dozens of models. Pure/tested.
+ */
+export function pickModels(models, limit = 6) {
   const usable = (models || []).filter((m) =>
     (m?.supportedGenerationMethods || []).includes("generateContent")
   );
-  const chosen =
-    usable.find((m) => /flash/.test(m.name) && /2\.0/.test(m.name)) ||
-    usable.find((m) => /flash/.test(m.name) && /2\.5/.test(m.name)) ||
-    usable.find((m) => /flash/.test(m.name)) ||
-    usable[0];
-  return chosen ? String(chosen.name).replace(/^models\//, "") : null;
+  const rank = (name) => {
+    const n = String(name);
+    if (/gemini-2\.0-flash/.test(n) && !/lite/.test(n)) return 0;
+    if (/gemini-2\.5-flash/.test(n) && !/lite/.test(n)) return 1;
+    if (/flash/.test(n) && /lite/.test(n)) return 2;
+    if (/flash/.test(n)) return 3;
+    if (/pro/.test(n)) return 5;
+    return 4;
+  };
+  return usable
+    .map((m) => String(m.name).replace(/^models\//, ""))
+    .filter((n) => !/embedding|aqa|imagen|veo|lyria|tts|audio|image|vision/i.test(n))
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, limit);
 }
 
 // Cache the discovered model across warm invocations (it's stable per key), with
@@ -96,33 +116,33 @@ const MODEL_TTL_MS = 30 * 60 * 1000; // 30 min
  * debugging. Callers use .model; the rest explains a failure.
  */
 async function discoverModel(key, now = Date.now()) {
-  if (_modelCache.model && _modelCache.key === key && now - _modelCache.at < MODEL_TTL_MS) {
-    return { status: -2, count: -1, model: _modelCache.model, names: [], cached: true };
+  if (_modelCache.models && _modelCache.key === key && now - _modelCache.at < MODEL_TTL_MS) {
+    return { status: -2, count: -1, models: _modelCache.models, names: [], cached: true };
   }
   try {
     const res = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
       { headers: { "x-goog-api-key": key } }
     );
-    if (!res.ok) return { status: res.status, count: 0, model: null, names: [] };
+    if (!res.ok) return { status: res.status, count: 0, models: [], names: [] };
     const data = await res.json().catch(() => null);
     const list = Array.isArray(data?.models) ? data.models : [];
-    const model = pickModelName(list);
-    if (model) _modelCache = { key, model, at: now };
+    const models = pickModels(list);
+    if (models.length) _modelCache = { key, models, at: now };
     return {
       status: res.status,
       count: list.length,
-      model,
+      models,
       names: list.slice(0, 6).map((m) => String(m?.name || "").replace(/^models\//, "")),
     };
   } catch (e) {
-    return { status: 0, count: 0, model: null, names: [], err: String((e && e.message) || e).slice(0, 60) };
+    return { status: 0, count: 0, models: [], names: [], err: String((e && e.message) || e).slice(0, 60) };
   }
 }
 
-/** Clear the cached model — used if a discovered model later 404s. */
+/** Clear the cached models — used if the discovered set later 404s. */
 function invalidateModelCache() {
-  _modelCache = { key: null, model: null, at: 0 };
+  _modelCache = { key: null, models: null, at: 0 };
 }
 
 // Some keys/projects serve a model on only ONE API version. Try v1beta first,
@@ -200,33 +220,40 @@ export async function generateReceptionistScript({ businessName, industry, servi
   if (process.env.GEMINI_MODEL) {
     models = [process.env.GEMINI_MODEL];
   } else {
-    // Discover a model this key can actually use (fixes hardcoded-name 404s);
-    // fall back to the known candidates if discovery isn't available.
+    // Discover the models this key can actually use (fixes hardcoded-name 404s);
+    // try the account's own names first (aliases + versioned), then the known
+    // candidates as a last resort.
     disc = await discoverModel(key);
-    models = disc.model
-      ? [disc.model, ...CANDIDATE_MODELS.filter((m) => m !== disc.model)]
+    const discovered = disc.models || [];
+    models = discovered.length
+      ? [...discovered, ...CANDIDATE_MODELS.filter((m) => !discovered.includes(m))]
       : CANDIDATE_MODELS;
   }
 
   let last = { error: "no_models" };
+  let firstFail = null; // the FIRST (best) model's failure — the meaningful one
   for (const model of models) {
     const r = await callModel({ key, model, businessName, industry, services, hours });
     if (r.text) return r;
-    last = { ...r, model };
+    const attempt = { ...r, model };
+    if (!firstFail) firstFail = attempt;
+    last = attempt;
     // Only a missing model is worth retrying on a different model.
     if (r.status !== 404) break;
     // A cached model that now 404s is stale — drop it so the next call re-discovers.
     invalidateModelCache();
   }
 
-  // Attach a compact, NON-SECRET diagnostic so a live setup failure can be
-  // pinpointed: what ListModels returned, how many models the key sees, which
-  // one we picked/tried, and the final generateContent status.
+  // Attach a compact, NON-SECRET diagnostic (ListModels status, model count, the
+  // best model we tried + Google's own message for THAT model, not the last
+  // throwaway candidate). Never includes the key.
   if (disc) {
+    const f = firstFail || last;
     last.diag =
-      `list=${disc.status};models=${disc.count};pick=${disc.model || "none"};` +
-      `tried=${last.model || "-"}@${last.apiVersion || "?"};gen=${last.status || last.error}` +
-      (last.msg ? `;msg=${String(last.msg).slice(0, 160)}` : "") +
+      `list=${disc.status};models=${disc.count};` +
+      `tried=${f.model || "-"}@${f.apiVersion || "?"};gen=${f.status || f.error}` +
+      (f.msg ? `;msg=${String(f.msg).slice(0, 160)}` : "") +
+      (disc.names && disc.names.length ? `;seen=${disc.names.slice(0, 4).join(",")}` : "") +
       (disc.err ? `;discErr=${disc.err}` : "");
   }
   return last;
