@@ -12,6 +12,27 @@ export interface GenerateScriptResult {
   message?: string;
 }
 
+/**
+ * Turn a raw backend reason code (status_403, no_output_SAFETY, …) into a plain
+ * fix the owner can act on without needing support. The code is appended in
+ * parentheses so it's still identifiable if they do reach out.
+ */
+function explainReason(reason?: string): string {
+  const code = reason ?? "";
+  const tag = code ? ` (${code})` : "";
+  if (/status_(401|403)/.test(code))
+    return `Your AI key was rejected. Create a fresh key at Google AI Studio (aistudio.google.com/apikey) and make sure the “Generative Language API” is enabled for it, then update it in Netlify.${tag}`;
+  if (/status_429/.test(code))
+    return `The AI is rate-limited right now — wait a minute and try again.${tag}`;
+  if (/status_400/.test(code))
+    return `The AI key looks malformed — re-paste it in Netlify (no spaces or line breaks), then try again.${tag}`;
+  if (/no_output_SAFETY/.test(code))
+    return `The AI declined this one — try a simpler industry word (e.g. “Dental” instead of a long phrase).${tag}`;
+  if (/status_5\d\d/.test(code))
+    return `The AI service had a hiccup — please try again in a moment.${tag}`;
+  return `Couldn't write your script just now — please try again.${tag}`;
+}
+
 export async function generateScript(
   businessName: string,
   industry: string
@@ -45,9 +66,7 @@ export async function generateScript(
 
     if (res.status === 400) return { status: "missing", message: data.message };
     if (!res.ok) {
-      // Append the short diagnostic reason (e.g. status_403) when present.
-      const base = data.message ?? "Couldn't generate a script.";
-      return { status: "error", message: data.reason ? `${base} (${data.reason})` : base };
+      return { status: "error", message: explainReason(data.reason) };
     }
     if (data.simulated) return { status: "not_configured" };
     if (data.script) return { status: "ok", script: data.script };
