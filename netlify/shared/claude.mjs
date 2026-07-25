@@ -59,16 +59,16 @@ export async function generateWithClaude({ businessName, industry, services, hou
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    return { error: `status_${res.status}`, status: res.status, detail: detail.slice(0, 300) };
+    return { error: `status_${res.status}`, status: res.status, detail: detail.slice(0, 300), engine: "claude" };
   }
 
   const data = await res.json().catch(() => null);
   // Safety classifiers can decline (HTTP 200 + stop_reason "refusal") — check
   // before reading content.
-  if (data?.stop_reason === "refusal") return { error: "refusal" };
+  if (data?.stop_reason === "refusal") return { error: "refusal", engine: "claude" };
   const text = cleanScript(
     (data?.content || []).filter((b) => b?.type === "text").map((b) => b.text || "").join("")
   );
-  if (!text) return { error: `no_output_${data?.stop_reason || "empty"}` };
+  if (!text) return { error: `no_output_${data?.stop_reason || "empty"}`, engine: "claude" };
   return { text, engine: "claude" };
 }

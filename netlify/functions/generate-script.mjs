@@ -75,24 +75,39 @@ export default async (req) => {
   const { services, hours } = await clinicDetails(uid);
   const args = { businessName, industry, services, hours };
 
-  // Prefer Claude (reliable) when configured; otherwise Gemini. If neither is
-  // configured, report "simulated" so the UI shows a friendly "being set up".
+  // Prefer Claude (reliable) when configured; otherwise Gemini. Whichever runs
+  // first, if it FAILS and the other engine is also configured, automatically
+  // fall back to it — so a stray/invalid key for one provider can never block
+  // generation when the other provider is working.
   let r;
-  if (hasClaude()) r = await generateWithClaude(args);
-  else if (hasGemini()) r = await generateReceptionistScript(args);
-  else r = { simulated: true };
+  if (hasClaude()) {
+    r = await generateWithClaude(args);
+    if (r.error && hasGemini()) {
+      const g = await generateReceptionistScript(args);
+      r = g.text ? g : { ...g, diag: `${g.diag || g.error}; claudeAlso=${r.error}` };
+    }
+  } else if (hasGemini()) {
+    r = await generateReceptionistScript(args);
+    if (r.error && hasClaude()) {
+      const c = await generateWithClaude(args);
+      r = c.text ? c : { ...r, diag: `${r.diag || r.error}; claudeAlso=${c.error}` };
+    }
+  } else {
+    r = { simulated: true };
+  }
 
   if (r.simulated) return json({ ok: true, simulated: true });
   if (r.error) {
     console.error("[generate-script]", r.engine || "?", r.error, r.diag || "", r.detail || "");
-    // Short, non-sensitive reason code (+ optional Gemini diagnostic) so a live
-    // setup issue can be pinpointed from the UI. Never includes the key/body.
+    // Short, non-sensitive reason code (+ engine/diagnostic) so a live setup
+    // issue can be pinpointed from the UI. Never includes the key/body.
+    const diag = r.diag || (r.engine ? `engine=${r.engine}` : undefined);
     return json(
       {
         ok: false,
         error: "generation_failed",
         reason: r.error,
-        diag: r.diag,
+        diag,
         message: "Couldn't write your script just now — please try again.",
       },
       502
