@@ -155,24 +155,53 @@ export default async (req) => {
   // verified above, so a forged booking can't reach here. With no DB (appointment
   // id null) both fire once, best-effort.
   if (sigValid && parsed.appointment) {
-    const wantConfirm = appointmentId ? !confirmationSent : true;
-    if (wantConfirm && parsed.appointment.patientPhone) {
-      const sent = await sendConfirmation(parsed);
-      if (sent && appointmentId) {
-        await sbUpdate("appointments", `id=eq.${encodeURIComponent(appointmentId)}`, {
-          confirmation_sent: true,
-        }).catch(() => {});
+    const apptKey = appointmentId ? encodeURIComponent(appointmentId) : null;
+
+    // Patient confirmation — CLAIM-then-send so a flag-write hiccup or a racing
+    // hourly sweep can never double-text the patient. We atomically flip
+    // confirmation_sent false->true and only the winner sends; on a failed/
+    // unconfigured send we roll the flag back so it retries later.
+    if (parsed.appointment.patientPhone) {
+      if (apptKey) {
+        if (!confirmationSent) {
+          const claimed = await sbUpdate(
+            "appointments",
+            `id=eq.${apptKey}&confirmation_sent=eq.false`,
+            { confirmation_sent: true }
+          );
+          if (claimed.length) {
+            const sent = await sendConfirmation(parsed);
+            if (!sent) {
+              await sbUpdate("appointments", `id=eq.${apptKey}`, {
+                confirmation_sent: false,
+              }).catch(() => {});
+            }
+          }
+        }
+      } else {
+        await sendConfirmation(parsed); // no DB row — best-effort once
       }
     }
 
-    const wantOwner = appointmentId ? !ownerNotified : true;
-    if (wantOwner) {
-      const notified = await notifyOwnerBooking(parsed, clinicId);
-      if (notified && appointmentId) {
-        await sbUpdate("appointments", `id=eq.${encodeURIComponent(appointmentId)}`, {
-          owner_notified: true,
-        }).catch(() => {});
+    // Owner alert — same claim-then-send guard.
+    if (apptKey) {
+      if (!ownerNotified) {
+        const claimed = await sbUpdate(
+          "appointments",
+          `id=eq.${apptKey}&owner_notified=eq.false`,
+          { owner_notified: true }
+        );
+        if (claimed.length) {
+          const notified = await notifyOwnerBooking(parsed, clinicId);
+          if (!notified) {
+            await sbUpdate("appointments", `id=eq.${apptKey}`, {
+              owner_notified: false,
+            }).catch(() => {});
+          }
+        }
       }
+    } else {
+      await notifyOwnerBooking(parsed, clinicId); // no DB row — best-effort once
     }
   }
 
@@ -263,21 +292,33 @@ async function persistCall(clinicId, parsed) {
     isNew = existing.length === 0;
   }
 
+  // Build the upsert payload so a LOW-VALUE event (a redelivered/out-of-order
+  // call_ended, which carries no summary, revenue 0, and outcome missed/info)
+  // can never CLOBBER the enriched row written by call_analyzed. On conflict,
+  // PostgREST only overwrites the columns present here, so we omit the enrichment
+  // fields unless they carry real signal, and never downgrade a booked/escalated
+  // outcome. Ordering-independent: whichever event has the data wins.
+  const HIGH_VALUE_OUTCOMES = new Set(["booked", "escalated"]);
+  const row = {
+    clinic_id: clinicId,
+    retell_call_id: parsed.retellCallId,
+    caller_name: parsed.callerName,
+    caller_phone: parsed.callerPhone,
+    started_at: parsed.startedAt ?? undefined,
+    duration_sec: parsed.durationSec,
+    reason: parsed.reason,
+  };
+  if (parsed.summary) row.summary = parsed.summary;
+  if (parsed.transcript) row.transcript = parsed.transcript;
+  if (Number(parsed.revenue) > 0) row.revenue = parsed.revenue;
+  // Set outcome when the row is new (record whatever we have) or when this event
+  // carries a high-value outcome (an upgrade) — but never overwrite an existing
+  // enriched outcome with a later 'missed'/'info'.
+  if (isNew || HIGH_VALUE_OUTCOMES.has(parsed.outcome)) row.outcome = parsed.outcome;
+
   const callRow = await sbInsert(
     "calls",
-    {
-      clinic_id: clinicId,
-      retell_call_id: parsed.retellCallId,
-      caller_name: parsed.callerName,
-      caller_phone: parsed.callerPhone,
-      started_at: parsed.startedAt ?? undefined,
-      duration_sec: parsed.durationSec,
-      outcome: parsed.outcome,
-      reason: parsed.reason,
-      summary: parsed.summary,
-      transcript: parsed.transcript,
-      revenue: parsed.revenue,
-    },
+    row,
     // Upsert so a duplicate delivery of the same call updates in place.
     parsed.retellCallId ? { onConflict: "retell_call_id" } : undefined
   );

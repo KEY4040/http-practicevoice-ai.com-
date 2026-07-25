@@ -36,8 +36,12 @@ test("buildPayload nests system instruction + user content correctly", () => {
 test("cleanScript strips a wrapping markdown fence but keeps inner text", () => {
   assert.equal(cleanScript("```\nHello world\n```"), "Hello world");
   assert.equal(cleanScript("```text\nLine one\nLine two\n```"), "Line one\nLine two");
-  // Unfenced text is returned as-is (trimmed).
+  // Relaxed: tolerate no newline after the opening fence and trailing whitespace.
+  assert.equal(cleanScript("```text Line one\nLine two```"), "Line one\nLine two");
+  assert.equal(cleanScript("```\nHello\n```   "), "Hello");
+  // Unfenced text is returned as-is (trimmed), and inner backticks are preserved.
   assert.equal(cleanScript("  Just a script.  "), "Just a script.");
+  assert.equal(cleanScript("Use `code` inline."), "Use `code` inline.");
 });
 
 test("pickModelName prefers a generateContent flash model and strips the prefix", () => {

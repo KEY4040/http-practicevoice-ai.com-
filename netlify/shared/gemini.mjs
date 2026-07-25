@@ -10,10 +10,9 @@
  *   GEMINI_API_KEY   the generation API key (required to generate for real)
  *   GEMINIAPIKEY     accepted as an alias (some hosts/keyboards make the
  *                    underscore form hard to enter) — either name works
- *   GEMINI_MODEL     optional model override (default: gemini-2.0-flash)
+ *   GEMINI_MODEL     optional model override; when unset, a usable model is
+ *                    discovered from the API and cached (see discoverModel)
  */
-
-const DEFAULT_MODEL = "gemini-2.0-flash";
 
 /**
  * The generation key, under either accepted env name. Strips ALL whitespace —
@@ -70,8 +69,10 @@ export function buildPayload({ businessName, industry, model }) {
 /** Strip any stray markdown code fences a model might wrap the output in. */
 export function cleanScript(text) {
   let t = String(text || "").trim();
-  // Remove a leading ```lang and trailing ``` fence if the whole thing is fenced.
-  const fenced = t.match(/^```[a-zA-Z]*\n([\s\S]*?)\n```$/);
+  // Tolerate an opening ```lang fence with or without a following newline, and a
+  // closing ``` with any surrounding whitespace — then peel it if the whole thing
+  // was fenced. Leaves un-fenced text untouched.
+  const fenced = t.match(/^```[a-zA-Z]*[ \t]*\n?([\s\S]*?)\n?[ \t]*```$/);
   if (fenced) t = fenced[1].trim();
   return t;
 }
@@ -99,13 +100,21 @@ export function pickModelName(models) {
   return chosen ? String(chosen.name).replace(/^models\//, "") : null;
 }
 
+// Cache the discovered model across warm invocations (it's stable per key), with
+// a short TTL, so we don't pay the ListModels round-trip on every generation.
+let _modelCache = { key: null, model: null, at: 0 };
+const MODEL_TTL_MS = 30 * 60 * 1000; // 30 min
+
 /**
  * Ask the API which models THIS key can actually call, so we never 404 on a
- * hardcoded name. Returns a usable model id, or null if discovery isn't
- * available (e.g. the key/API can't list models — we then fall back to the
- * known candidates and surface the real error).
+ * hardcoded name. Cached per key for MODEL_TTL_MS. Returns a usable model id, or
+ * null if discovery isn't available (e.g. the key/API can't list models — we
+ * then fall back to the known candidates and surface the real error).
  */
-async function discoverModel(key) {
+async function discoverModel(key, now = Date.now()) {
+  if (_modelCache.model && _modelCache.key === key && now - _modelCache.at < MODEL_TTL_MS) {
+    return _modelCache.model;
+  }
   try {
     const res = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
@@ -113,10 +122,17 @@ async function discoverModel(key) {
     );
     if (!res.ok) return null;
     const data = await res.json().catch(() => null);
-    return pickModelName(data?.models);
+    const model = pickModelName(data?.models);
+    if (model) _modelCache = { key, model, at: now };
+    return model;
   } catch {
     return null;
   }
+}
+
+/** Clear the cached model — used if a discovered model later 404s. */
+function invalidateModelCache() {
+  _modelCache = { key: null, model: null, at: 0 };
 }
 
 /** One generateContent call against a specific model. */
@@ -186,6 +202,8 @@ export async function generateReceptionistScript({ businessName, industry }) {
     last = r;
     // Only a missing model is worth retrying on a different model.
     if (r.status !== 404) break;
+    // A cached model that now 404s is stale — drop it so the next call re-discovers.
+    invalidateModelCache();
   }
   return last;
 }

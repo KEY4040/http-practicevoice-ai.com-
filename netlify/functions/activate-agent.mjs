@@ -176,6 +176,7 @@ export default async (req) => {
 
       let number = clinic.retell_number || null;
       let numberError = null;
+      let pausedMessage = null;
       if (!number) {
         const areaCode = areaCodeFrom(clinic.phone);
         if (!areaCode) {
@@ -203,6 +204,15 @@ export default async (req) => {
             numberError = e.message;
           }
         }
+      } else if (clinic.usage_suspended) {
+        // COST-CAP GUARD: the line was auto-paused for hitting this month's
+        // included minutes. Do NOT rebind it — rebinding would resume billing
+        // while usage_suspended stays true, so enforceUsage's `!usage_suspended`
+        // check could never re-pause it and voice spend would run uncapped for
+        // the rest of the month. The hourly sweep (resumeUnderLimitLines) rebinds
+        // and clears the flag together once usage resets or the plan is upgraded.
+        pausedMessage =
+          "Your AI line is paused for this month — you've used your plan's included minutes. It resumes at your next billing cycle, or upgrade your plan to resume sooner.";
       } else {
         // Self-heal on every re-sync: (1) point the number's inbound routing at
         // OUR handler (VIP passthrough), and (2) RE-BIND it to this clinic's agent
@@ -213,7 +223,13 @@ export default async (req) => {
           inbound_agents: [{ agent_id: clinic.retell_agent_id, weight: 1 }],
         }).catch(() => {});
       }
-      return json({ ok: true, status: "updated", number, ...(numberError ? { numberError } : {}) });
+      return json({
+        ok: true,
+        status: "updated",
+        number,
+        ...(numberError ? { numberError } : {}),
+        ...(pausedMessage ? { message: pausedMessage } : {}),
+      });
     }
 
     // --- Fresh provision. Derive the area code BEFORE spending anything. ---

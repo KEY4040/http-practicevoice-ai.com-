@@ -1,0 +1,14 @@
+-- Re-grant the alert_email UPDATE privilege (ordering fix).
+--
+-- When the dated migrations are applied in filename order, the alert_email grant
+-- in 2026-07-24-clinic-alert-email.sql sorts BEFORE the broad
+-- `revoke update on public.clinics from authenticated` in
+-- 2026-07-24-clinics-column-lockdown.sql / -tenant-lockdown-and-notify.sql, whose
+-- re-grant lists do NOT include alert_email. Net result of a stepwise apply: the
+-- authenticated role loses UPDATE(alert_email) and the browser's "Send alerts to"
+-- save fails with permission denied.
+--
+-- This migration sorts last (2026-07-25) and restores the column-level grant so a
+-- stepwise apply matches the canonical supabase/schema.sql (which already lists
+-- alert_email). Idempotent and safe to run repeatedly.
+grant update (alert_email) on public.clinics to authenticated;
