@@ -107,26 +107,35 @@ const MODEL_TTL_MS = 30 * 60 * 1000; // 30 min
 
 /**
  * Ask the API which models THIS key can actually call, so we never 404 on a
- * hardcoded name. Cached per key for MODEL_TTL_MS. Returns a usable model id, or
- * null if discovery isn't available (e.g. the key/API can't list models — we
- * then fall back to the known candidates and surface the real error).
+ * hardcoded name. Cached per key for MODEL_TTL_MS. Returns a DIAGNOSTIC object:
+ *   { status, count, model, names, err }
+ * where status is the ListModels HTTP status (0 = network error / -2 = cached),
+ * count is how many models the key can see, model is the picked usable id (or
+ * null), and names is a short sample. Non-secret — safe to surface for setup
+ * debugging. Callers use .model; the rest explains a failure.
  */
 async function discoverModel(key, now = Date.now()) {
   if (_modelCache.model && _modelCache.key === key && now - _modelCache.at < MODEL_TTL_MS) {
-    return _modelCache.model;
+    return { status: -2, count: -1, model: _modelCache.model, names: [], cached: true };
   }
   try {
     const res = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
       { headers: { "x-goog-api-key": key } }
     );
-    if (!res.ok) return null;
+    if (!res.ok) return { status: res.status, count: 0, model: null, names: [] };
     const data = await res.json().catch(() => null);
-    const model = pickModelName(data?.models);
+    const list = Array.isArray(data?.models) ? data.models : [];
+    const model = pickModelName(list);
     if (model) _modelCache = { key, model, at: now };
-    return model;
-  } catch {
-    return null;
+    return {
+      status: res.status,
+      count: list.length,
+      model,
+      names: list.slice(0, 6).map((m) => String(m?.name || "").replace(/^models\//, "")),
+    };
+  } catch (e) {
+    return { status: 0, count: 0, model: null, names: [], err: String((e && e.message) || e).slice(0, 60) };
   }
 }
 
@@ -184,14 +193,15 @@ export async function generateReceptionistScript({ businessName, industry }) {
   if (!key) return { simulated: true };
 
   let models;
+  let disc = null;
   if (process.env.GEMINI_MODEL) {
     models = [process.env.GEMINI_MODEL];
   } else {
     // Discover a model this key can actually use (fixes hardcoded-name 404s);
     // fall back to the known candidates if discovery isn't available.
-    const discovered = await discoverModel(key);
-    models = discovered
-      ? [discovered, ...CANDIDATE_MODELS.filter((m) => m !== discovered)]
+    disc = await discoverModel(key);
+    models = disc.model
+      ? [disc.model, ...CANDIDATE_MODELS.filter((m) => m !== disc.model)]
       : CANDIDATE_MODELS;
   }
 
@@ -199,11 +209,22 @@ export async function generateReceptionistScript({ businessName, industry }) {
   for (const model of models) {
     const r = await callModel({ key, model, businessName, industry });
     if (r.text) return r;
-    last = r;
+    last = { ...r, model };
     // Only a missing model is worth retrying on a different model.
     if (r.status !== 404) break;
     // A cached model that now 404s is stale — drop it so the next call re-discovers.
     invalidateModelCache();
+  }
+
+  // Attach a compact, NON-SECRET diagnostic so a live setup failure can be
+  // pinpointed: what ListModels returned, how many models the key sees, which
+  // one we picked/tried, and the final generateContent status.
+  if (disc) {
+    last.diag =
+      `list=${disc.status};models=${disc.count};pick=${disc.model || "none"};` +
+      `tried=${last.model || "-"};gen=${last.status || last.error}` +
+      (disc.names && disc.names.length ? `;seen=${disc.names.join(",")}` : "") +
+      (disc.err ? `;discErr=${disc.err}` : "");
   }
   return last;
 }

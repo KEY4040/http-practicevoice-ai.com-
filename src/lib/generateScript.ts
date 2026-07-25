@@ -18,7 +18,7 @@ export interface GenerateScriptResult {
  * only what the customer can do (retry, simplify, or wait). The raw reason stays
  * in the server logs for the operator; it is never surfaced here.
  */
-function explainReason(reason?: string): string {
+function explainReason(reason?: string, diag?: string): string {
   const code = reason ?? "";
   if (/no_output_SAFETY/.test(code))
     return "Try a simpler industry word (for example “Dental”) and generate again.";
@@ -28,10 +28,12 @@ function explainReason(reason?: string): string {
     return "The script writer is busy right now — please try again in a minute.";
   // Everything else (auth/config/model/upstream) is an operator-side setup issue
   // the customer can't act on — keep it neutral and reassuring, no jargon.
-  // TEMPORARY: a neutral diagnostic code (no brand names) is appended so a live
-  // setup issue can be pinpointed from the screen; remove once resolved.
-  const tag = code ? ` (${code})` : "";
-  return `The script writer is temporarily unavailable — please try again in a few minutes.${tag}`;
+  // TEMPORARY: a neutral diagnostic (no brand names) is appended so a live setup
+  // issue can be pinpointed from the screen; remove once resolved.
+  const tag = [code, diag].filter(Boolean).join(" · ");
+  return `The script writer is temporarily unavailable — please try again in a few minutes.${
+    tag ? ` (${tag})` : ""
+  }`;
 }
 
 export async function generateScript(
@@ -66,12 +68,13 @@ export async function generateScript(
       simulated?: boolean;
       error?: string;
       reason?: string;
+      diag?: string;
       message?: string;
     };
 
     if (res.status === 400) return { status: "missing", message: data.message };
     if (!res.ok) {
-      return { status: "error", message: explainReason(data.reason) };
+      return { status: "error", message: explainReason(data.reason, data.diag) };
     }
     if (data.simulated) return { status: "not_configured" };
     if (data.script) return { status: "ok", script: data.script };
