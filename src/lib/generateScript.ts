@@ -28,7 +28,10 @@ function explainReason(reason?: string): string {
     return "The script writer is busy right now — please try again in a minute.";
   // Everything else (auth/config/model/upstream) is an operator-side setup issue
   // the customer can't act on — keep it neutral and reassuring, no jargon.
-  return "The script writer is temporarily unavailable — please try again in a few minutes.";
+  // TEMPORARY: a neutral diagnostic code (no brand names) is appended so a live
+  // setup issue can be pinpointed from the screen; remove once resolved.
+  const tag = code ? ` (${code})` : "";
+  return `The script writer is temporarily unavailable — please try again in a few minutes.${tag}`;
 }
 
 export async function generateScript(
