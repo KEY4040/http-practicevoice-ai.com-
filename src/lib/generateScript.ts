@@ -39,11 +39,16 @@ export async function generateScript(
       script?: string;
       simulated?: boolean;
       error?: string;
+      reason?: string;
       message?: string;
     };
 
     if (res.status === 400) return { status: "missing", message: data.message };
-    if (!res.ok) return { status: "error", message: data.message ?? "Couldn't generate a script." };
+    if (!res.ok) {
+      // Append the short diagnostic reason (e.g. status_403) when present.
+      const base = data.message ?? "Couldn't generate a script.";
+      return { status: "error", message: data.reason ? `${base} (${data.reason})` : base };
+    }
     if (data.simulated) return { status: "not_configured" };
     if (data.script) return { status: "ok", script: data.script };
     return { status: "error", message: "No script came back — please try again." };

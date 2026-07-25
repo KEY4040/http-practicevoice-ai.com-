@@ -62,19 +62,17 @@ export function cleanScript(text) {
   return t;
 }
 
-/**
- * Generate a receptionist script from a business name + industry.
- * Returns { text } on success, { simulated:true } if unconfigured, or { error }.
- */
-export async function generateReceptionistScript({ businessName, industry }) {
-  const key = apiKey();
-  if (!key) return { simulated: true };
+// Models to try, in order, when no explicit GEMINI_MODEL is set. Different keys
+// have access to different models, so we fall through to the next only when a
+// model is missing/unsupported (a 404) — never on an auth/quota error, where
+// trying another model wouldn't help.
+const CANDIDATE_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 
-  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+/** One generateContent call against a specific model. */
+async function callModel({ key, model, businessName, industry }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
   )}:generateContent`;
-
   let res;
   try {
     res = await fetch(url, {
@@ -92,7 +90,7 @@ export async function generateReceptionistScript({ businessName, industry }) {
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    return { error: `status_${res.status}`, detail: detail.slice(0, 500) };
+    return { error: `status_${res.status}`, status: res.status, detail: detail.slice(0, 500) };
   }
 
   const data = await res.json().catch(() => null);
@@ -106,4 +104,26 @@ export async function generateReceptionistScript({ businessName, industry }) {
     return { error: `no_output_${reason}` };
   }
   return { text };
+}
+
+/**
+ * Generate a receptionist script from a business name + industry.
+ * Returns { text } on success, { simulated:true } if unconfigured, or { error }.
+ * Tries candidate models in order, falling through only on a 404 (model not
+ * found for this key).
+ */
+export async function generateReceptionistScript({ businessName, industry }) {
+  const key = apiKey();
+  if (!key) return { simulated: true };
+
+  const models = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : CANDIDATE_MODELS;
+  let last = { error: "no_models" };
+  for (const model of models) {
+    const r = await callModel({ key, model, businessName, industry });
+    if (r.text) return r;
+    last = r;
+    // Only a missing model is worth retrying on a different model.
+    if (r.status !== 404) break;
+  }
+  return last;
 }
