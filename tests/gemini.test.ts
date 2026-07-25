@@ -6,6 +6,7 @@ import {
   cleanScript,
   hasGemini,
   pickModelName,
+  pickModels,
   RECEPTIONIST_SYSTEM_INSTRUCTION,
 } from "../netlify/shared/gemini.mjs";
 import { hasClaude } from "../netlify/shared/claude.mjs";
@@ -66,6 +67,29 @@ test("pickModelName prefers a generateContent flash model and strips the prefix"
   );
   assert.equal(pickModelName([]), null);
   assert.equal(pickModelName(undefined), null);
+});
+
+test("pickModels returns a prioritized list incl. versioned names, flash first", () => {
+  const models = [
+    { name: "models/embedding-001", supportedGenerationMethods: ["embedContent"] },
+    { name: "models/imagen-3", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/gemini-2.0-pro", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/gemini-2.5-flash", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/gemini-2.0-flash-001", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/gemini-2.0-flash", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/gemini-2.0-flash-lite", supportedGenerationMethods: ["generateContent"] },
+  ];
+  const picked = pickModels(models);
+  // gemini-2.0-flash family (non-lite) ranks first; embedding + imagen excluded.
+  assert.ok(picked[0].startsWith("gemini-2.0-flash"));
+  assert.ok(picked.includes("gemini-2.0-flash-001"));
+  assert.ok(picked.includes("gemini-2.5-flash"));
+  assert.ok(!picked.includes("embedding-001"));
+  assert.ok(!picked.includes("imagen-3"));
+  // pro sinks below flash + flash-lite
+  assert.ok(picked.indexOf("gemini-2.0-pro") > picked.indexOf("gemini-2.5-flash"));
+  assert.deepEqual(pickModels([]), []);
+  assert.deepEqual(pickModels(undefined), []);
 });
 
 test("buildUserContent includes services and hours only when present", () => {
