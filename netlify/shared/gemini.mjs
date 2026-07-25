@@ -101,42 +101,33 @@ export function pickModels(models, limit = 6) {
     .slice(0, limit);
 }
 
-// Cache the discovered model across warm invocations (it's stable per key), with
-// a short TTL, so we don't pay the ListModels round-trip on every generation.
-let _modelCache = { key: null, model: null, at: 0 };
+// Cache the discovered models across warm invocations (stable per key), with a
+// short TTL, so we don't pay the ListModels round-trip on every generation.
+let _modelCache = { key: null, models: null, at: 0 };
 const MODEL_TTL_MS = 30 * 60 * 1000; // 30 min
 
 /**
  * Ask the API which models THIS key can actually call, so we never 404 on a
- * hardcoded name. Cached per key for MODEL_TTL_MS. Returns a DIAGNOSTIC object:
- *   { status, count, model, names, err }
- * where status is the ListModels HTTP status (0 = network error / -2 = cached),
- * count is how many models the key can see, model is the picked usable id (or
- * null), and names is a short sample. Non-secret — safe to surface for setup
- * debugging. Callers use .model; the rest explains a failure.
+ * hardcoded name. Returns a prioritized list of usable model ids (see
+ * pickModels), or [] on any error. Cached per key for MODEL_TTL_MS.
  */
 async function discoverModel(key, now = Date.now()) {
   if (_modelCache.models && _modelCache.key === key && now - _modelCache.at < MODEL_TTL_MS) {
-    return { status: -2, count: -1, models: _modelCache.models, names: [], cached: true };
+    return _modelCache.models;
   }
   try {
     const res = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
       { headers: { "x-goog-api-key": key } }
     );
-    if (!res.ok) return { status: res.status, count: 0, models: [], names: [] };
+    if (!res.ok) return [];
     const data = await res.json().catch(() => null);
     const list = Array.isArray(data?.models) ? data.models : [];
     const models = pickModels(list);
     if (models.length) _modelCache = { key, models, at: now };
-    return {
-      status: res.status,
-      count: list.length,
-      models,
-      names: list.slice(0, 6).map((m) => String(m?.name || "").replace(/^models\//, "")),
-    };
-  } catch (e) {
-    return { status: 0, count: 0, models: [], names: [], err: String((e && e.message) || e).slice(0, 60) };
+    return models;
+  } catch {
+    return [];
   }
 }
 
@@ -208,53 +199,35 @@ async function callModel(args) {
 /**
  * Generate a receptionist script from a business name + industry.
  * Returns { text } on success, { simulated:true } if unconfigured, or { error }.
- * Tries candidate models in order, falling through only on a 404 (model not
- * found for this key).
+ * Tries the models this key can actually use in priority order, falling through
+ * only on a 404 (model not found for this key).
  */
 export async function generateReceptionistScript({ businessName, industry, services, hours }) {
   const key = apiKey();
   if (!key) return { simulated: true };
 
   let models;
-  let disc = null;
   if (process.env.GEMINI_MODEL) {
     models = [process.env.GEMINI_MODEL];
   } else {
     // Discover the models this key can actually use (fixes hardcoded-name 404s);
     // try the account's own names first (aliases + versioned), then the known
     // candidates as a last resort.
-    disc = await discoverModel(key);
-    const discovered = disc.models || [];
+    const discovered = await discoverModel(key);
     models = discovered.length
       ? [...discovered, ...CANDIDATE_MODELS.filter((m) => !discovered.includes(m))]
       : CANDIDATE_MODELS;
   }
 
-  let last = { error: "no_models" };
-  let firstFail = null; // the FIRST (best) model's failure — the meaningful one
+  let last = { error: "no_models", engine: "gemini" };
   for (const model of models) {
     const r = await callModel({ key, model, businessName, industry, services, hours });
-    if (r.text) return r;
-    const attempt = { ...r, model };
-    if (!firstFail) firstFail = attempt;
-    last = attempt;
+    if (r.text) return { ...r, engine: "gemini" };
+    last = { ...r, model, engine: "gemini" };
     // Only a missing model is worth retrying on a different model.
     if (r.status !== 404) break;
     // A cached model that now 404s is stale — drop it so the next call re-discovers.
     invalidateModelCache();
-  }
-
-  // Attach a compact, NON-SECRET diagnostic (ListModels status, model count, the
-  // best model we tried + Google's own message for THAT model, not the last
-  // throwaway candidate). Never includes the key.
-  if (disc) {
-    const f = firstFail || last;
-    last.diag =
-      `list=${disc.status};models=${disc.count};` +
-      `tried=${f.model || "-"}@${f.apiVersion || "?"};gen=${f.status || f.error}` +
-      (f.msg ? `;msg=${String(f.msg).slice(0, 160)}` : "") +
-      (disc.names && disc.names.length ? `;seen=${disc.names.slice(0, 4).join(",")}` : "") +
-      (disc.err ? `;discErr=${disc.err}` : "");
   }
   return last;
 }
