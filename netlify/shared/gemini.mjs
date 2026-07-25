@@ -40,7 +40,15 @@ export function hasGemini() {
 }
 
 /** Build the (pure) request body for the generation API. Exported for testing. */
-export function buildPayload({ businessName, industry }) {
+export function buildPayload({ businessName, industry, model }) {
+  const generationConfig = { temperature: 0.7, topP: 0.95, maxOutputTokens: 2048 };
+  // 2.5-family models spend "thinking" tokens before writing; with a small
+  // output budget they can return an EMPTY answer (finishReason MAX_TOKENS).
+  // Turn thinking off for them so the whole budget goes to the script. The field
+  // is only valid on 2.5 models, so we add it only there.
+  if (String(model || "").includes("2.5")) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
   return {
     systemInstruction: { parts: [{ text: RECEPTIONIST_SYSTEM_INSTRUCTION }] },
     contents: [
@@ -49,7 +57,7 @@ export function buildPayload({ businessName, industry }) {
         parts: [{ text: `Business Name: ${businessName}\nIndustry: ${industry}` }],
       },
     ],
-    generationConfig: { temperature: 0.7, topP: 0.95, maxOutputTokens: 1200 },
+    generationConfig,
   };
 }
 
@@ -82,7 +90,7 @@ async function callModel({ key, model, businessName, industry }) {
         // Header auth keeps the key out of the URL/query string (and logs).
         "x-goog-api-key": key,
       },
-      body: JSON.stringify(buildPayload({ businessName, industry })),
+      body: JSON.stringify(buildPayload({ businessName, industry, model })),
     });
   } catch (e) {
     return { error: `network: ${e.message}` };
