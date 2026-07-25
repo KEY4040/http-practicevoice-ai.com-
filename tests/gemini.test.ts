@@ -4,6 +4,7 @@ import {
   buildPayload,
   cleanScript,
   hasGemini,
+  pickModelName,
   RECEPTIONIST_SYSTEM_INSTRUCTION,
 } from "../netlify/shared/gemini.mjs";
 
@@ -37,6 +38,28 @@ test("cleanScript strips a wrapping markdown fence but keeps inner text", () => 
   assert.equal(cleanScript("```text\nLine one\nLine two\n```"), "Line one\nLine two");
   // Unfenced text is returned as-is (trimmed).
   assert.equal(cleanScript("  Just a script.  "), "Just a script.");
+});
+
+test("pickModelName prefers a generateContent flash model and strips the prefix", () => {
+  const models = [
+    { name: "models/embedding-001", supportedGenerationMethods: ["embedContent"] },
+    { name: "models/gemini-1.5-flash", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/gemini-2.0-flash", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/gemini-2.0-pro", supportedGenerationMethods: ["generateContent"] },
+  ];
+  assert.equal(pickModelName(models), "gemini-2.0-flash");
+  // Falls back to any generateContent model when no flash is present.
+  assert.equal(
+    pickModelName([{ name: "models/gemini-2.0-pro", supportedGenerationMethods: ["generateContent"] }]),
+    "gemini-2.0-pro"
+  );
+  // Ignores models that can't generateContent; null when none qualify.
+  assert.equal(
+    pickModelName([{ name: "models/embedding-001", supportedGenerationMethods: ["embedContent"] }]),
+    null
+  );
+  assert.equal(pickModelName([]), null);
+  assert.equal(pickModelName(undefined), null);
 });
 
 test("hasGemini reflects the env key", () => {

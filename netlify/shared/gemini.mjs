@@ -76,11 +76,48 @@ export function cleanScript(text) {
   return t;
 }
 
-// Models to try, in order, when no explicit GEMINI_MODEL is set. Different keys
-// have access to different models, so we fall through to the next only when a
-// model is missing/unsupported (a 404) — never on an auth/quota error, where
-// trying another model wouldn't help.
+// Models to try, in order, when no explicit GEMINI_MODEL is set and discovery
+// is unavailable. Different keys have access to different models, so we fall
+// through to the next only when a model is missing/unsupported (a 404) — never
+// on an auth/quota error, where trying another model wouldn't help.
 const CANDIDATE_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+
+/**
+ * Pick the best usable model name from a ListModels response. Prefers a fast
+ * "flash" model (2.0, then 2.5, then any flash), else any model that supports
+ * generateContent. Returns a bare id ("gemini-2.0-flash") or null. Pure/tested.
+ */
+export function pickModelName(models) {
+  const usable = (models || []).filter((m) =>
+    (m?.supportedGenerationMethods || []).includes("generateContent")
+  );
+  const chosen =
+    usable.find((m) => /flash/.test(m.name) && /2\.0/.test(m.name)) ||
+    usable.find((m) => /flash/.test(m.name) && /2\.5/.test(m.name)) ||
+    usable.find((m) => /flash/.test(m.name)) ||
+    usable[0];
+  return chosen ? String(chosen.name).replace(/^models\//, "") : null;
+}
+
+/**
+ * Ask the API which models THIS key can actually call, so we never 404 on a
+ * hardcoded name. Returns a usable model id, or null if discovery isn't
+ * available (e.g. the key/API can't list models — we then fall back to the
+ * known candidates and surface the real error).
+ */
+async function discoverModel(key) {
+  try {
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
+      { headers: { "x-goog-api-key": key } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return pickModelName(data?.models);
+  } catch {
+    return null;
+  }
+}
 
 /** One generateContent call against a specific model. */
 async function callModel({ key, model, businessName, industry }) {
@@ -130,7 +167,18 @@ export async function generateReceptionistScript({ businessName, industry }) {
   const key = apiKey();
   if (!key) return { simulated: true };
 
-  const models = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : CANDIDATE_MODELS;
+  let models;
+  if (process.env.GEMINI_MODEL) {
+    models = [process.env.GEMINI_MODEL];
+  } else {
+    // Discover a model this key can actually use (fixes hardcoded-name 404s);
+    // fall back to the known candidates if discovery isn't available.
+    const discovered = await discoverModel(key);
+    models = discovered
+      ? [discovered, ...CANDIDATE_MODELS.filter((m) => m !== discovered)]
+      : CANDIDATE_MODELS;
+  }
+
   let last = { error: "no_models" };
   for (const model of models) {
     const r = await callModel({ key, model, businessName, industry });

@@ -55,6 +55,10 @@ export async function generateScript(
 
     if (res.status === 401) return { status: "error", message: "Please sign in again." };
     if (res.status === 404) return { status: "demo" };
+    if (res.status === 402) {
+      const d = (await res.json().catch(() => ({}))) as { message?: string };
+      return { status: "error", message: d.message ?? "Start your trial to use the script writer." };
+    }
 
     const data = (await res.json().catch(() => ({}))) as {
       script?: string;
