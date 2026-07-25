@@ -39,8 +39,15 @@ export default async (req) => {
   if (r.simulated) return json({ ok: true, simulated: true });
   if (r.error) {
     console.error("[generate-script]", r.error, r.detail || "");
+    // Surface a short, non-sensitive reason code (e.g. status_403, no_output_SAFETY)
+    // so setup issues can be diagnosed from the UI. Never includes the key/body.
     return json(
-      { ok: false, error: "generation_failed", message: "Couldn't write your script just now — please try again." },
+      {
+        ok: false,
+        error: "generation_failed",
+        reason: r.error,
+        message: "Couldn't write your script just now — please try again.",
+      },
       502
     );
   }
