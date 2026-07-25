@@ -8,7 +8,7 @@
  * Request:  { businessName, industry }
  * Response: { ok, script? , simulated?, error?, message? }
  */
-import { getUserId, bearer } from "../shared/auth.mjs";
+import { getUserId, bearer, isEntitled } from "../shared/auth.mjs";
 import { generateReceptionistScript } from "../shared/gemini.mjs";
 
 export default async (req) => {
@@ -18,6 +18,16 @@ export default async (req) => {
   // from being called anonymously.
   const uid = await getUserId(bearer(req));
   if (!uid) return json({ ok: false, error: "not_signed_in" }, 401);
+
+  // Entitlement gate: each call spends real generation quota, so require a
+  // trialing/active account (same bar as the other cost-incurring endpoints).
+  // This stops a drive-by free account from looping the generator on our key.
+  if (!(await isEntitled(uid))) {
+    return json(
+      { ok: false, error: "needs_card", message: "Start your trial to use the script writer." },
+      402
+    );
+  }
 
   let body = {};
   try {
