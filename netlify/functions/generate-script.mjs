@@ -11,7 +11,7 @@
  * instructions, so the output is identical regardless of engine.
  *
  * Request:  { businessName, industry }
- * Response: { ok, script?, engine?, simulated?, error?, reason?, diag?, message? }
+ * Response: { ok, script?, engine?, simulated?, error?, reason?, message? }
  */
 import { getUserId, bearer, isEntitled } from "../shared/auth.mjs";
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
@@ -84,13 +84,13 @@ export default async (req) => {
     r = await generateWithClaude(args);
     if (r.error && hasGemini()) {
       const g = await generateReceptionistScript(args);
-      r = g.text ? g : { ...g, diag: `${g.diag || g.error}; claudeAlso=${r.error}` };
+      if (g.text) r = g;
     }
   } else if (hasGemini()) {
     r = await generateReceptionistScript(args);
     if (r.error && hasClaude()) {
       const c = await generateWithClaude(args);
-      r = c.text ? c : { ...r, diag: `${r.diag || r.error}; claudeAlso=${c.error}` };
+      if (c.text) r = c;
     }
   } else {
     r = { simulated: true };
@@ -98,16 +98,16 @@ export default async (req) => {
 
   if (r.simulated) return json({ ok: true, simulated: true });
   if (r.error) {
-    console.error("[generate-script]", r.engine || "?", r.error, r.diag || "", r.detail || "");
-    // Short, non-sensitive reason code (+ engine/diagnostic) so a live setup
-    // issue can be pinpointed from the UI. Never includes the key/body.
-    const diag = r.diag || (r.engine ? `engine=${r.engine}` : undefined);
+    // Full detail stays in the server logs for the operator; the customer only
+    // ever sees the neutral, white-labeled message below.
+    console.error("[generate-script]", r.engine || "?", r.error, r.detail || "");
     return json(
       {
         ok: false,
         error: "generation_failed",
+        // A short, non-sensitive code (never a brand/infra name) so the UI can
+        // show the right friendly guidance — "busy, try again", etc.
         reason: r.error,
-        diag,
         message: "Couldn't write your script just now — please try again.",
       },
       502
