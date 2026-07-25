@@ -25,27 +25,22 @@ function apiKey() {
   return raw.replace(/\s+/g, "");
 }
 
-// The exact system instruction that shapes every generated script. Kept here
-// (server-side) so it can never be seen or altered from the browser.
-export const RECEPTIONIST_SYSTEM_INSTRUCTION = `You are an expert AI architect building instructions for an AI voice receptionist. The user will provide their 'Business Name' and 'Industry'. You must generate a highly professional, concise, 3-4 paragraph instruction script for the AI receptionist to follow.
-
-Output Requirements:
-- Write strictly in the third person as rules for the AI.
-- Include a warm greeting protocol.
-- Define the tone based on industry.
-- Include a directive to capture the caller's name, phone number, and reason for calling.
-- Include a directive on how to handle booking or taking a message based on the industry.
-- Always confirm the caller's details back to them before ending the call.
-- Include a polite closing that summarizes next steps.
-
-Do not include any filler text, introductory remarks, or markdown outside of the script itself. Output ONLY the raw script.`;
+// The system instruction + user-content builder + fence cleaner are shared with
+// the Claude engine so both produce identical scripts. Imported for local use
+// and re-exported so existing importers/tests keep resolving them from here.
+import {
+  RECEPTIONIST_SYSTEM_INSTRUCTION,
+  buildUserContent,
+  cleanScript,
+} from "./scriptwriter-core.mjs";
+export { RECEPTIONIST_SYSTEM_INSTRUCTION, buildUserContent, cleanScript };
 
 export function hasGemini() {
   return Boolean(apiKey());
 }
 
 /** Build the (pure) request body for the generation API. Exported for testing. */
-export function buildPayload({ businessName, industry, model }) {
+export function buildPayload({ businessName, industry, services, hours, model }) {
   const generationConfig = { temperature: 0.7, topP: 0.95, maxOutputTokens: 2048 };
   // 2.5-family models spend "thinking" tokens before writing; with a small
   // output budget they can return an EMPTY answer (finishReason MAX_TOKENS).
@@ -57,24 +52,10 @@ export function buildPayload({ businessName, industry, model }) {
   return {
     systemInstruction: { parts: [{ text: RECEPTIONIST_SYSTEM_INSTRUCTION }] },
     contents: [
-      {
-        role: "user",
-        parts: [{ text: `Business Name: ${businessName}\nIndustry: ${industry}` }],
-      },
+      { role: "user", parts: [{ text: buildUserContent({ businessName, industry, services, hours }) }] },
     ],
     generationConfig,
   };
-}
-
-/** Strip any stray markdown code fences a model might wrap the output in. */
-export function cleanScript(text) {
-  let t = String(text || "").trim();
-  // Tolerate an opening ```lang fence with or without a following newline, and a
-  // closing ``` with any surrounding whitespace — then peel it if the whole thing
-  // was fenced. Leaves un-fenced text untouched.
-  const fenced = t.match(/^```[a-zA-Z]*[ \t]*\n?([\s\S]*?)\n?[ \t]*```$/);
-  if (fenced) t = fenced[1].trim();
-  return t;
 }
 
 // Models to try, in order, when no explicit GEMINI_MODEL is set and discovery
@@ -145,7 +126,7 @@ function invalidateModelCache() {
 }
 
 /** One generateContent call against a specific model. */
-async function callModel({ key, model, businessName, industry }) {
+async function callModel({ key, model, businessName, industry, services, hours }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
   )}:generateContent`;
@@ -158,7 +139,7 @@ async function callModel({ key, model, businessName, industry }) {
         // Header auth keeps the key out of the URL/query string (and logs).
         "x-goog-api-key": key,
       },
-      body: JSON.stringify(buildPayload({ businessName, industry, model })),
+      body: JSON.stringify(buildPayload({ businessName, industry, services, hours, model })),
     });
   } catch (e) {
     return { error: `network: ${e.message}` };
@@ -188,7 +169,7 @@ async function callModel({ key, model, businessName, industry }) {
  * Tries candidate models in order, falling through only on a 404 (model not
  * found for this key).
  */
-export async function generateReceptionistScript({ businessName, industry }) {
+export async function generateReceptionistScript({ businessName, industry, services, hours }) {
   const key = apiKey();
   if (!key) return { simulated: true };
 
@@ -207,7 +188,7 @@ export async function generateReceptionistScript({ businessName, industry }) {
 
   let last = { error: "no_models" };
   for (const model of models) {
-    const r = await callModel({ key, model, businessName, industry });
+    const r = await callModel({ key, model, businessName, industry, services, hours });
     if (r.text) return r;
     last = { ...r, model };
     // Only a missing model is worth retrying on a different model.
