@@ -125,9 +125,13 @@ function invalidateModelCache() {
   _modelCache = { key: null, model: null, at: 0 };
 }
 
-/** One generateContent call against a specific model. */
-async function callModel({ key, model, businessName, industry, services, hours }) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+// Some keys/projects serve a model on only ONE API version. Try v1beta first,
+// then v1, so a version-specific availability quirk can't wrongly read as 404.
+const API_VERSIONS = ["v1beta", "v1"];
+
+/** One generateContent call against a specific model + API version. */
+async function callOnce({ key, model, apiVersion, businessName, industry, services, hours }) {
+  const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(
     model
   )}:generateContent`;
   let res;
@@ -147,7 +151,13 @@ async function callModel({ key, model, businessName, industry, services, hours }
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    return { error: `status_${res.status}`, status: res.status, detail: detail.slice(0, 500) };
+    let msg = "";
+    try {
+      msg = JSON.parse(detail)?.error?.message || "";
+    } catch {
+      /* leave msg empty */
+    }
+    return { error: `status_${res.status}`, status: res.status, detail: detail.slice(0, 500), msg };
   }
 
   const data = await res.json().catch(() => null);
@@ -161,6 +171,18 @@ async function callModel({ key, model, businessName, industry, services, hours }
     return { error: `no_output_${reason}` };
   }
   return { text };
+}
+
+/** Try a model across API versions; only a 404 is worth trying the next version. */
+async function callModel(args) {
+  let last = { error: "no_versions" };
+  for (const apiVersion of API_VERSIONS) {
+    const r = await callOnce({ ...args, apiVersion });
+    if (r.text) return { ...r, apiVersion };
+    last = { ...r, apiVersion };
+    if (r.status !== 404) break;
+  }
+  return last;
 }
 
 /**
@@ -203,8 +225,8 @@ export async function generateReceptionistScript({ businessName, industry, servi
   if (disc) {
     last.diag =
       `list=${disc.status};models=${disc.count};pick=${disc.model || "none"};` +
-      `tried=${last.model || "-"};gen=${last.status || last.error}` +
-      (disc.names && disc.names.length ? `;seen=${disc.names.join(",")}` : "") +
+      `tried=${last.model || "-"}@${last.apiVersion || "?"};gen=${last.status || last.error}` +
+      (last.msg ? `;msg=${String(last.msg).slice(0, 160)}` : "") +
       (disc.err ? `;discErr=${disc.err}` : "");
   }
   return last;
