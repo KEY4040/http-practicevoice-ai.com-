@@ -2,11 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildPayload,
+  buildUserContent,
   cleanScript,
   hasGemini,
   pickModelName,
   RECEPTIONIST_SYSTEM_INSTRUCTION,
 } from "../netlify/shared/gemini.mjs";
+import { hasClaude } from "../netlify/shared/claude.mjs";
 
 // The generator's request shape and output cleanup are pinned here: if the
 // system instruction, payload field names, or fence-stripping drift, the
@@ -64,6 +66,32 @@ test("pickModelName prefers a generateContent flash model and strips the prefix"
   );
   assert.equal(pickModelName([]), null);
   assert.equal(pickModelName(undefined), null);
+});
+
+test("buildUserContent includes services and hours only when present", () => {
+  assert.equal(
+    buildUserContent({ businessName: "Bayview Dental", industry: "Dental" }),
+    "Business Name: Bayview Dental\nIndustry: Dental"
+  );
+  assert.equal(
+    buildUserContent({
+      businessName: "Dixon HVAC",
+      industry: "HVAC",
+      services: ["Repair", "Install", ""],
+      hours: "Mon, Tue, 9–5",
+    }),
+    "Business Name: Dixon HVAC\nIndustry: HVAC\nServices offered: Repair, Install\nHours: Mon, Tue, 9–5"
+  );
+});
+
+test("hasClaude reflects the ANTHROPIC_API_KEY env", () => {
+  const prev = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+  assert.equal(hasClaude(), false);
+  process.env.ANTHROPIC_API_KEY = "sk-ant-test";
+  assert.equal(hasClaude(), true);
+  if (prev === undefined) delete process.env.ANTHROPIC_API_KEY;
+  else process.env.ANTHROPIC_API_KEY = prev;
 });
 
 test("hasGemini reflects the env key", () => {
