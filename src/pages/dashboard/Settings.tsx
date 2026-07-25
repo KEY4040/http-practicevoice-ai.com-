@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Building2,
@@ -72,6 +72,14 @@ export default function Settings() {
   const [reminderTemplate, setReminderTemplate] = useState(loaded.reminderTemplate);
   const [about, setAbout] = useState(loaded.about);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  // Set once the user edits a free-text field, so a slow initial DB hydrate can't
+  // overwrite what they've already typed.
+  const interacted = useRef(false);
+  const markInteracted = () => {
+    interacted.current = true;
+  };
   // "Instant AI Receptionist" generator: industry input + progress/error state.
   // Industry is a generation input only (not persisted) — the drafted script it
   // produces is what gets saved (into `about`).
@@ -116,9 +124,13 @@ export default function Settings() {
         if (!supabase) return;
         const clinic = await getOrCreateClinic(supabase);
         if (!active || !clinic) return;
-        if (clinic.name && clinic.name !== "My Practice") setClinicName(clinic.name);
-        if (clinic.phone) setPhone(clinic.phone);
-        if (clinic.about) setAbout(clinic.about);
+        // Don't clobber free-text the user may have already started typing while
+        // this fetch was in flight.
+        if (!interacted.current) {
+          if (clinic.name && clinic.name !== "My Practice") setClinicName(clinic.name);
+          if (clinic.phone) setPhone(clinic.phone);
+          if (clinic.about) setAbout(clinic.about);
+        }
         // Hydrate the rest from the DB (source of truth) so settings survive a
         // new device / cleared cache instead of snapping back to defaults.
         if (clinic.services && clinic.services.length) setServices(clinic.services);
@@ -145,7 +157,7 @@ export default function Settings() {
     };
   }, []);
 
-  async function onActivate() {
+  async function onActivate(): Promise<ActivateResult> {
     setActivating(true);
     setActivateResult(null);
     // Make sure the latest settings are saved before the AI is built from them.
@@ -154,9 +166,11 @@ export default function Settings() {
     if (result.number) setAiNumber(result.number);
     setActivateResult(result);
     setActivating(false);
+    return result;
   }
 
   async function onGenerate() {
+    if (generating) return; // guard: button is disabled, but Enter isn't
     setGenError(null);
     const name = clinicName.trim();
     const ind = industry.trim();
@@ -164,11 +178,16 @@ export default function Settings() {
       setGenError("Add your business name and industry first.");
       return;
     }
+    // Don't silently destroy text the owner already wrote.
+    if (about.trim() && !window.confirm("Replace what's in the box with a fresh AI-written script?")) {
+      return;
+    }
     setGenerating(true);
     const r = await generateScript(name, ind);
     setGenerating(false);
     if (r.status === "ok" && r.script) {
       setAbout(r.script);
+      markInteracted();
     } else if (r.status === "missing") {
       setGenError(r.message ?? "Add your business name and industry first.");
     } else if (r.status === "not_configured") {
@@ -212,8 +231,9 @@ export default function Settings() {
 
   /** Save everything: on-device (templates) + the clinic profile in Supabase
    *  (name, phone, services, hours, voice, about) so the AI is built from real
-   *  values. Returns a promise so callers can await before provisioning. */
-  function persist(): Promise<void> {
+   *  values. Resolves TRUE only when the server write actually succeeded, so the
+   *  caller never shows a false "saved" on a failed write. */
+  async function persist(): Promise<boolean> {
     saveClinicSettings({
       clinicName,
       twilioNumber,
@@ -226,57 +246,64 @@ export default function Settings() {
       voice,
       about,
     });
-    if (!isSupabaseConfigured) return Promise.resolve();
-    return getSupabase()
-      .then((supabase) => {
-        if (supabase)
-          return updateClinicProfile(supabase, {
-            name: clinicName,
-            phone: phone.trim() || undefined,
-            about,
-            services,
-            openDays,
-            openTime,
-            closeTime,
-            voice,
-            alertEmail,
-          })
-            .then(() =>
-              updateVipSettings(supabase, {
-                enabled: vipEnabled,
-                transferTo: vipTransferTo,
-                numbers: vipNumbers,
-              })
-            )
-            .then(() =>
-              updateCalendarSettings(supabase, {
-                // Only send the key when the owner actually typed one — a blank
-                // field means "unchanged", so we must NOT clear the stored key.
-                apiKey: calApiKey.trim() ? calApiKey : undefined,
-                eventTypeId: calEventTypeId.replace(/\D/g, "")
-                  ? Number(calEventTypeId.replace(/\D/g, ""))
-                  : null,
-                timezone: calTimezone,
-              })
-            );
-      })
-      .catch(() => {
-        /* non-fatal — settings still saved locally */
+    if (!isSupabaseConfigured) return true; // local-only mode: nothing to fail
+    try {
+      const supabase = await getSupabase();
+      if (!supabase) return true;
+      await updateClinicProfile(supabase, {
+        name: clinicName,
+        phone: phone.trim() || undefined,
+        about,
+        services,
+        openDays,
+        openTime,
+        closeTime,
+        voice,
+        alertEmail,
       });
+      await updateVipSettings(supabase, {
+        enabled: vipEnabled,
+        transferTo: vipTransferTo,
+        numbers: vipNumbers,
+      });
+      await updateCalendarSettings(supabase, {
+        // Only send the key when the owner actually typed one — a blank field
+        // means "unchanged", so we must NOT clear the stored key.
+        apiKey: calApiKey.trim() ? calApiKey : undefined,
+        eventTypeId: calEventTypeId.replace(/\D/g, "")
+          ? Number(calEventTypeId.replace(/\D/g, ""))
+          : null,
+        timezone: calTimezone,
+      });
+      return true;
+    } catch {
+      return false; // surfaced to the user as "couldn't save" — never a false ✓
+    }
   }
 
   async function onSave(e: FormEvent) {
     e.preventDefault();
+    if (saving || activating) return; // guard against double-submit
+    setSaving(true);
+    setSaveError(false);
     // One clear action: save the settings, and if the AI line is already live,
     // push those changes to the AI too (re-sync) — so there's no separate
     // "Re-sync" button to think about. First-time activation stays its own button.
+    let ok: boolean;
     if (aiNumber) {
-      await onActivate();
+      const result = await onActivate();
+      // Re-sync succeeded only if the profile saved AND activation didn't error.
+      ok = result.status === "created" || result.status === "updated";
     } else {
-      await persist();
+      ok = await persist();
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(false);
+    if (ok) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } else {
+      setSaveError(true);
+    }
   }
 
   return (
@@ -413,7 +440,10 @@ export default function Settings() {
               <Input
                 id="clinic"
                 value={clinicName}
-                onChange={(e) => setClinicName(e.target.value)}
+                onChange={(e) => {
+                  markInteracted();
+                  setClinicName(e.target.value);
+                }}
                 placeholder="e.g. Bayview Dental"
               />
             </div>
@@ -424,7 +454,10 @@ export default function Settings() {
                 <Input
                   id="phone"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    markInteracted();
+                    setPhone(e.target.value);
+                  }}
                   className="pl-9"
                   placeholder="(415) 555-0100"
                 />
@@ -481,7 +514,10 @@ export default function Settings() {
               <Textarea
                 id="about"
                 value={about}
-                onChange={(e) => setAbout(e.target.value)}
+                onChange={(e) => {
+                  markInteracted();
+                  setAbout(e.target.value);
+                }}
                 rows={12}
                 className="min-h-[16rem]"
                 placeholder="What you do, what you sell, prices, common questions, anything the AI should know when it answers. Example: We sell rubber feet, grommets, and washers. Free shipping over $50. Minimum order 20 pieces."
@@ -878,13 +914,17 @@ export default function Settings() {
                 <Check className="size-4" />
                 Settings saved
               </span>
+            ) : saveError ? (
+              <span className="font-medium text-destructive">
+                Couldn't save — check your connection and try again.
+              </span>
             ) : (
               "Changes apply to your AI receptionist instantly."
             )}
           </p>
-          <Button type="submit" size="lg" disabled={activating}>
-            {activating && <Loader2 className="animate-spin" />}
-            {activating ? "Saving…" : "Save settings"}
+          <Button type="submit" size="lg" disabled={saving || activating}>
+            {(saving || activating) && <Loader2 className="animate-spin" />}
+            {saving || activating ? "Saving…" : "Save settings"}
           </Button>
         </div>
       </form>
@@ -1049,11 +1089,14 @@ function CalendarConnect({
   const hasKey = calApiKey.trim().length > 0;
   const hasEvent = calEventTypeId.replace(/\D/g, "").length > 0;
   const hasTz = calTimezone.trim().length > 0;
-  // "Connected" = saved in the DB already, or all fields filled in this session.
-  const connected = calConnected || (hasKey && hasEvent && hasTz);
+  // The celebratory "connected / Live" summary reflects PERSISTED state only
+  // (calConnected from the DB). Filling the fields in-session lights up the steps
+  // but must NOT claim "Live" before the owner has saved — otherwise they'd leave
+  // thinking booking is on when nothing was written.
+  const filledThisSession = hasKey && hasEvent && hasTz;
 
-  // Show the celebratory summary once connected — unless the owner chose to edit.
-  if (connected && !editing) {
+  // Show the celebratory summary only once actually saved — unless editing.
+  if (calConnected && !editing) {
     return (
       <Card className="overflow-hidden border-accent/30">
         <div className="flex flex-col gap-4 bg-accent/[0.05] p-6 sm:flex-row sm:items-center sm:justify-between">
@@ -1100,9 +1143,12 @@ function CalendarConnect({
     );
   }
 
-  const doneCount = [accountOpened || connected, hasKey || calConnected, hasEvent, hasTz].filter(
-    Boolean
-  ).length;
+  const doneCount = [
+    accountOpened || calConnected || filledThisSession,
+    hasKey || calConnected,
+    hasEvent,
+    hasTz,
+  ].filter(Boolean).length;
 
   return (
     <Card className="overflow-hidden">
@@ -1144,7 +1190,7 @@ function CalendarConnect({
       <ol className="p-6">
         <Step
           n={1}
-          done={accountOpened || connected}
+          done={accountOpened || calConnected || filledThisSession}
           title="Create a free Cal.com account"
           subtitle="Takes about a minute. Already have one? Just tick over and move on."
         >
@@ -1170,6 +1216,7 @@ function CalendarConnect({
         >
           <Input
             id="cal-key"
+            aria-label="Cal.com connection key"
             type="password"
             autoComplete="off"
             value={calApiKey}
@@ -1189,6 +1236,7 @@ function CalendarConnect({
         >
           <Input
             id="cal-event"
+            aria-label="Appointment event type ID"
             type="text"
             inputMode="numeric"
             value={calEventTypeId}
@@ -1214,6 +1262,7 @@ function CalendarConnect({
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               id="cal-tz"
+              aria-label="Timezone"
               type="text"
               value={calTimezone}
               onChange={(e) => setCalTimezone(e.target.value)}

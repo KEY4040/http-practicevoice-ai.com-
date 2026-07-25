@@ -256,15 +256,29 @@ export async function getPhoneNumber(phoneNumber) {
  */
 export async function findAgentNumber(agentId) {
   if (!agentId) return null;
-  const list = await retellFetch("GET", "/list-phone-numbers");
-  const arr = Array.isArray(list) ? list : list?.items || [];
-  const match = arr.find((n) => {
+  const matches = (n) => {
     const inbound =
       n.inbound_agent_id ||
       (Array.isArray(n.inbound_agents) && n.inbound_agents[0]?.agent_id);
     return inbound && inbound === agentId;
-  });
-  return match?.phone_number || null;
+  };
+  // Page through the full list — this is the guard against DUPLICATE PURCHASES,
+  // so it must see every number, not just the first page. Once the account holds
+  // more numbers than one page returns, a single-page scan could miss this
+  // agent's already-bound number and let the caller buy (and bill) a second one.
+  let paginationKey;
+  for (let page = 0; page < 50; page++) {
+    const qs = paginationKey ? `?pagination_key=${encodeURIComponent(paginationKey)}` : "";
+    const list = await retellFetch("GET", `/list-phone-numbers${qs}`);
+    const arr = Array.isArray(list) ? list : list?.items || [];
+    const match = arr.find(matches);
+    if (match?.phone_number) return match.phone_number;
+    // Stop when the API signals no more pages (or gives us nothing to page on).
+    const more = !Array.isArray(list) && list?.has_more && list?.pagination_key;
+    if (!more) break;
+    paginationKey = list.pagination_key;
+  }
+  return null;
 }
 
 /**

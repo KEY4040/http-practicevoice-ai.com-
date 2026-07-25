@@ -62,9 +62,10 @@ export async function activateAiLine(): Promise<ActivateResult> {
     return {
       status: body.status === "updated" ? "updated" : "created",
       number: body.number ?? null,
-      message: body.number
-        ? undefined
-        : body.numberError || noNumberMsg,
+      // When there's no number, explain why; when there IS a number, surface any
+      // informational message the server returned (e.g. "line paused — over
+      // monthly minutes") so the owner isn't left in the dark.
+      message: body.number ? body.message : body.numberError || noNumberMsg,
     };
   } catch {
     return { status: "demo" };

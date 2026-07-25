@@ -128,12 +128,23 @@ async function reNotifyPendingBookings(nowMs) {
       const ownerEmail =
         override || (ownerId ? await getAuthUserEmail(ownerId) : process.env.OWNER_ALERT_EMAIL);
       if (!ownerEmail) {
-        // No address to reach — mark notified so this row isn't retried forever.
-        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
-          owner_notified: true,
-        }).catch(() => {});
+        // No address resolved — a config gap, NOT a delivered alert. Leave the
+        // flag false (bounded by the 26h cutoff) and log it, so the misconfig
+        // surfaces instead of being hidden behind a "notified" flag with nothing
+        // ever sent.
+        console.warn(
+          `[send-reminders] no owner email for appointment ${a.id} (clinic ${clinicName}) — not marking notified`
+        );
         continue;
       }
+      // CLAIM before sending: atomically flip owner_notified false->true so the
+      // live webhook or an overlapping sweep run can't also send (double alert).
+      const claimed = await sbUpdate(
+        "appointments",
+        `id=eq.${encodeURIComponent(a.id)}&owner_notified=eq.false`,
+        { owner_notified: true }
+      );
+      if (!claimed.length) continue; // someone else already claimed/sent it
       const when = a.scheduled_for
         ? new Date(a.scheduled_for).toLocaleString("en-US", {
             weekday: "short",
@@ -157,15 +168,14 @@ async function reNotifyPendingBookings(nowMs) {
         subject: `🟢 New appointment — ${clinicName}`,
         text: body,
       });
-      // Flip the flag only on a real send. An error OR a simulated result (Resend
-      // not configured) leaves it false so the next hourly run retries once email
-      // is actually working — a booking alert is never marked done with nothing
-      // sent.
       if (r?.sent) {
-        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
-          owner_notified: true,
-        }).catch(() => {});
         sent += 1;
+      } else {
+        // Send failed or is simulated (Resend not configured) — ROLL BACK the
+        // claim so the next hourly run retries once email actually works.
+        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
+          owner_notified: false,
+        }).catch(() => {});
       }
     }
   } catch (e) {
@@ -192,6 +202,14 @@ async function reDriveConfirmations(nowMs) {
     );
     const template = process.env.SMS_CONFIRMATION_TEMPLATE || DEFAULT_CONFIRMATION_TEMPLATE;
     for (const a of rows) {
+      // CLAIM before sending so the live webhook or an overlapping sweep can't
+      // also text the patient (double confirmation).
+      const claimed = await sbUpdate(
+        "appointments",
+        `id=eq.${encodeURIComponent(a.id)}&confirmation_sent=eq.false`,
+        { confirmation_sent: true }
+      );
+      if (!claimed.length) continue; // already claimed/sent elsewhere
       const body = renderTemplate(template, {
         patient_name: a.patient_name || "there",
         clinic_name: a.clinics?.name || "our office",
@@ -201,10 +219,12 @@ async function reDriveConfirmations(nowMs) {
       });
       const r = await sendSms(a.patient_phone, body);
       if (r?.sent) {
-        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
-          confirmation_sent: true,
-        }).catch(() => {});
         sent += 1;
+      } else {
+        // Roll back so a later run retries once SMS is actually working.
+        await sbUpdate("appointments", `id=eq.${encodeURIComponent(a.id)}`, {
+          confirmation_sent: false,
+        }).catch(() => {});
       }
     }
   } catch (e) {

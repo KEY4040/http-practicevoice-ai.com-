@@ -18,7 +18,6 @@ export interface ClinicRow {
   retell_agent_id: string | null;
   retell_llm_id: string | null;
   about: string | null;
-  calendar_connected: boolean | null;
   usage_minutes: number | null;
   usage_suspended: boolean | null;
   vip_enabled: boolean | null;
