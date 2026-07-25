@@ -48,14 +48,16 @@ export default async (req) => {
   const r = await generateReceptionistScript({ businessName, industry });
   if (r.simulated) return json({ ok: true, simulated: true });
   if (r.error) {
-    console.error("[generate-script]", r.error, r.detail || "");
-    // Surface a short, non-sensitive reason code (e.g. status_403, no_output_SAFETY)
-    // so setup issues can be diagnosed from the UI. Never includes the key/body.
+    console.error("[generate-script]", r.error, r.diag || "", r.detail || "");
+    // Surface a short, non-sensitive reason code (e.g. status_403) plus a compact
+    // NON-SECRET diagnostic (ListModels status, model count, tried model) so a
+    // live setup issue can be pinpointed from the UI. Never includes the key/body.
     return json(
       {
         ok: false,
         error: "generation_failed",
         reason: r.error,
+        diag: r.diag,
         message: "Couldn't write your script just now — please try again.",
       },
       502
