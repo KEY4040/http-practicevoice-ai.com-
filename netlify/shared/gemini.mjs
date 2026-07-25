@@ -15,9 +15,15 @@
 
 const DEFAULT_MODEL = "gemini-2.0-flash";
 
-/** The generation key, under either accepted env name. */
+/**
+ * The generation key, under either accepted env name. Strips ALL whitespace —
+ * these keys never contain spaces/tabs/newlines, so removing them defends
+ * against stray characters a copy-paste (especially on mobile) can smuggle in,
+ * which otherwise make the key look "malformed" (HTTP 400) to the API.
+ */
 function apiKey() {
-  return process.env.GEMINI_API_KEY || process.env.GEMINIAPIKEY || "";
+  const raw = process.env.GEMINI_API_KEY || process.env.GEMINIAPIKEY || "";
+  return raw.replace(/\s+/g, "");
 }
 
 // The exact system instruction that shapes every generated script. Kept here
