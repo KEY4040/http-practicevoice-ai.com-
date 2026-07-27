@@ -19,6 +19,7 @@ import { AudioDemo } from "@/components/marketing/AudioDemo";
 import { FeatureHub } from "@/components/marketing/FeatureHub";
 import { VipSection } from "@/components/marketing/VipSection";
 import { Testimonials } from "@/components/marketing/Testimonials";
+import { ProofBand } from "@/components/marketing/ProofBand";
 import { MissedRevenueCalculator } from "@/components/marketing/MissedRevenueCalculator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -535,6 +536,9 @@ export default function Home() {
         <VipSection />
         <RevenueHighlight />
         <MissedRevenueCalculator />
+        {/* Honest trust section until real customer quotes exist; Testimonials
+            renders nothing until then, and takes over once quotes are added. */}
+        <ProofBand />
         <Testimonials />
         <HowItWorks />
         <PricingPeek />
