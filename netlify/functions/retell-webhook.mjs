@@ -34,7 +34,7 @@ import {
   renderTemplate,
   DEFAULT_CONFIRMATION_TEMPLATE,
 } from "../shared/sms.mjs";
-import { verifySignature, parseCall } from "../shared/retell.mjs";
+import { verifySignature, parseCall, resolveAppointmentWhen } from "../shared/retell.mjs";
 import { allowanceMinutes, monthStartIso } from "../shared/entitlement.mjs";
 import { unbindNumber } from "../shared/retell-api.mjs";
 import { sendEmail } from "../shared/email.mjs";
@@ -126,6 +126,12 @@ export default async (req) => {
         console.error("[retell-webhook] No clinic matched this call. Set DEFAULT_CLINIC_ID or clinics.retell_number.");
         return json({ ok: false, error: "no_clinic_matched" }, 200);
       }
+      // If the AI captured a spoken time ("Friday at 9") but no machine datetime,
+      // resolve one from the clinic's timezone + opening hours so the 24-hour
+      // reminder can actually be scheduled. Best-effort: when it can't be resolved
+      // confidently, scheduled_for stays null and notifyOwnerBooking flags it, so
+      // the booking is never a silent no-reminder.
+      await resolveApptTime(clinicId, parsed);
       const res = await persistCall(clinicId, parsed);
       saved = res.saved;
       isNew = res.isNew;
@@ -270,6 +276,37 @@ async function resolveClinicId(parsed) {
     `[retell-webhook] no clinic matched (agent=${parsed.agentId || "?"} to=${parsed.toNumber || "?"})`
   );
   return null;
+}
+
+/**
+ * Fill in a booking's `scheduledFor` when the agent only captured a spoken time.
+ * Pulls the clinic's timezone + opening hours and hands them to the conservative
+ * resolver (see resolveAppointmentWhen). Mutates parsed.appointment in place.
+ * Best-effort and never throws — a failure just leaves scheduledFor null, which
+ * the owner alert surfaces.
+ */
+async function resolveApptTime(clinicId, parsed) {
+  const appt = parsed.appointment;
+  if (!appt || appt.scheduledFor || !appt.whenText) return;
+  try {
+    const rows = await sbSelect(
+      "clinics",
+      `select=cal_timezone,open_time,close_time&id=eq.${encodeURIComponent(clinicId)}&limit=1`
+    );
+    const c = rows[0] || {};
+    const iso = resolveAppointmentWhen(appt.whenText, parsed.startedAt, {
+      timezone: c.cal_timezone,
+      openTime: c.open_time,
+      closeTime: c.close_time,
+    });
+    if (iso) appt.scheduledFor = iso;
+    else
+      console.warn(
+        `[retell-webhook] could not schedule a reminder for spoken time "${String(appt.whenText).slice(0, 40)}" (clinic ${clinicId}) — owner will be alerted to confirm`
+      );
+  } catch (e) {
+    console.error(`[retell-webhook] appt time resolve skipped: ${((e && e.message) || e).toString().slice(0, 80)}`);
+  }
 }
 
 /**
@@ -612,6 +649,12 @@ async function notifyOwnerBooking(parsed, clinicId) {
     `Service: ${appt.type || "Appointment"}`,
     `When: ${when}`,
     `Provider: ${appt.provider || "Our team"}`,
+    // When we couldn't pin an exact datetime, the automatic 24-hour reminder
+    // can't be scheduled — tell the owner plainly so they confirm it by hand,
+    // instead of the reminder just silently never going out.
+    ...(appt.scheduledFor
+      ? []
+      : ["", "⚠️ Couldn't set an automatic 24-hour reminder for this time — please confirm the appointment with the patient directly."]),
   ].join("\n");
 
   // `delivered` gates the owner_notified flag in the caller: only flip it true

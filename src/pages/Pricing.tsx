@@ -54,13 +54,20 @@ export default function Pricing() {
   ]);
 
   // Where each plan's CTA points — returned as a real href so the button is a
-  // genuine anchor (crawlable, middle-clickable, open-in-new-tab). Billing-
-  // enforced accounts go to Billing/Signup; open beta goes straight to the
-  // plan's Stripe link (with the signed-in identity when known).
+  // genuine anchor (crawlable, middle-clickable, open-in-new-tab).
+  //
+  // A signed-OUT visitor ALWAYS goes to signup first, never straight to Stripe:
+  // without an account, a payment carries no client_reference_id, so the
+  // stripe-webhook can't map it to a user — the customer would pay and get
+  // nothing. Signup creates the account, then continues to checkout carrying
+  // their identity (see Signup.tsx). Signed-IN users go straight through:
+  // billing-enforced accounts manage it in-app; open beta opens the plan's
+  // Stripe link with their identity attached so the payment reconciles.
   function ctaHref(plan: Plan): string {
-    if (isBillingEnabled) return user ? "/billing" : `/signup?plan=${plan.id}`;
+    if (!user) return `/signup?plan=${plan.id}`;
+    if (isBillingEnabled) return "/billing";
     return (
-      checkoutUrl(plan, { userId: user?.id, email: user?.email }) ||
+      checkoutUrl(plan, { userId: user.id, email: user.email }) ||
       `/signup?plan=${plan.id}`
     );
   }
@@ -183,6 +190,11 @@ export default function Pricing() {
               >
                 Have a question? Book a demo
               </Link>
+            </p>
+            <p className="mx-auto mt-3 max-w-xl text-balance text-center text-xs text-muted-foreground">
+              Flat monthly price — no per-minute overage charges, ever. If you
+              reach your included minutes, your line pauses until your month
+              resets; upgrade anytime for more.
             </p>
           </div>
         </section>

@@ -24,20 +24,17 @@ export interface Plan {
 }
 
 /**
- * Included call-minutes per plan per month, and the overage rate charged after.
- * These are ENFORCED server-side (usage metering + auto-pause) — see
- * netlify/shared/entitlement.mjs. Priced so every plan keeps a healthy margin
- * over the ~$0.13/min voice cost even at full usage, with overage above cost.
+ * Included call-minutes per plan per month. These are ENFORCED server-side
+ * (usage metering + auto-pause) — see netlify/shared/entitlement.mjs. There is
+ * NO per-minute overage billing: when an account reaches its included minutes,
+ * the line pauses until the month resets or the owner upgrades. Pricing copy
+ * must reflect that (flat price, no surprise metered charges) — never advertise
+ * a "then X¢/min" rate the system does not actually bill.
  */
 export const PLAN_MINUTES: Record<PlanId, number> = {
   basic: 250,
   professional: 750,
   premium: 2000,
-};
-export const PLAN_OVERAGE: Record<PlanId, string> = {
-  basic: "35¢/min",
-  professional: "30¢/min",
-  premium: "25¢/min",
 };
 /** Minutes included in the paid $9.99 / 14-day trial. */
 export const TRIAL_MINUTES = 60;
@@ -53,7 +50,7 @@ export const PLANS: Plan[] = [
     paymentLink: "https://buy.stripe.com/4gMcN52yha2edMFf4vcjS0k",
     features: [
       "250 call-minutes / mo included",
-      "then 35¢/min — never a surprise",
+      "Flat price — no surprise overage bills",
       "1 AI phone number",
       "24/7 call answering & booking",
       "Answers in the caller's language (English, Spanish & more)",
@@ -74,7 +71,7 @@ export const PLANS: Plan[] = [
     badge: "Most popular",
     features: [
       "750 call-minutes / mo included",
-      "then 30¢/min",
+      "Flat price — no surprise overage bills",
       "Everything in Basic, plus:",
       "Revenue dashboard — see what calls earn you",
       "Calendar sync — Google & Outlook (coming soon)",
@@ -94,7 +91,7 @@ export const PLANS: Plan[] = [
     paymentLink: "https://buy.stripe.com/8x24gz0q93DQ8slg8zcjS0l",
     features: [
       "2,000 call-minutes / mo included",
-      "then 25¢/min",
+      "Flat price — no surprise overage bills",
       "Everything in Professional, plus:",
       "Multiple numbers & locations",
       "Custom voice & knowledge base",

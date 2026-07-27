@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { PLANS } from "@/data/plans";
+import { checkoutUrl } from "@/lib/checkout";
+import { isBillingEnabled } from "@/lib/supabase";
 
 const perks = [
   "$9.99 to start, then your plan",
@@ -21,9 +23,8 @@ export default function Signup() {
   const { signUp, demoMode } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // The plan chosen on the pricing/home page rides along in `?plan=`. When
-  // Stripe is connected, this is where you'd start the Checkout Session after
-  // the account is created.
+  // The plan chosen on the pricing/home page rides along in `?plan=`; once the
+  // account is created we continue straight to that plan's checkout (see onSubmit).
   const selectedPlan = PLANS.find((p) => p.id === searchParams.get("plan"));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -37,13 +38,29 @@ export default function Signup() {
     setError(null);
     setLoading(true);
     try {
-      const { needsConfirmation } = await signUp(email, password, name);
+      const { needsConfirmation, userId } = await signUp(email, password, name);
       if (needsConfirmation) {
-        // Email confirmation is on — don't pretend they're logged in.
+        // Email confirmation is on — don't pretend they're logged in. They'll
+        // confirm, log in, and can start their plan from Billing.
         setConfirmSent(true);
-      } else {
-        navigate("/dashboard");
+        return;
       }
+      // Account is live. If they picked a plan, continue to checkout NOW,
+      // carrying their identity so the payment reconciles to this account
+      // (never an orphaned payment). Demo mode has no real Stripe, so it just
+      // lands in the app.
+      if (selectedPlan && !demoMode) {
+        if (isBillingEnabled) {
+          navigate("/billing");
+          return;
+        }
+        const url = checkoutUrl(selectedPlan, { userId, email });
+        if (url) {
+          window.location.href = url;
+          return;
+        }
+      }
+      navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign up.");
     } finally {
