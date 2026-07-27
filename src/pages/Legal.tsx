@@ -24,7 +24,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
     title: "Privacy Policy",
     updated: "Last updated: July 9, 2026",
     intro:
-      "PracticeVoice AI, a service of BestBuys LLC (“we”, “us”), provides an AI voice receptionist for healthcare and legal practices. This policy explains what we collect and how we use it.",
+      "PracticeVoice AI, a service of The Best Buys LLC (“we”, “us”), provides an AI voice receptionist for healthcare and legal practices. This policy explains what we collect and how we use it.",
     sections: [
       {
         heading: "Information we collect",
@@ -69,7 +69,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
     title: "Terms of Service",
     updated: "Last updated: July 9, 2026",
     intro:
-      "These terms govern your use of PracticeVoice AI, a service of BestBuys LLC. By creating an account you agree to them.",
+      "These terms govern your use of PracticeVoice AI, a service of The Best Buys LLC. By creating an account you agree to them.",
     sections: [
       {
         heading: "The service",
@@ -109,7 +109,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
     title: "HIPAA & Security",
     updated: "Last updated: July 9, 2026",
     intro:
-      "We build PracticeVoice AI, a service of BestBuys LLC, to support HIPAA-ready workflows for healthcare practices. This page summarizes our approach.",
+      "We build PracticeVoice AI, a service of The Best Buys LLC, to support HIPAA-ready workflows for healthcare practices. This page summarizes our approach.",
     sections: [
       {
         heading: "Business Associate Agreement",

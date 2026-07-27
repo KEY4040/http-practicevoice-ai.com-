@@ -85,7 +85,7 @@ export function Footer() {
 
       <div className="border-t border-border">
         <div className="container-page flex flex-col items-center justify-between gap-3 py-6 text-sm text-muted-foreground sm:flex-row">
-          <p>© {new Date().getFullYear()} PracticeVoice AI, a service of BestBuys LLC. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} PracticeVoice AI, a service of The Best Buys LLC. All rights reserved.</p>
           <div className="flex items-center gap-5">
             <Link to="/privacy" className="hover:text-foreground">
               Privacy
