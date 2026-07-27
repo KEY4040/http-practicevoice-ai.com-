@@ -193,3 +193,171 @@ export function parseCall(call, opts = {}) {
       : null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Spoken-time resolver
+// ---------------------------------------------------------------------------
+// The 24-hour reminder can only be scheduled when an appointment has a real
+// datetime (scheduled_for). The reliable source is the Retell agent emitting
+// `appointment_datetime` as a full ISO string. When it only captured spoken
+// words ("Friday at 9", "tomorrow at 2pm"), parseCall leaves scheduledFor null
+// and the reminder would silently never fire. resolveAppointmentWhen is the
+// safety net: a CONSERVATIVE best-effort parse that returns an ISO datetime only
+// when it is confident, so a reminder never fires for the wrong moment. The
+// webhook alerts the owner whenever this returns null, so the booking is never
+// silent.
+
+const _WEEKDAYS = {
+  sun: 0, sunday: 0, mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2,
+  wed: 3, weds: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4,
+  fri: 5, friday: 5, sat: 6, saturday: 6,
+};
+const _MONTHS = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9,
+  september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+};
+
+function _toMinutes(t) {
+  const m = String(t || "").match(/^(\d{1,2}):(\d{2})/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+/**
+ * Parse a clock time from spoken text. Uses explicit am/pm when present; when the
+ * meridiem is missing, disambiguates a 1–11 o'clock reading by which of AM/PM
+ * falls inside the clinic's opening hours — and gives up (null) when both or
+ * neither fit, rather than guess. Returns { h, min } in 24h, or null.
+ */
+function _parseClock(text, openTime, closeTime) {
+  if (/\bnoon\b/.test(text)) return { h: 12, min: 0 };
+  if (/\bmidnight\b/.test(text)) return { h: 0, min: 0 };
+
+  // Explicit meridiem wins.
+  let m = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\b/);
+  if (m) {
+    let h = Number(m[1]);
+    const min = m[2] ? Number(m[2]) : 0;
+    const pm = /p/.test(m[3]);
+    if (h === 12) h = pm ? 12 : 0;
+    else if (pm) h += 12;
+    return h > 23 || min > 59 ? null : { h, min };
+  }
+
+  // "at H(:MM)?" or a bare "H:MM" — no meridiem.
+  m = text.match(/\bat\s+(\d{1,2})(?::(\d{2}))?\b/) || text.match(/\b(\d{1,2}):(\d{2})\b/);
+  if (m) {
+    const h12 = Number(m[1]);
+    const min = m[2] ? Number(m[2]) : 0;
+    if (h12 > 23 || min > 59) return null;
+    if (h12 === 0 || h12 === 12 || h12 > 12) return { h: h12, min }; // already unambiguous
+    const open = _toMinutes(openTime);
+    const close = _toMinutes(closeTime);
+    if (open == null || close == null) return null; // no hours to disambiguate
+    const inRange = (x) => x >= open && x <= close;
+    const amOk = inRange(h12 * 60 + min);
+    const pmOk = inRange((h12 + 12) * 60 + min);
+    if (amOk && !pmOk) return { h: h12, min };
+    if (pmOk && !amOk) return { h: h12 + 12, min };
+    return null; // ambiguous or neither — don't guess
+  }
+  return null;
+}
+
+/** Calendar Y/M/D (+ weekday 0–6) of an instant, read in a specific timezone. */
+function _ymdInZone(date, tz) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
+  })
+    .formatToParts(date)
+    .reduce((a, p) => ((a[p.type] = p.value), a), {});
+  const y = Number(parts.year);
+  const mo = Number(parts.month);
+  const d = Number(parts.day);
+  const weekday = _WEEKDAYS[String(parts.weekday || "").toLowerCase()] ??
+    new Date(Date.UTC(y, mo - 1, d)).getUTCDay();
+  return { y, m: mo, d, weekday };
+}
+
+/** Add n calendar days to a {y,m,d}. Returns {y,m,d,weekday}. */
+function _addDays(ymd, n) {
+  const b = new Date(Date.UTC(ymd.y, ymd.m - 1, ymd.d));
+  b.setUTCDate(b.getUTCDate() + n);
+  return { y: b.getUTCFullYear(), m: b.getUTCMonth() + 1, d: b.getUTCDate(), weekday: b.getUTCDay() };
+}
+
+/** The wall-clock time (y/m/d h:min) in timezone `tz`, as a real UTC instant. */
+function _zonedWallToIso(y, m, d, h, min, tz) {
+  const utcGuess = Date.UTC(y, m - 1, d, h, min);
+  const seen = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12: false, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  })
+    .formatToParts(new Date(utcGuess))
+    .reduce((a, p) => ((a[p.type] = p.value), a), {});
+  let hh = Number(seen.hour);
+  if (hh === 24) hh = 0;
+  const asUTC = Date.UTC(Number(seen.year), Number(seen.month) - 1, Number(seen.day), hh, Number(seen.minute), Number(seen.second));
+  const instant = utcGuess - (asUTC - utcGuess);
+  const dt = new Date(instant);
+  return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+}
+
+/**
+ * Best-effort resolve a spoken appointment time to an ISO datetime.
+ *
+ *   resolveAppointmentWhen("Friday at 9", callStartedAtIso, {
+ *     timezone: clinic.cal_timezone, openTime: "08:00", closeTime: "17:00",
+ *   }) -> "2026-01-09T14:00:00.000Z"  (or null when not confident)
+ *
+ * Requires a timezone, a pin-able date (today / tomorrow / a weekday / an
+ * explicit month-day), and an unambiguous clock time. Returns null otherwise —
+ * the caller then alerts the owner rather than dropping the booking silently.
+ */
+export function resolveAppointmentWhen(whenText, anchorIso, opts = {}) {
+  const text = String(whenText || "").toLowerCase().trim();
+  if (!text) return null;
+  const tz = opts.timezone;
+  if (!tz) return null; // can't place a wall-clock without a timezone
+  const anchor = anchorIso ? new Date(anchorIso) : null;
+  if (!anchor || Number.isNaN(anchor.getTime())) return null;
+
+  const time = _parseClock(text, opts.openTime, opts.closeTime);
+  if (!time) return null;
+
+  const base = _ymdInZone(anchor, tz);
+  let target = null;
+  if (/\btoday\b/.test(text)) {
+    target = { ...base };
+  } else if (/\btomorrow\b/.test(text) || /\btmrw\b/.test(text)) {
+    target = _addDays(base, 1);
+  } else {
+    const wd = text.match(/\b(sun(?:day)?|mon(?:day)?|tues?(?:day)?|wed(?:s|nesday)?|thur?s?(?:day)?|fri(?:day)?|sat(?:urday)?)\b/);
+    if (wd) {
+      const target0 = _WEEKDAYS[wd[1]];
+      if (target0 == null) return null;
+      let diff = (target0 - base.weekday + 7) % 7;
+      if (/\bnext\b/.test(text)) diff = diff === 0 ? 7 : diff + 7;
+      target = _addDays(base, diff);
+    } else {
+      const nameM = text.match(/\b(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\s+(\d{1,2})(?:st|nd|rd|th)?\b/);
+      const numM = text.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+      if (nameM) {
+        const mo = _MONTHS[nameM[1]];
+        const d = Number(nameM[2]);
+        if (mo && d >= 1 && d <= 31) target = { y: base.y, m: mo, d };
+      } else if (numM) {
+        const mo = Number(numM[1]);
+        const d = Number(numM[2]);
+        if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) target = { y: base.y, m: mo, d };
+      }
+    }
+  }
+  if (!target) return null;
+
+  const iso = _zonedWallToIso(target.y, target.m, target.d, time.h, time.min, tz);
+  if (!iso) return null;
+  // Appointments are in the future; never emit a reminder time at/before the call.
+  if (new Date(iso).getTime() <= anchor.getTime()) return null;
+  return iso;
+}

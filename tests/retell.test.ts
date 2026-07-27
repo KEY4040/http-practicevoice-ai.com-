@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { verifySignature, parseCall } from "../netlify/shared/retell.mjs";
+import { verifySignature, parseCall, resolveAppointmentWhen } from "../netlify/shared/retell.mjs";
 
 const KEY = "key_test_abc";
 const body = JSON.stringify({ event: "call_analyzed", call: { call_id: "c1" } });
@@ -104,4 +104,69 @@ test("parseCall: revenue only credited with real booking evidence", () => {
     { defaultBookingValue: 200 }
   );
   assert.equal(booked.revenue, 200);
+});
+
+// --- resolveAppointmentWhen: spoken-time -> ISO (so the 24h reminder fires) ---
+// Anchor: Monday Jan 5, 2026, 10:00 EST (America/New_York, EST = UTC-5 in Jan).
+const ANCHOR = "2026-01-05T15:00:00.000Z";
+const NY = { timezone: "America/New_York", openTime: "08:00", closeTime: "17:00" };
+
+test("resolveAppointmentWhen: 'tomorrow at 2pm' -> next day 14:00 local", () => {
+  assert.equal(
+    resolveAppointmentWhen("tomorrow at 2pm", ANCHOR, NY),
+    "2026-01-06T19:00:00.000Z"
+  );
+});
+
+test("resolveAppointmentWhen: 'Friday at 9' infers AM from opening hours", () => {
+  assert.equal(
+    resolveAppointmentWhen("Friday at 9", ANCHOR, NY),
+    "2026-01-09T14:00:00.000Z"
+  );
+});
+
+test("resolveAppointmentWhen: 'today at 2' infers PM (2am is outside hours)", () => {
+  assert.equal(
+    resolveAppointmentWhen("today at 2", ANCHOR, NY),
+    "2026-01-05T19:00:00.000Z"
+  );
+});
+
+test("resolveAppointmentWhen: 'next Monday at 10:30 am' -> following week", () => {
+  assert.equal(
+    resolveAppointmentWhen("next Monday at 10:30 am", ANCHOR, NY),
+    "2026-01-12T15:30:00.000Z"
+  );
+});
+
+test("resolveAppointmentWhen: explicit month + day", () => {
+  assert.equal(
+    resolveAppointmentWhen("march 3 at 9", ANCHOR, NY),
+    "2026-03-03T14:00:00.000Z"
+  );
+});
+
+test("resolveAppointmentWhen: ambiguous hour (fits AM and PM) -> null", () => {
+  // Open till 22:00, so both 10:00 and 22:00 are in range -> refuse to guess.
+  assert.equal(
+    resolveAppointmentWhen("at 10", ANCHOR, {
+      timezone: "America/New_York",
+      openTime: "08:00",
+      closeTime: "22:00",
+    }),
+    null
+  );
+});
+
+test("resolveAppointmentWhen: no timezone -> null (can't place a wall clock)", () => {
+  assert.equal(resolveAppointmentWhen("Friday at 9", ANCHOR, { openTime: "08:00", closeTime: "17:00" }), null);
+});
+
+test("resolveAppointmentWhen: a time already in the past -> null", () => {
+  // 9am today, but the call was at 10am -> past -> no reminder time.
+  assert.equal(resolveAppointmentWhen("today at 9", ANCHOR, NY), null);
+});
+
+test("resolveAppointmentWhen: unparseable text -> null (no clock time)", () => {
+  assert.equal(resolveAppointmentWhen("sometime next week", ANCHOR, NY), null);
 });

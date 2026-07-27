@@ -26,12 +26,14 @@ interface AuthContextValue {
   demoMode: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   /** Resolves with `needsConfirmation: true` when Supabase requires the user
-   *  to confirm their email before a session exists. */
+   *  to confirm their email before a session exists. When a session DOES exist
+   *  (confirmation off / demo), also returns the new account's id + email so the
+   *  caller can continue straight to checkout with the payment reconciled. */
   signUp: (
     email: string,
     password: string,
     name: string
-  ) => Promise<{ needsConfirmation: boolean }>;
+  ) => Promise<{ needsConfirmation: boolean; userId?: string; email?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -178,12 +180,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: data.user.email ?? email,
               name: resolveName(name, email),
             });
-            return { needsConfirmation: false };
+            return {
+              needsConfirmation: false,
+              userId: data.user.id,
+              email: data.user.email ?? email,
+            };
           }
           return { needsConfirmation: true };
         } else if (isDemoMode) {
           setDemoUser({ id: "demo", email, name: resolveName(name, email) });
-          return { needsConfirmation: false };
+          return { needsConfirmation: false, userId: "demo", email };
         } else {
           throw new Error(MISCONFIGURED_MESSAGE);
         }
