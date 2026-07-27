@@ -22,6 +22,7 @@ import { hasSupabase, sbSelect, sbInsert, sbUpdate } from "../shared/supabase.mj
 import { verifyStripeSignature } from "../shared/stripe.mjs";
 import { planKeyFromPrice } from "../shared/entitlement.mjs";
 import { hasRetell, teardownRetell } from "../shared/retell-api.mjs";
+import { sendEmail } from "../shared/email.mjs";
 
 /**
  * Tear down a canceled/expired customer's provisioned Retell line so their
@@ -52,6 +53,33 @@ async function teardownForCustomer(customerId) {
   } catch (e) {
     console.error("[stripe-webhook] teardown failed (non-fatal):", e.message);
   }
+}
+
+/**
+ * Email the owner when a Stripe payment arrives with no account attached, so a
+ * rare orphaned charge (e.g. a bookmarked payment link paid outside the app) can
+ * be reconciled or refunded instead of silently lost. Best-effort; no-ops if
+ * neither OWNER_ALERT_EMAIL nor Resend is configured.
+ */
+async function alertOrphanPayment(session) {
+  const to = process.env.OWNER_ALERT_EMAIL;
+  if (!to) return;
+  const email = session?.customer_details?.email || session?.customer_email || "(unknown)";
+  const amount =
+    typeof session?.amount_total === "number"
+      ? `$${(session.amount_total / 100).toFixed(2)} ${String(session.currency || "usd").toUpperCase()}`
+      : "(unknown amount)";
+  const body = [
+    "⚠️ ORPHANED PAYMENT — a Stripe checkout completed with no account attached.",
+    "This customer paid but has no linked account, so no plan was activated.",
+    "Reconcile them manually (create/link their account) or refund the charge.",
+    "",
+    `Customer email: ${email}`,
+    `Amount: ${amount}`,
+    `Stripe customer: ${session?.customer || "(none)"}`,
+    `Checkout session: ${session?.id || "(none)"}`,
+  ].join("\n");
+  await sendEmail({ to, subject: "⚠️ Orphaned Stripe payment — action needed", text: body });
 }
 
 export default async (req) => {
@@ -86,7 +114,15 @@ export default async (req) => {
       case "checkout.session.completed": {
         const userId = obj.client_reference_id;
         if (!userId) {
+          // The app never sends an anonymous visitor to checkout, so this should
+          // not happen — but a bare/bookmarked payment link opened outside the
+          // app could still pay with no account attached. Don't let that go
+          // unnoticed: alert the owner so they can reconcile or refund the
+          // charge. Best-effort; still 200 so Stripe stops retrying.
           console.error("[stripe-webhook] checkout.session.completed missing client_reference_id — cannot map to a user.");
+          await alertOrphanPayment(obj).catch((e) =>
+            console.error(`[stripe-webhook] orphan-payment alert failed: ${((e && e.message) || e).toString().slice(0, 80)}`)
+          );
           return json({ ok: false, error: "no_client_reference" }, 200);
         }
         // A subscription checkout starts as "trialing" — a SAFE FLOOR that keeps
