@@ -58,11 +58,21 @@ export interface Vertical {
    */
   demoNumber?: string;
   /**
-   * When true, render the "Hear a real call" audio player on this page. Set on
-   * verticals whose recording matches the audience (e.g. the law-intake call on
-   * /legal) so the proof feels custom-built for that buyer.
+   * When true, render the default "Hear a real call" audio player (the shared
+   * /demo-call.wav) on this page — e.g. the law-intake call on /legal.
    */
   showAudioDemo?: boolean;
+  /**
+   * A per-industry SAMPLE call for this page's audience, with its own recording
+   * and honest copy. Takes precedence over showAudioDemo when set.
+   */
+  audioDemo?: {
+    src: string;
+    title?: string;
+    subtitle?: string;
+    caption?: string;
+    durationSec?: number;
+  };
 }
 
 export const VERTICALS: Record<Vertical["slug"], Vertical> = {
@@ -347,6 +357,14 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   },
   salons: {
     slug: "salons",
+    audioDemo: {
+      src: "/demo-call-salon.wav",
+      title: "Hear a sample salon call",
+      subtitle:
+        "A sample booking call, answered by the PracticeVoice AI receptionist — greeting the caller, checking the service, and locking in the appointment. Press play.",
+      caption: "Sample call · answered by PracticeVoice AI",
+      durationSec: 79,
+    },
     audience: "salons & spas",
     eyebrow: "For salons & spas",
     title: "AI receptionist for salons & spas",
@@ -387,6 +405,14 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   },
   "real-estate": {
     slug: "real-estate",
+    audioDemo: {
+      src: "/demo-call-real-estate.wav",
+      title: "Hear a sample real-estate call",
+      subtitle:
+        "A sample inbound call, answered by the PracticeVoice AI receptionist — capturing and qualifying the lead so it never goes cold. Press play.",
+      caption: "Sample call · answered by PracticeVoice AI",
+      durationSec: 120,
+    },
     audience: "real estate teams",
     eyebrow: "For real estate",
     title: "AI receptionist for real estate",

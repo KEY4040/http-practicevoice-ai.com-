@@ -23,13 +23,34 @@ function fmt(s: number) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-export function AudioDemo() {
+/**
+ * Props let each page supply its own recording + honest copy (e.g. a per-industry
+ * SAMPLE call on a vertical page). Defaults reproduce the original homepage
+ * player exactly, so existing usage is unchanged.
+ */
+interface AudioDemoProps {
+  src?: string;
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  caption?: string;
+  durationSec?: number;
+}
+
+export function AudioDemo({
+  src = DEMO_AUDIO_SRC,
+  eyebrow = "Hear it for yourself",
+  title = "A real call, answered by the AI",
+  subtitle = "No script, no actor — this is our AI receptionist taking a real inbound call, calming the caller, and capturing everything the business needs. Press play.",
+  caption = "Real call · captured live by PracticeVoice AI",
+  durationSec = DEMO_DURATION_SEC,
+}: AudioDemoProps = {}) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
-  const [duration, setDuration] = useState(DEMO_DURATION_SEC);
+  const [duration, setDuration] = useState(durationSec);
 
-  if (!DEMO_AUDIO_SRC) return null;
+  if (!src) return null;
 
   const toggle = () => {
     const el = audioRef.current;
@@ -58,15 +79,13 @@ export function AudioDemo() {
       <div className="container-page max-w-2xl text-center">
         <Badge variant="primary" className="mb-4">
           <Play className="size-3.5" />
-          Hear it for yourself
+          {eyebrow}
         </Badge>
         <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-          A real call, answered by the AI
+          {title}
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-balance text-muted-foreground">
-          No script, no actor — this is our AI receptionist taking a real inbound
-          call, calming the caller, and capturing everything the business needs.
-          Press play.
+          {subtitle}
         </p>
 
         <div className="mx-auto mt-8 flex max-w-lg items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-card sm:gap-5 sm:p-5">
@@ -99,14 +118,12 @@ export function AudioDemo() {
           </div>
         </div>
 
-        <p className="mt-4 text-xs text-muted-foreground">
-          Real call · captured live by PracticeVoice AI
-        </p>
+        <p className="mt-4 text-xs text-muted-foreground">{caption}</p>
 
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <audio
           ref={audioRef}
-          src={DEMO_AUDIO_SRC}
+          src={src}
           preload="none"
           onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
           onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
