@@ -119,8 +119,13 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
           </div>
         </section>
 
-        {/* Real recorded call — shown on verticals whose recording fits */}
-        {v.showAudioDemo && <AudioDemo />}
+        {/* A per-industry SAMPLE call when this vertical has its own recording;
+            otherwise the shared default player when opted in. */}
+        {v.audioDemo ? (
+          <AudioDemo {...v.audioDemo} />
+        ) : (
+          v.showAudioDemo && <AudioDemo />
+        )}
 
         {/* VIP Passthrough — relevant to any business run off a cell (skip the
             nonprofit/contract assistance-line vertical, which routes differently). */}
