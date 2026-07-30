@@ -57,6 +57,14 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
         ],
       },
       {
+        heading: "Text messaging (SMS)",
+        body: [
+          "If you give your mobile number when booking, the business (through PracticeVoice AI) sends you appointment confirmation and reminder texts. Message frequency varies — typically 1–2 messages per appointment.",
+          "Message and data rates may apply. Reply STOP at any time to opt out, or HELP for help.",
+          "We do NOT sell or share mobile phone numbers, or SMS opt-in/consent, with third parties or affiliates for their own marketing. Mobile information is used only to send the messages you asked for. No mobile opt-in data is shared with any third party.",
+        ],
+      },
+      {
         heading: "Your choices",
         body: [
           "You can access, export, or delete your practice's data from Settings or by contacting us.",
