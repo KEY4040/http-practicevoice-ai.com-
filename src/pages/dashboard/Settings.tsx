@@ -699,7 +699,7 @@ export default function Settings() {
           </CardHeader>
           <div className="space-y-6 px-6 pb-6">
             <div className="space-y-1.5">
-              <Label htmlFor="twilio">Your text-message number</Label>
+              <Label htmlFor="twilio">Number texts are sent FROM</Label>
               <div className="relative max-w-xs">
                 <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -711,8 +711,8 @@ export default function Settings() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                The number your patients' confirmations and reminders are sent
-                from.
+                Your business texting number — this is what patients see on their
+                confirmation and reminder texts.
               </p>
             </div>
 
@@ -966,15 +966,17 @@ function SendTestText() {
 
   return (
     <div className="rounded-xl border border-border bg-muted/30 p-4">
-      <p className="text-sm font-medium">Send a test text</p>
+      <p className="text-sm font-medium">Send yourself a test text</p>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        Text your own phone to confirm your text messaging is set up correctly.
+        Check that texting works. For safety we can only text your own business
+        number — so enter the same number as your <strong>Practice phone
+        number</strong> above (it must be a phone that can receive texts).
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Input
           type="tel"
-          aria-label="Your phone number for a test text"
-          placeholder="Your cell, e.g. (762) 555-0100"
+          aria-label="Your business phone number for a test text"
+          placeholder="Your business number, e.g. (762) 555-0100"
           value={to}
           onChange={(e) => setTo(e.target.value)}
           className="sm:max-w-xs"
