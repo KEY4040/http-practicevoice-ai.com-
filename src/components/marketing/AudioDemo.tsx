@@ -3,12 +3,12 @@ import { Play, Pause } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 /**
- * "Hear a real call" homepage section with a clean, on-brand audio player.
+ * "Hear a sample call" section with a clean, on-brand audio player.
  *
- * Renders ONLY when a real recording is present. Drop the file at
- * `public/demo-call.wav` (a genuine call from the AI line — never fabricated)
- * and point DEMO_AUDIO_SRC at it. Empty string = section renders nothing, so
- * the homepage never shows a broken player.
+ * Renders ONLY when a recording is present. Drop the file at
+ * `public/demo-call.wav` — a real recording of the AI on a sample call (never a
+ * fabricated or AI-generated clip) — and point DEMO_AUDIO_SRC at it. Empty
+ * string = section renders nothing, so the page never shows a broken player.
  */
 const DEMO_AUDIO_SRC = "/demo-call.wav"; // real recording of the AI taking a live call
 // Known length of the demo file, so the player shows the right time before the
@@ -40,9 +40,9 @@ interface AudioDemoProps {
 export function AudioDemo({
   src = DEMO_AUDIO_SRC,
   eyebrow = "Hear it for yourself",
-  title = "A real call, answered by the AI",
-  subtitle = "No script, no actor — this is our AI receptionist taking a real inbound call, calming the caller, and capturing everything the business needs. Press play.",
-  caption = "Real call · captured live by PracticeVoice AI",
+  title = "Hear the AI answer a call",
+  subtitle = "A sample call, answered by the PracticeVoice AI receptionist — greeting the caller, handling the request, and capturing everything the business needs. Press play.",
+  caption = "Sample call · answered by PracticeVoice AI",
   durationSec = DEMO_DURATION_SEC,
 }: AudioDemoProps = {}) {
   const audioRef = useRef<HTMLAudioElement>(null);
