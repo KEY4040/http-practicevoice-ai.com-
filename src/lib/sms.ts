@@ -42,12 +42,28 @@ export async function sendSms(to: string, body: string): Promise<SmsResult> {
       error?: string;
     };
 
-    if (!res.ok) return { status: "error", message: data.error ?? "Failed to send" };
+    if (!res.ok) return { status: "error", message: friendlyError(data.error) };
     if (data.simulated) return { status: "not_configured" };
     return { status: "sent" };
   } catch {
     // No backend reachable — demo mode.
     return { status: "demo" };
+  }
+}
+
+/** Turn a raw backend error code into plain-English guidance for the owner. */
+function friendlyError(code?: string): string {
+  switch (code) {
+    case "test_texts_go_to_your_own_number_only":
+      return "For safety, the test only sends to your own business number. Enter the same number as your Practice phone number above.";
+    case "set_business_phone_first":
+      return "Add your Practice phone number above and save, then send the test.";
+    case "needs_card":
+      return "Start your trial first to send texts.";
+    case "missing_to_or_body":
+      return "Enter a phone number to send the test to.";
+    default:
+      return code ?? "Could not send — please try again.";
   }
 }
 
