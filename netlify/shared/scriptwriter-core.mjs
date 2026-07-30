@@ -15,6 +15,7 @@ Output Requirements:
 - Include a warm greeting protocol.
 - Define the tone based on industry.
 - Include a directive to capture the caller's name, phone number, and reason for calling.
+- Include a directive that, before promising any confirmation or reminder text, the receptionist must ask the caller's permission to text that number (for example: "Would you like me to text your appointment confirmation and reminders to this number? Message and data rates may apply, and you can reply STOP any time to opt out."), and only promise texts if the caller agrees.
 - Include a directive on how to handle booking or taking a message based on the industry.
 - Always confirm the caller's details back to them before ending the call.
 - Include a polite closing that summarizes next steps.
