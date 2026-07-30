@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { verifySignature, parseCall, resolveAppointmentWhen } from "../netlify/shared/retell.mjs";
+import { verifySignature, parseCall, resolveAppointmentWhen, placeLocalDatetime } from "../netlify/shared/retell.mjs";
 
 const KEY = "key_test_abc";
 const body = JSON.stringify({ event: "call_analyzed", call: { call_id: "c1" } });
@@ -169,4 +169,33 @@ test("resolveAppointmentWhen: a time already in the past -> null", () => {
 
 test("resolveAppointmentWhen: unparseable text -> null (no clock time)", () => {
   assert.equal(resolveAppointmentWhen("sometime next week", ANCHOR, NY), null);
+});
+
+// --- timezone-safe machine datetime (the reminder-timing fix) ---
+test("parseCall: an offset-aware datetime is trusted as an absolute instant", () => {
+  const p = parseCall(
+    { call_id: "x", call_analysis: { custom_analysis_data: { appointment_booked: true, appointment_datetime: "2026-01-09T09:00:00-05:00" } } },
+    {}
+  );
+  assert.equal(p.appointment?.scheduledFor, "2026-01-09T14:00:00.000Z");
+  assert.equal(p.appointment?.datetimeLocal, null);
+});
+
+test("parseCall: a NAIVE datetime is NOT trusted (kept for tz placement)", () => {
+  const p = parseCall(
+    { call_id: "x", call_analysis: { custom_analysis_data: { appointment_booked: true, appointment_datetime: "2026-01-09T09:00:00" } } },
+    {}
+  );
+  // Must not be read as UTC — left for the webhook to place in the clinic tz.
+  assert.equal(p.appointment?.scheduledFor, null);
+  assert.equal(p.appointment?.datetimeLocal, "2026-01-09T09:00:00");
+});
+
+test("placeLocalDatetime: naive wall-clock lands in the clinic timezone", () => {
+  // 9 AM Eastern (EST, UTC-5) -> 14:00Z, not 09:00Z.
+  assert.equal(placeLocalDatetime("2026-01-09T09:00", "America/New_York"), "2026-01-09T14:00:00.000Z");
+  // 9 AM Pacific (PST, UTC-8) -> 17:00Z.
+  assert.equal(placeLocalDatetime("2026-01-09 09:00:00", "America/Los_Angeles"), "2026-01-09T17:00:00.000Z");
+  assert.equal(placeLocalDatetime("2026-01-09T09:00", ""), null);
+  assert.equal(placeLocalDatetime("", "America/New_York"), null);
 });

@@ -86,6 +86,23 @@ function parseDate(value) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+// True when a datetime string carries an explicit timezone (a trailing "Z" or a
+// ±HH:MM offset) — i.e. it names an ABSOLUTE instant we can trust as-is.
+function hasTzOffset(value) {
+  return /(?:Z|[+-]\d{2}:?\d{2})$/.test(String(value || "").trim());
+}
+
+/**
+ * Parse a datetime ONLY if it carries an explicit timezone offset (absolute
+ * instant). A naive datetime like "2026-01-09T09:00:00" is rejected (returns
+ * null) — parsing it here would read it as the server's UTC and fire the 24h
+ * reminder hours off for any non-UTC clinic. Naive wall-clock times are placed
+ * in the clinic's timezone later, in the webhook, via placeLocalDatetime.
+ */
+function parseAbsoluteDate(value) {
+  return hasTzOffset(value) ? parseDate(value) : null;
+}
+
 /**
  * Normalize a Retell `call` payload into the fields we persist.
  *
@@ -139,13 +156,19 @@ export function parseCall(call, opts = {}) {
 
   const apptType = (custom.appointment_type || custom.service || "").toString().trim();
   const apptWhenText = (custom.appointment_time || "").toString().trim();
+  // Trust a machine datetime ONLY when it carries a timezone offset (an absolute
+  // instant). A naive "2026-01-09T09:00" is kept as datetimeLocal so the webhook
+  // can place it in the clinic's timezone — reading it as server-UTC here would
+  // fire the 24h reminder hours off for any non-UTC clinic.
+  const rawDt = (custom.appointment_datetime || "").toString().trim();
   const scheduledFor =
-    parseDate(custom.appointment_datetime) || parseDate(custom.appointment_time);
+    parseAbsoluteDate(custom.appointment_datetime) || parseAbsoluteDate(custom.appointment_time);
+  const datetimeLocal = !scheduledFor && rawDt && !hasTzOffset(rawDt) ? rawDt : null;
   // Only record an appointment when there's real evidence of one — either the
   // agent's explicit flag or actual appointment details. This prevents a stray
   // keyword match from creating a phantom appointment + confirmation text.
   const structuredBooked = custom.appointment_booked === true;
-  const hasApptData = Boolean(apptType || scheduledFor || apptWhenText);
+  const hasApptData = Boolean(apptType || scheduledFor || apptWhenText || datetimeLocal);
   const hasAppointment = structuredBooked || hasApptData;
 
   const patientName =
@@ -186,6 +209,8 @@ export function parseCall(call, opts = {}) {
           type: apptType || "Appointment",
           provider: (custom.provider || "").toString().trim() || "Our team",
           scheduledFor,
+          // A naive machine datetime (no offset) awaiting timezone placement.
+          datetimeLocal,
           whenText: apptWhenText || null,
           patientName,
           patientPhone,
@@ -301,6 +326,19 @@ function _zonedWallToIso(y, m, d, h, min, tz) {
   const instant = utcGuess - (asUTC - utcGuess);
   const dt = new Date(instant);
   return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+}
+
+/**
+ * Place a NAIVE machine datetime (no timezone offset, e.g. "2026-01-09T09:00" or
+ * "2026-01-09 09:00:00") into the clinic's timezone and return a correct UTC ISO.
+ * This is the precise path when the agent emitted a datetime but without an
+ * offset. Returns null if the timezone or the string is missing/unparseable.
+ */
+export function placeLocalDatetime(localStr, tz) {
+  if (!localStr || !tz) return null;
+  const m = String(localStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return _zonedWallToIso(Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5]), tz);
 }
 
 /**
