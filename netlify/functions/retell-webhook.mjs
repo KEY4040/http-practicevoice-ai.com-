@@ -34,7 +34,7 @@ import {
   renderTemplate,
   DEFAULT_CONFIRMATION_TEMPLATE,
 } from "../shared/sms.mjs";
-import { verifySignature, parseCall, resolveAppointmentWhen } from "../shared/retell.mjs";
+import { verifySignature, parseCall, resolveAppointmentWhen, placeLocalDatetime } from "../shared/retell.mjs";
 import { allowanceMinutes, monthStartIso } from "../shared/entitlement.mjs";
 import { unbindNumber } from "../shared/retell-api.mjs";
 import { sendEmail } from "../shared/email.mjs";
@@ -287,22 +287,27 @@ async function resolveClinicId(parsed) {
  */
 async function resolveApptTime(clinicId, parsed) {
   const appt = parsed.appointment;
-  if (!appt || appt.scheduledFor || !appt.whenText) return;
+  // Already an absolute instant, or nothing to work from.
+  if (!appt || appt.scheduledFor || (!appt.datetimeLocal && !appt.whenText)) return;
   try {
     const rows = await sbSelect(
       "clinics",
       `select=cal_timezone,open_time,close_time&id=eq.${encodeURIComponent(clinicId)}&limit=1`
     );
     const c = rows[0] || {};
-    const iso = resolveAppointmentWhen(appt.whenText, parsed.startedAt, {
-      timezone: c.cal_timezone,
-      openTime: c.open_time,
-      closeTime: c.close_time,
-    });
+    // Prefer the precise machine datetime (placed in the clinic's timezone); fall
+    // back to parsing the spoken time.
+    const iso =
+      (appt.datetimeLocal && placeLocalDatetime(appt.datetimeLocal, c.cal_timezone)) ||
+      resolveAppointmentWhen(appt.whenText, parsed.startedAt, {
+        timezone: c.cal_timezone,
+        openTime: c.open_time,
+        closeTime: c.close_time,
+      });
     if (iso) appt.scheduledFor = iso;
     else
       console.warn(
-        `[retell-webhook] could not schedule a reminder for spoken time "${String(appt.whenText).slice(0, 40)}" (clinic ${clinicId}) — owner will be alerted to confirm`
+        `[retell-webhook] could not schedule a reminder for "${String(appt.datetimeLocal || appt.whenText).slice(0, 40)}" (clinic ${clinicId}) — owner will be alerted to confirm`
       );
   } catch (e) {
     console.error(`[retell-webhook] appt time resolve skipped: ${((e && e.message) || e).toString().slice(0, 80)}`);
