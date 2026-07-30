@@ -78,6 +78,14 @@ export interface Vertical {
 export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   dental: {
     slug: "dental",
+    audioDemo: {
+      src: "/demo-call-dental.wav",
+      title: "Hear a sample dental-office call",
+      subtitle:
+        "A sample patient call, answered by the PracticeVoice AI receptionist — greeting the caller, checking the reason for the visit, and booking the appointment. Press play.",
+      caption: "Sample call · answered by PracticeVoice AI",
+      durationSec: 35,
+    },
     audience: "dental practices",
     eyebrow: "For dental practices",
     title: "AI receptionist for dental practices",
