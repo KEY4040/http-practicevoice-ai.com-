@@ -233,7 +233,14 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
     ],
     trust: ["Encrypted in transit & at rest", "Confidential intake", "Answers 24/7"],
     demoNumber: "(803) 770-5067",
-    showAudioDemo: true,
+    audioDemo: {
+      src: "/demo-call.wav",
+      title: "Hear a sample law-firm call",
+      subtitle:
+        "A sample intake call, answered by the PracticeVoice AI receptionist — greeting the caller, capturing the matter, and booking the consultation. Press play.",
+      caption: "Sample call · answered by PracticeVoice AI",
+      durationSec: 80,
+    },
   },
   "home-services": {
     slug: "home-services",
