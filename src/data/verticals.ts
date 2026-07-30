@@ -117,6 +117,14 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   },
   medical: {
     slug: "medical",
+    audioDemo: {
+      src: "/demo-call-medical.wav",
+      title: "Hear a sample medical-office call",
+      subtitle:
+        "A sample patient call, answered by the PracticeVoice AI receptionist — greeting the caller, capturing the reason for the visit, and booking the appointment. Press play.",
+      caption: "Sample call · answered by PracticeVoice AI",
+      durationSec: 45,
+    },
     audience: "medical practices",
     eyebrow: "For medical practices",
     title: "AI receptionist for medical practices",
