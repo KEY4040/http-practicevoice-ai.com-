@@ -252,6 +252,14 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   },
   "home-services": {
     slug: "home-services",
+    audioDemo: {
+      src: "/demo-call-hvac.wav",
+      title: "Hear a sample HVAC call",
+      subtitle:
+        "A sample service call, answered by the PracticeVoice AI receptionist — capturing the problem and the address, then booking the visit. Press play.",
+      caption: "Sample call · answered by PracticeVoice AI",
+      durationSec: 32,
+    },
     audience: "home service businesses",
     eyebrow: "For home services",
     title: "AI receptionist for home services",
