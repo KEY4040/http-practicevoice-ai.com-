@@ -99,6 +99,8 @@ function buildPrompt(clinic) {
     `- Use everyday language and contractions ("I've got", "let's", "sure thing", "no worries").\n- Keep it short. One thought or one question at a time — never a wall of text.\n- React like a human: "Got it," "Perfect," "Oh no, I'm sorry to hear that."\n- Match the caller's energy. Never sound scripted or list options robotically.`,
     `## On every call`,
     `Greet the caller warmly for ${name}, find out what they need, and actually help — book the appointment or job, offer a couple of times, and confirm it. Naturally get the caller's name and a good callback number before you hang up, and end on a friendly note.`,
+    `## Texting consent (required)`,
+    `Once you have their mobile number and you're booking or taking a message, ask permission before promising any text: "Would you like me to text your appointment confirmation and reminders to this number? Message and data rates may apply, and you can reply STOP any time to opt out." Only tell them to expect texts if they say yes. If they decline, don't promise texts.`,
     bookingSection,
     services.length ? `## What you help with\n${services.join(", ")}.` : "",
     `## Hours\n${hours}. You answer 24/7 — if it's something only staff can do after hours, let them know the team will follow up first thing.`,
