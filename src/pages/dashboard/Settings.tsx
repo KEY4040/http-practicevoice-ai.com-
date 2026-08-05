@@ -351,6 +351,37 @@ export default function Settings() {
                       ← forward your calls here
                     </span>
                   </div>
+
+                  {/* Carrier call-forwarding steps so owners know exactly how to
+                      point their existing line at the AI number. */}
+                  <div className="mt-4 rounded-xl border border-border bg-background/70 p-4">
+                    <p className="text-sm font-semibold">How to forward your calls</p>
+                    <ol className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                      <li>
+                        <span className="font-medium text-foreground">1.</span> From the
+                        phone customers already call (your business line), dial{" "}
+                        <span className="font-mono font-semibold text-foreground">*72</span>,
+                        then your AI number{" "}
+                        <span className="font-mono font-semibold text-foreground">{aiNumber}</span>,
+                        and press call.
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">2.</span> Wait for the
+                        confirmation tone, then hang up. Every call now rings your AI.
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">3.</span> To turn
+                        forwarding off later, dial{" "}
+                        <span className="font-mono font-semibold text-foreground">*73</span>.
+                      </li>
+                    </ol>
+                    <p className="mt-2.5 text-xs text-muted-foreground">
+                      Codes can vary by carrier. If <span className="font-mono">*72</span>{" "}
+                      doesn&rsquo;t work, open your phone&rsquo;s Call Forwarding settings
+                      and forward to <span className="font-mono">{aiNumber}</span>, or search
+                      &ldquo;[your carrier] call forwarding.&rdquo;
+                    </p>
+                  </div>
                 </>
               ) : (
                 <>
