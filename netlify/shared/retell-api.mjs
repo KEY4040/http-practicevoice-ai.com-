@@ -87,6 +87,22 @@ function toE164(s) {
 }
 
 /**
+ * The SINGLE source of truth for "is the VIP code-word transfer active?" — the
+ * transfer tool (below) and the buildPrompt directive MUST both gate on this so
+ * they can never diverge (a prompt that names a tool the agent doesn't have, or
+ * vice-versa). Returns the ready-to-dial +1 E.164 owner cell when VIP is on AND
+ * the cell normalizes to a valid US number AND a non-blank passphrase is set;
+ * otherwise "". The trimmed passphrase, when active, is returned alongside.
+ */
+export function vipTransfer(clinic) {
+  if (!clinic?.vip_enabled) return { cell: "", passphrase: "" };
+  const cell = toE164(clinic?.vip_transfer_to);
+  const passphrase = String(clinic?.vip_passphrase || "").trim();
+  if (!cell || !passphrase) return { cell: "", passphrase: "" };
+  return { cell, passphrase };
+}
+
+/**
  * Retell `transfer_call` tool for the VIP CODE WORD — a caller-ID-INDEPENDENT
  * backup to VIP Passthrough. Passthrough routes by caller ID at call start, but
  * a rare carrier can hide the number on a forwarded call. With a code word, any
@@ -101,10 +117,8 @@ function toE164(s) {
  * transfer_option}; cold (blind) transfer via transfer_option.type.
  */
 export function vipTransferTool(clinic) {
-  if (!clinic?.vip_enabled) return [];
-  const cell = toE164(clinic?.vip_transfer_to);
-  const phrase = String(clinic?.vip_passphrase || "").trim();
-  if (!cell || !phrase) return [];
+  const { cell } = vipTransfer(clinic);
+  if (!cell) return [];
   return [
     {
       type: "transfer_call",

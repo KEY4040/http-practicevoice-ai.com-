@@ -33,6 +33,7 @@ import {
   deleteLlm,
   pickVoice,
   calTools,
+  vipTransfer,
   vipTransferTool,
 } from "../shared/retell-api.mjs";
 
@@ -93,16 +94,16 @@ function buildPrompt(clinic) {
     ? `## Booking\nYou can book real appointments on the calendar. When the caller wants a time, call check_availability_cal to offer open slots. Once they pick one, you MUST call book_appointment_cal to actually book it — never say "someone will follow up." Then confirm the exact date and time back to them.`
     : "";
 
-  // VIP code word: when the owner has set a private passphrase (and a transfer
-  // cell), the agent carries a transfer_to_owner tool (see vipTransferTool). Tell
-  // it to transfer the instant the caller says the exact phrase — and to never
-  // reveal or hint at the code word. Only include when the tool is actually
-  // attached, so the prompt never references a tool the agent doesn't have.
-  const passphrase = String(clinic.vip_passphrase || "").trim();
-  const vipCodeSection =
-    clinic.vip_enabled && passphrase && clinic.vip_transfer_to
-      ? `## VIP code word (priority)\nThere is a private code word: "${passphrase}". If a caller says this exact phrase, it means the owner told them to. Immediately call the transfer_to_owner tool to connect them — say only something brief and natural like "Of course, connecting you now" and transfer. Do NOT ask why, do NOT question it, and NEVER say, spell, hint at, or confirm the code word out loud to anyone. If nobody says the code word, never mention that one exists.`
-      : "";
+  // VIP code word: when the owner has set a private passphrase AND a transfer
+  // cell that normalizes to a valid number, the agent carries a transfer_to_owner
+  // tool (see vipTransferTool). Gate this directive on the SAME predicate
+  // (vipTransfer) the tool uses, so the prompt can never name a tool the agent
+  // doesn't have. JSON.stringify the passphrase so quotes/newlines in the owner's
+  // value can't splice fake directives into the prompt.
+  const { passphrase } = vipTransfer(clinic);
+  const vipCodeSection = passphrase
+    ? `## VIP code word (priority)\nThere is a private code word: ${JSON.stringify(passphrase)}. If a caller says this exact phrase, it means the owner told them to. Immediately call the transfer_to_owner tool to connect them — say only something brief and natural like "Of course, connecting you now" and transfer. Do NOT ask why, do NOT question it, and NEVER say, spell, hint at, or confirm the code word out loud to anyone. If nobody says the code word, never mention that one exists.`
+    : "";
 
   return [
     `## Identity`,
