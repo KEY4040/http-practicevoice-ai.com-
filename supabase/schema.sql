@@ -72,6 +72,7 @@ alter table public.clinics add column if not exists usage_suspended boolean not 
 alter table public.clinics add column if not exists vip_enabled boolean not null default false;
 alter table public.clinics add column if not exists vip_transfer_to text;
 alter table public.clinics add column if not exists vip_numbers text[] default '{}';
+alter table public.clinics add column if not exists vip_passphrase text;
 alter table public.clinics add column if not exists cal_api_key text;
 alter table public.clinics add column if not exists cal_event_type_id bigint;
 alter table public.clinics add column if not exists cal_timezone text;
@@ -222,7 +223,7 @@ create policy "Owners manage their clinics"
 revoke update on public.clinics from authenticated;
 grant update (
   name, phone, about, services, open_days, open_time, close_time, voice,
-  vip_enabled, vip_transfer_to, vip_numbers,
+  vip_enabled, vip_transfer_to, vip_numbers, vip_passphrase,
   cal_api_key, cal_event_type_id, cal_timezone, calendar_provider,
   alert_email
 ) on public.clinics to authenticated;
