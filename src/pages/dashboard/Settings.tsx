@@ -986,8 +986,9 @@ export default function Settings() {
               <p className="text-xs text-muted-foreground">
                 Keep it simple to say and hard to guess. Tell it only to the
                 people you want ringing straight through. Leave blank to turn it
-                off. Save, then click <strong>Activate my AI line</strong> to
-                apply it.
+                off. Tap <strong>Save settings</strong> to apply it — if your AI
+                line is already live, your AI updates right away; if not, it
+                takes effect the moment you activate.
               </p>
             </div>
           </div>
