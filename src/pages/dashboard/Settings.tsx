@@ -850,6 +850,21 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
 
+          {/* Reliability note: VIP matches on caller ID, so the most robust setup
+              is customers calling the AI number directly (no forwarding carrier in
+              the middle that could hide the number). */}
+          <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
+            <p className="text-sm font-semibold">Make VIP 100% reliable</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              VIP matches the caller&rsquo;s phone number. To catch your people
+              every time, use your <strong>AI number as your public business
+              number</strong> so customers call it directly. If you forward
+              instead (dial <span className="font-mono">*72</span>), it works with
+              almost every carrier — a rare few hide the caller&rsquo;s number on
+              forwarded calls, and a hidden number can&rsquo;t be matched.
+            </p>
+          </div>
+
           <div className="mt-6 space-y-5">
             {/* Master switch */}
             <label className="flex cursor-pointer items-center gap-3">
