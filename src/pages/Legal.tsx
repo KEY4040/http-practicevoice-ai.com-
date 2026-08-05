@@ -94,6 +94,13 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
         ],
       },
       {
+        heading: "Text messaging (SMS)",
+        body: [
+          "If you provide a mobile number, you may receive appointment confirmation and reminder texts. Message frequency varies. Message and data rates may apply.",
+          "Reply STOP at any time to opt out, or HELP for help. We do not share or sell mobile phone numbers, or SMS opt-in consent, with third parties.",
+        ],
+      },
+      {
         heading: "Billing & trials",
         body: [
           "New accounts start with a one-time $9.99 activation that includes a 14-day trial; your monthly plan begins after the trial unless you cancel. Paid plans are billed monthly, and you can cancel anytime.",
