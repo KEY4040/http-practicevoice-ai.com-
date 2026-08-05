@@ -45,6 +45,8 @@ import { sendSms, describeSmsResult, type SmsResult } from "@/lib/sms";
 import { sendTestEmail, type TestEmailResult } from "@/lib/testEmail";
 import { generateScript } from "@/lib/generateScript";
 import { activateAiLine, type ActivateResult } from "@/lib/provision";
+import { BestRepLibrary } from "@/components/dashboard/BestRepLibrary";
+import type { BestRepPrompt } from "@/data/bestRepPrompts";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -197,6 +199,20 @@ export default function Settings() {
     } else {
       setGenError(r.message ?? "Couldn't write your script just now — please try again.");
     }
+  }
+
+  // Load a BestRep library prompt into the "about" box. Returns false if the
+  // owner declined the overwrite, so the card can skip its "Loaded" state.
+  function onUseBestRep(p: BestRepPrompt): boolean {
+    if (
+      about.trim() &&
+      !window.confirm("Replace what's in the box with this ready-made prompt?")
+    ) {
+      return false;
+    }
+    setAbout(p.prompt);
+    markInteracted();
+    return true;
   }
 
   function addService() {
@@ -541,6 +557,9 @@ export default function Settings() {
                   <p className="mt-2 text-xs text-destructive">{genError}</p>
                 )}
               </div>
+
+              {/* BestRep Prompt Library — one-tap expert scripts by industry. */}
+              <BestRepLibrary onUse={onUseBestRep} />
 
               <Textarea
                 id="about"
