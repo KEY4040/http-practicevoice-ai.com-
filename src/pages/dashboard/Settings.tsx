@@ -98,6 +98,9 @@ export default function Settings() {
   const [vipTransferTo, setVipTransferTo] = useState("");
   const [vipNumbers, setVipNumbers] = useState<string[]>([]);
   const [newVip, setNewVip] = useState("");
+  // VIP code word: a caller who says it is transferred to the cell above, even
+  // when their caller ID is hidden (the caller-ID-independent backup).
+  const [vipPassphrase, setVipPassphrase] = useState("");
 
   // Calendar booking (Cal.com): the AI books real appointments into the owner's
   // own calendar. They paste their Cal.com API key + event-type id + timezone.
@@ -145,6 +148,7 @@ export default function Settings() {
         if (typeof clinic.vip_enabled === "boolean") setVipEnabled(clinic.vip_enabled);
         if (clinic.vip_transfer_to) setVipTransferTo(clinic.vip_transfer_to);
         if (clinic.vip_numbers && clinic.vip_numbers.length) setVipNumbers(clinic.vip_numbers);
+        if (clinic.vip_passphrase) setVipPassphrase(clinic.vip_passphrase);
         // The key is never fetched to the browser; connection state comes from
         // calendar_provider. The field stays blank until the owner enters a new key.
         setCalConnected(Boolean(clinic.calendar_provider));
@@ -281,6 +285,7 @@ export default function Settings() {
         enabled: vipEnabled,
         transferTo: vipTransferTo,
         numbers: vipNumbers,
+        passphrase: vipPassphrase,
       });
       await updateCalendarSettings(supabase, {
         // Only send the key when the owner actually typed one — a blank field
@@ -956,6 +961,34 @@ export default function Settings() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Code word — the caller-ID-independent backup transfer. */}
+            <div className="space-y-1.5 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor="vip-passphrase">VIP code word</Label>
+                <Badge variant="neutral">Never fails</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Give your people a secret word. When they say it on the call, the
+                AI transfers them straight to your cell above — even if their
+                number is hidden or they&rsquo;re calling from a phone that
+                isn&rsquo;t on your VIP list. This is the bulletproof way to make
+                sure your VIPs always reach you.
+              </p>
+              <Input
+                id="vip-passphrase"
+                value={vipPassphrase}
+                onChange={(e) => setVipPassphrase(e.target.value)}
+                placeholder="e.g. blue tiger"
+                autoComplete="off"
+              />
+              <p className="text-xs text-muted-foreground">
+                Keep it simple to say and hard to guess. Tell it only to the
+                people you want ringing straight through. Leave blank to turn it
+                off. Save, then click <strong>Activate my AI line</strong> to
+                apply it.
+              </p>
             </div>
           </div>
         </Card>

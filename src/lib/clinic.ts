@@ -22,6 +22,10 @@ export interface ClinicRow {
   usage_suspended: boolean | null;
   vip_enabled: boolean | null;
   vip_transfer_to: string | null;
+  // Private code word: any caller who says it is transferred to vip_transfer_to,
+  // regardless of caller ID (the caller-ID-independent VIP backup). Not a secret
+  // in the security sense — it's the owner's own word, safe in their browser.
+  vip_passphrase: string | null;
   // NOTE: cal_api_key is deliberately NOT read into the browser — it's a live
   // third-party credential. The client only needs to know a calendar is
   // connected (calendar_provider / calendar_connected); the raw key stays
@@ -58,6 +62,7 @@ const CLINIC_COLUMNS = [
   "vip_enabled",
   "vip_transfer_to",
   "vip_numbers",
+  "vip_passphrase",
   "cal_event_type_id",
   "cal_timezone",
   "calendar_provider",
@@ -156,7 +161,7 @@ export async function updateClinicProfile(
  */
 export async function updateVipSettings(
   supabase: SupabaseClient,
-  patch: { enabled?: boolean; transferTo?: string; numbers?: string[] }
+  patch: { enabled?: boolean; transferTo?: string; numbers?: string[]; passphrase?: string }
 ): Promise<void> {
   const clinic = await getOrCreateClinic(supabase);
   if (!clinic) return;
@@ -164,6 +169,8 @@ export async function updateVipSettings(
   if (patch.enabled != null) fields.vip_enabled = patch.enabled;
   if (patch.transferTo != null) fields.vip_transfer_to = patch.transferTo.trim() || null;
   if (patch.numbers) fields.vip_numbers = patch.numbers.map((n) => n.trim()).filter(Boolean);
+  // Empty string clears the code word (turns the passphrase transfer off).
+  if (patch.passphrase != null) fields.vip_passphrase = patch.passphrase.trim() || null;
   if (Object.keys(fields).length === 0) return;
   await supabase.from("clinics").update(fields).eq("id", clinic.id);
 }

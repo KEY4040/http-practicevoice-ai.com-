@@ -80,6 +80,43 @@ export function calTools(clinic) {
   ];
 }
 
+/** Normalize a loosely-typed US number to +1 E.164, or "" if not 10 digits. */
+function toE164(s) {
+  const ten = String(s || "").replace(/\D/g, "").slice(-10);
+  return ten.length === 10 ? `+1${ten}` : "";
+}
+
+/**
+ * Retell `transfer_call` tool for the VIP CODE WORD — a caller-ID-INDEPENDENT
+ * backup to VIP Passthrough. Passthrough routes by caller ID at call start, but
+ * a rare carrier can hide the number on a forwarded call. With a code word, any
+ * caller who says the owner's private phrase is transferred to the owner's cell
+ * mid-call, no matter what number they're on.
+ *
+ * Returns [] unless VIP is on AND a transfer cell AND a passphrase are all set.
+ * The destination is a fixed literal (known at provision time) — NOT a dynamic
+ * variable — precisely because the code-word path must work when caller ID (and
+ * thus {{vip_cell}}) is missing. Schema verified against Retell's TS SDK
+ * (LlmCreateParams.TransferCallTool): required {type,name,transfer_destination,
+ * transfer_option}; cold (blind) transfer via transfer_option.type.
+ */
+export function vipTransferTool(clinic) {
+  if (!clinic?.vip_enabled) return [];
+  const cell = toE164(clinic?.vip_transfer_to);
+  const phrase = String(clinic?.vip_passphrase || "").trim();
+  if (!cell || !phrase) return [];
+  return [
+    {
+      type: "transfer_call",
+      name: "transfer_to_owner",
+      description:
+        "Transfer the call to the business owner immediately. Call this the moment the caller says the private VIP code word.",
+      transfer_destination: { type: "predefined", number: cell },
+      transfer_option: { type: "cold_transfer" },
+    },
+  ];
+}
+
 /**
  * Post-call extraction schema attached to EVERY provisioned agent. Retell's LLM
  * fills these after each call; the webhook's parseCall reads them from
