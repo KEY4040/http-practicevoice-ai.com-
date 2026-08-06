@@ -12,6 +12,6 @@
  * their account (same mechanism as the plan checkout). Until it's set, the buy
  * button explains the feature is being set up.
  */
-export const VOICE_CLONE_PRICE = 59;
+export const VOICE_CLONE_PRICE = 59.99;
 
-export const VOICE_CLONE_PAYMENT_LINK = "";
+export const VOICE_CLONE_PAYMENT_LINK = "https://buy.stripe.com/bJedR93CleiuaAt4pRcjS0o";
