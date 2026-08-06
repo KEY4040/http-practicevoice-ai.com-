@@ -12,12 +12,15 @@ export interface SmsVariable {
   example: string;
 }
 
+// Tokens are unchanged (existing saved templates depend on them); only the
+// owner-facing labels and example values are industry-neutral now, so a salon /
+// contractor / real-estate customer doesn't see medical-only wording.
 export const SMS_VARIABLES: SmsVariable[] = [
-  { token: "{{patient_name}}", label: "Patient name", example: "Maria Gonzalez" },
-  { token: "{{clinic_name}}", label: "Clinic name", example: "Bayview Dental" },
-  { token: "{{service}}", label: "Service", example: "Cleaning & Exam" },
+  { token: "{{patient_name}}", label: "Customer name", example: "Maria Gonzalez" },
+  { token: "{{clinic_name}}", label: "Business name", example: "Riverside Studio" },
+  { token: "{{service}}", label: "Service", example: "consultation" },
   { token: "{{appointment_time}}", label: "Appointment time", example: "Tue, Jul 8 · 10:00 AM" },
-  { token: "{{provider}}", label: "Provider", example: "Dr. Patel" },
+  { token: "{{provider}}", label: "Staff member", example: "Alex" },
 ];
 
 export const DEFAULT_CONFIRMATION_TEMPLATE =
@@ -40,9 +43,9 @@ export function renderTemplate(
 export function sampleVars(clinicName: string): Record<string, string> {
   return {
     patient_name: "Maria Gonzalez",
-    clinic_name: clinicName || "Bayview Dental",
-    service: "Cleaning & Exam",
+    clinic_name: clinicName || "Riverside Studio",
+    service: "consultation",
     appointment_time: "Tue, Jul 8 · 10:00 AM",
-    provider: "Dr. Patel",
+    provider: "Alex",
   };
 }
