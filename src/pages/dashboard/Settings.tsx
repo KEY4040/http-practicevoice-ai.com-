@@ -764,7 +764,7 @@ export default function Settings() {
               Text messages (SMS)
             </CardTitle>
             <CardDescription>
-              Confirmations and reminders sent to patients after they book.
+              Confirmations and reminders sent to customers after they book.
             </CardDescription>
           </CardHeader>
           <div className="space-y-6 px-6 pb-6">
@@ -781,7 +781,7 @@ export default function Settings() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Your business texting number — this is what patients see on their
+                Your business texting number — this is what customers see on their
                 confirmation and reminder texts.
               </p>
             </div>
@@ -1491,7 +1491,7 @@ function SmsTemplateField({
       />
       <div className="mt-2">
         <p className="mb-1 text-xs font-medium text-muted-foreground">Preview</p>
-        <div className="max-w-sm rounded-2xl rounded-bl-sm bg-primary px-3.5 py-2.5 text-sm text-primary-foreground shadow-soft">
+        <div className="max-w-sm rounded-2xl rounded-bl-sm border border-primary/15 bg-primary/[0.06] px-3.5 py-2.5 text-sm text-foreground">
           {preview}
         </div>
       </div>
