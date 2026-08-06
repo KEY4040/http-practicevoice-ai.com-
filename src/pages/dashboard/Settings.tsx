@@ -47,6 +47,7 @@ import { generateScript } from "@/lib/generateScript";
 import { activateAiLine, type ActivateResult } from "@/lib/provision";
 import { BestRepLibrary } from "@/components/dashboard/BestRepLibrary";
 import type { BestRepPrompt } from "@/data/bestRepPrompts";
+import { VoiceCloneCard } from "@/components/dashboard/VoiceCloneCard";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,9 @@ export default function Settings() {
   const [openTime, setOpenTime] = useState(loaded.openTime);
   const [closeTime, setCloseTime] = useState(loaded.closeTime);
   const [voice, setVoice] = useState(loaded.voice);
+  // One-time voice cloning: paid flag + the cloned voice_id (both server-managed).
+  const [voiceClonePaid, setVoiceClonePaid] = useState(false);
+  const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [twilioNumber, setTwilioNumber] = useState(loaded.twilioNumber);
   const [confirmationTemplate, setConfirmationTemplate] = useState(
     loaded.confirmationTemplate
@@ -143,6 +147,8 @@ export default function Settings() {
         if (clinic.open_time) setOpenTime(clinic.open_time.slice(0, 5));
         if (clinic.close_time) setCloseTime(clinic.close_time.slice(0, 5));
         if (clinic.voice) setVoice(clinic.voice);
+        setVoiceClonePaid(Boolean(clinic.voice_clone_paid));
+        setClonedVoiceId(clinic.cloned_voice_id ?? null);
         if (clinic.retell_number) setAiNumber(clinic.retell_number);
         if (clinic.alert_email) setAlertEmail(clinic.alert_email);
         if (typeof clinic.vip_enabled === "boolean") setVipEnabled(clinic.vip_enabled);
@@ -740,6 +746,15 @@ export default function Settings() {
             </div>
           </fieldset>
         </Card>
+
+        {/* Voice cloning (optional one-time) */}
+        <VoiceCloneCard
+          paid={voiceClonePaid}
+          clonedVoiceId={clonedVoiceId}
+          userId={user?.id}
+          email={user?.email}
+          onCloned={setClonedVoiceId}
+        />
 
         {/* Text messages (SMS) */}
         <Card>
