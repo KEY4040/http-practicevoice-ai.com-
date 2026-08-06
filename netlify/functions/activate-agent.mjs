@@ -182,7 +182,8 @@ export default async (req) => {
     // --- Already has an agent: re-sync brain/voice, and buy a number if the
     //     first attempt failed to get one (don't dead-end). ---
     if (clinic.retell_agent_id && clinic.retell_llm_id) {
-      const voiceId = await pickVoice(clinic.voice);
+      // A purchased cloned voice wins over the preset catalog voices.
+      const voiceId = clinic.cloned_voice_id || (await pickVoice(clinic.voice));
       await updateLlm(clinic.retell_llm_id, { prompt, beginMessage, generalTools: tools });
       await updateAgent(clinic.retell_agent_id, {
         voiceId,

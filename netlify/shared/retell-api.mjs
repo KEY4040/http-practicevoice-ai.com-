@@ -197,6 +197,52 @@ export const POST_CALL_ANALYSIS = [
   },
 ];
 
+/**
+ * Clone a voice from audio samples (Retell POST /clone-voice, multipart). Used by
+ * the one-time voice-cloning purchase: the owner's samples are forwarded here and
+ * the returned voice_id becomes their agent's voice.
+ *
+ * `files` is an array of { data: Buffer|Blob, name, type } audio samples. We use
+ * ElevenLabs as the provider (its voices speak multilingually, matching our
+ * "multi" language agents). Schema verified against the Retell Clone Voice API:
+ * multipart fields files[], voice_name, voice_provider; returns { voice_id, ... }.
+ */
+export async function cloneVoice({ files, voiceName }) {
+  if (!Array.isArray(files) || files.length === 0) {
+    const err = new Error("No audio files provided for voice cloning.");
+    err.status = 400;
+    throw err;
+  }
+  const form = new FormData();
+  for (const f of files) {
+    const blob = f.data instanceof Blob ? f.data : new Blob([f.data], { type: f.type || "audio/mpeg" });
+    form.append("files", blob, f.name || "sample.mp3");
+  }
+  form.append("voice_name", String(voiceName || "My Voice").slice(0, 200));
+  form.append("voice_provider", "elevenlabs");
+
+  const res = await fetch(`${BASE}/clone-voice`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.RETELL_API_KEY}` }, // no Content-Type: FormData sets the multipart boundary
+    body: form,
+    signal: AbortSignal.timeout(60000), // cloning is slower than a JSON call
+  });
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text };
+  }
+  if (!res.ok) {
+    const msg = data?.message || data?.error_message || text || `HTTP ${res.status}`;
+    const err = new Error(`Retell POST /clone-voice failed: ${res.status} ${msg}`);
+    err.status = res.status;
+    throw err;
+  }
+  return data; // { voice_id, voice_name, provider, gender, preview_audio_url, ... }
+}
+
 /** Create the response engine (the prompt/brain). Returns { llm_id }. */
 export async function createLlm({ prompt, beginMessage, generalTools }) {
   return retellFetch("POST", "/create-retell-llm", {

@@ -77,6 +77,10 @@ alter table public.clinics add column if not exists cal_api_key text;
 alter table public.clinics add column if not exists cal_event_type_id bigint;
 alter table public.clinics add column if not exists cal_timezone text;
 alter table public.clinics add column if not exists calendar_provider text;
+-- One-time voice cloning ($59). Both server-managed (webhook + clone-voice);
+-- deliberately excluded from the authenticated UPDATE grant below.
+alter table public.clinics add column if not exists voice_clone_paid boolean not null default false;
+alter table public.clinics add column if not exists cloned_voice_id text;
 alter table public.clinics add column if not exists alert_email text;
 
 -- Calls ---------------------------------------------------------------------

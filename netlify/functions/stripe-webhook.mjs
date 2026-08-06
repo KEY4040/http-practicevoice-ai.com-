@@ -113,6 +113,29 @@ export default async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const userId = obj.client_reference_id;
+        // One-time purchases (mode=payment) are NOT plan subscriptions — today the
+        // only one is the $59 voice-clone add-on. Flip the clinic's paid flag and
+        // stop; never write a subscription row from a one-time payment (that would
+        // wrongly unlock a monthly plan). Subscription checkouts use mode=subscription
+        // and fall through to the existing logic below.
+        if (obj.mode === "payment") {
+          if (!userId) {
+            console.error("[stripe-webhook] one-time payment missing client_reference_id — cannot map to a user.");
+            await alertOrphanPayment(obj).catch((e) =>
+              console.error(`[stripe-webhook] orphan-payment alert failed: ${((e && e.message) || e).toString().slice(0, 80)}`)
+            );
+            return json({ ok: false, error: "no_client_reference" }, 200);
+          }
+          const updated = await sbUpdate(
+            "clinics",
+            `owner_id=eq.${encodeURIComponent(userId)}`,
+            { voice_clone_paid: true }
+          );
+          if (!Array.isArray(updated) || !updated.length) {
+            console.error(`[stripe-webhook] voice-clone paid but no clinic for user ${userId} yet.`);
+          }
+          break;
+        }
         if (!userId) {
           // The app never sends an anonymous visitor to checkout, so this should
           // not happen — but a bare/bookmarked payment link opened outside the

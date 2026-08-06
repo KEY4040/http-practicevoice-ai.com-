@@ -34,6 +34,10 @@ export interface ClinicRow {
   cal_event_type_id: number | null;
   cal_timezone: string | null;
   calendar_provider: string | null;
+  // One-time voice cloning. Both server-managed (Stripe webhook + clone-voice);
+  // the browser only reads them to show paid/cloned state. Not secrets.
+  voice_clone_paid: boolean | null;
+  cloned_voice_id: string | null;
   // Optional override for where booking alerts are emailed. Null = use the
   // owner's account email (the default). Not a secret — safe in the browser.
   alert_email: string | null;
@@ -67,6 +71,8 @@ const CLINIC_COLUMNS = [
   "cal_timezone",
   "calendar_provider",
   "alert_email",
+  "voice_clone_paid",
+  "cloned_voice_id",
 ].join(",");
 
 /**
