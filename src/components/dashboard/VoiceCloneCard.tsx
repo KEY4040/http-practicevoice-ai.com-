@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mic, Sparkles, Upload, X, Check, Loader2, Square } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,21 @@ export function VoiceCloneCard({ paid, clonedVoiceId, userId, email, onCloned }:
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
+  // Release the mic if the owner navigates away from Settings mid-recording —
+  // otherwise the MediaStream tracks stay live and the "mic in use" indicator
+  // lingers. onstop stops the tracks (see startRecording).
+  useEffect(() => {
+    return () => {
+      try {
+        if (recorderRef.current && recorderRef.current.state !== "inactive") {
+          recorderRef.current.stop();
+        }
+      } catch {
+        /* nothing to clean up */
+      }
+    };
+  }, []);
 
   const header = (
     <CardHeader>
