@@ -119,6 +119,13 @@ export function AudioDemo({
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">{caption}</p>
+        {/* Always shown, on every sample: makes clear no real customer data is
+            involved, so a privacy-sensitive prospect (law, medical) never mistakes
+            a staged demo for real client information. */}
+        <p className="mx-auto mt-1.5 max-w-md text-[11px] leading-snug text-muted-foreground/70">
+          Demonstration only — the caller is fictional and any names, dates, or
+          details are made up to show how the AI works.
+        </p>
 
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <audio
