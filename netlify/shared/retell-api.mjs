@@ -81,7 +81,7 @@ export function calTools(clinic) {
 }
 
 /** Normalize a loosely-typed US number to +1 E.164, or "" if not 10 digits. */
-function toE164(s) {
+export function toE164(s) {
   const ten = String(s || "").replace(/\D/g, "").slice(-10);
   return ten.length === 10 ? `+1${ten}` : "";
 }

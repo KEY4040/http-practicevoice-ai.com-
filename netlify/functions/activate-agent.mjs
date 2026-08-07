@@ -259,7 +259,9 @@ export default async (req) => {
       );
     }
 
-    const voiceId = await pickVoice(clinic.voice);
+    // A purchased cloned voice wins over the preset catalog voices — same as the
+    // re-sync branch, so cloning BEFORE the first activation still takes effect.
+    const voiceId = clinic.cloned_voice_id || (await pickVoice(clinic.voice));
     const llm = await createLlm({ prompt, beginMessage, generalTools: tools });
     const agent = await createAgent({
       llmId: llm.llm_id,

@@ -17,7 +17,11 @@ import { getUserId, bearer } from "../shared/auth.mjs";
 import { hasRetell, cloneVoice, updateAgent } from "../shared/retell-api.mjs";
 
 const MAX_FILES = 25; // Retell's ElevenLabs limit
-const MAX_TOTAL_BYTES = 25 * 1024 * 1024; // 25 MB guard so a huge upload can't hang the function
+// Netlify synchronous functions reject request bodies around 6 MB at the platform
+// (before this handler runs), so keep our own ceiling just under that — this way an
+// oversized upload hits the friendly message below instead of an opaque platform 413.
+// ~5 MB is plenty of audio for a clone (MediaRecorder is ~1 MB/min).
+const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

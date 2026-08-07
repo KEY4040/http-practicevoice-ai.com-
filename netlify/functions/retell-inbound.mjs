@@ -28,14 +28,12 @@
  */
 import { hasSupabase, sbSelect } from "../shared/supabase.mjs";
 import { verifySignature } from "../shared/retell.mjs";
+// Shared with the VIP transfer tool so the cell is normalized identically on both
+// the call-START (here) and mid-call-transfer (retell-api) paths.
+import { toE164 } from "../shared/retell-api.mjs";
 
+// Last-10-digits, for matching a caller against the VIP allow-list (ignores +1).
 const nat = (s) => String(s || "").replace(/\D/g, "").slice(-10);
-// Normalize any way a customer typed their cell into valid +1 E.164 so a typo
-// (missing +1, spaces, dashes, a stray digit) can never break their transfers.
-const toE164 = (s) => {
-  const ten = nat(s);
-  return ten.length === 10 ? `+1${ten}` : "";
-};
 
 export default async (req) => {
   if (req.method !== "POST") return json({ call_inbound: {} }, 405);
