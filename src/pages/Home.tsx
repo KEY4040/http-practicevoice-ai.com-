@@ -16,6 +16,7 @@ import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { PhoneDemo } from "@/components/marketing/PhoneDemo";
 import { AudioDemo } from "@/components/marketing/AudioDemo";
+import { VideoDemo } from "@/components/marketing/VideoDemo";
 import { FeatureHub } from "@/components/marketing/FeatureHub";
 import { VipSection } from "@/components/marketing/VipSection";
 import { Testimonials } from "@/components/marketing/Testimonials";
@@ -529,6 +530,7 @@ export default function Home() {
       <Navbar />
       <main id="main" className="flex-1">
         <Hero />
+        <VideoDemo />
         <TrustBar />
         <AudioDemo />
         <Benefits />
