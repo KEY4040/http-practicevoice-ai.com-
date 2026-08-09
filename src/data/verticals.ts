@@ -57,35 +57,11 @@ export interface Vertical {
    * own AI receptionist. Display format, e.g. "(803) 770-5067".
    */
   demoNumber?: string;
-  /**
-   * When true, render the default "Hear a real call" audio player (the shared
-   * /demo-call.wav) on this page — e.g. the law-intake call on /legal.
-   */
-  showAudioDemo?: boolean;
-  /**
-   * A per-industry SAMPLE call for this page's audience, with its own recording
-   * and honest copy. Takes precedence over showAudioDemo when set.
-   */
-  audioDemo?: {
-    src: string;
-    title?: string;
-    subtitle?: string;
-    caption?: string;
-    durationSec?: number;
-  };
 }
 
 export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   dental: {
     slug: "dental",
-    audioDemo: {
-      src: "/demo-call-dental.wav",
-      title: "Hear a sample dental-office call",
-      subtitle:
-        "A sample patient call, answered by the PracticeVoice AI receptionist — greeting the caller, checking the reason for the visit, and booking the appointment. Press play.",
-      caption: "Sample call · answered by PracticeVoice AI",
-      durationSec: 35,
-    },
     audience: "dental practices",
     eyebrow: "For dental practices",
     title: "AI receptionist for dental practices",
@@ -125,14 +101,6 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   },
   medical: {
     slug: "medical",
-    audioDemo: {
-      src: "/demo-call-medical.wav",
-      title: "Hear a sample medical-office call",
-      subtitle:
-        "A sample patient call, answered by the PracticeVoice AI receptionist — greeting the caller, capturing the reason for the visit, and booking the appointment. Press play.",
-      caption: "Sample call · answered by PracticeVoice AI",
-      durationSec: 45,
-    },
     audience: "medical practices",
     eyebrow: "For medical practices",
     title: "AI receptionist for medical practices",
@@ -249,25 +217,9 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
     ],
     trust: ["Encrypted in transit & at rest", "Confidential intake", "Answers 24/7"],
     demoNumber: "(803) 770-5067",
-    audioDemo: {
-      src: "/demo-call.wav",
-      title: "Hear a sample law-firm call",
-      subtitle:
-        "A sample intake call, answered by the PracticeVoice AI receptionist — greeting the caller, capturing the matter, and booking the consultation. Press play.",
-      caption: "Sample call · answered by PracticeVoice AI",
-      durationSec: 80,
-    },
   },
   "home-services": {
     slug: "home-services",
-    audioDemo: {
-      src: "/demo-call-hvac.wav",
-      title: "Hear a sample HVAC call",
-      subtitle:
-        "A sample service call, answered by the PracticeVoice AI receptionist — capturing the problem and the address, then booking the visit. Press play.",
-      caption: "Sample call · answered by PracticeVoice AI",
-      durationSec: 32,
-    },
     audience: "home service businesses",
     eyebrow: "For home services",
     title: "AI receptionist for home services",
@@ -388,14 +340,6 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   },
   salons: {
     slug: "salons",
-    audioDemo: {
-      src: "/demo-call-salon.wav",
-      title: "Hear a sample salon call",
-      subtitle:
-        "A sample booking call, answered by the PracticeVoice AI receptionist — greeting the caller, checking the service, and locking in the appointment. Press play.",
-      caption: "Sample call · answered by PracticeVoice AI",
-      durationSec: 79,
-    },
     audience: "salons & spas",
     eyebrow: "For salons & spas",
     title: "AI receptionist for salons & spas",
@@ -436,14 +380,6 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
   },
   "real-estate": {
     slug: "real-estate",
-    audioDemo: {
-      src: "/demo-call-real-estate.wav",
-      title: "Hear a sample real-estate call",
-      subtitle:
-        "A sample inbound call, answered by the PracticeVoice AI receptionist — capturing and qualifying the lead so it never goes cold. Press play.",
-      caption: "Sample call · answered by PracticeVoice AI",
-      durationSec: 120,
-    },
     audience: "real estate teams",
     eyebrow: "For real estate",
     title: "AI receptionist for real estate",

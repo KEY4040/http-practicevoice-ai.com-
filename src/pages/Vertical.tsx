@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Check, PhoneCall, ShieldCheck, Clock, Phone } from "lucide-react";
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
-import { AudioDemo } from "@/components/marketing/AudioDemo";
 import { VipSection } from "@/components/marketing/VipSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,14 +117,6 @@ export default function Vertical({ slug }: { slug: VerticalData["slug"] }) {
             </div>
           </div>
         </section>
-
-        {/* A per-industry SAMPLE call when this vertical has its own recording;
-            otherwise the shared default player when opted in. */}
-        {v.audioDemo ? (
-          <AudioDemo {...v.audioDemo} />
-        ) : (
-          v.showAudioDemo && <AudioDemo />
-        )}
 
         {/* VIP Passthrough — relevant to any business run off a cell (skip the
             nonprofit/contract assistance-line vertical, which routes differently). */}
