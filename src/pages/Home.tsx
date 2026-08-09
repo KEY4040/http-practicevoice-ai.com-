@@ -17,6 +17,7 @@ import { Footer } from "@/components/marketing/Footer";
 import { PhoneDemo } from "@/components/marketing/PhoneDemo";
 import { AudioDemo } from "@/components/marketing/AudioDemo";
 import { VideoDemo } from "@/components/marketing/VideoDemo";
+import { LiveSample } from "@/components/marketing/LiveSample";
 import { FeatureHub } from "@/components/marketing/FeatureHub";
 import { VipSection } from "@/components/marketing/VipSection";
 import { Testimonials } from "@/components/marketing/Testimonials";
@@ -533,6 +534,7 @@ export default function Home() {
         <VideoDemo />
         <TrustBar />
         <AudioDemo />
+        <LiveSample />
         <Benefits />
         <FeatureHub />
         <IndustriesHub />
