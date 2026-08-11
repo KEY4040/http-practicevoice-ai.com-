@@ -15,7 +15,6 @@ import {
 import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { PhoneDemo } from "@/components/marketing/PhoneDemo";
-import { AudioDemo } from "@/components/marketing/AudioDemo";
 import { VideoDemo } from "@/components/marketing/VideoDemo";
 import { LiveSample } from "@/components/marketing/LiveSample";
 import { FeatureHub } from "@/components/marketing/FeatureHub";
@@ -533,7 +532,6 @@ export default function Home() {
         <Hero />
         <VideoDemo />
         <TrustBar />
-        <AudioDemo />
         <LiveSample />
         <Benefits />
         <FeatureHub />
