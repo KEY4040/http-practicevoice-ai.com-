@@ -62,6 +62,13 @@ function Hero() {
             </Button>
           </div>
 
+          {/* Pricing clarity — people were confused thinking it was $199 up front. */}
+          <p className="mt-4 text-base font-medium text-foreground">
+            <span className="font-extrabold text-primary">Just $9.99</span> for your
+            first 14 days — then plans from <span className="font-bold">$99/mo</span>.
+            Cancel anytime.
+          </p>
+
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Clock className="size-4 text-accent" />
