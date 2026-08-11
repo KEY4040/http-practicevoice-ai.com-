@@ -86,6 +86,27 @@ export default function Settings() {
   const markInteracted = () => {
     interacted.current = true;
   };
+
+  // The SMS template field the owner last focused, so tapping a variable chip
+  // inserts it at the cursor of that field (falls back to the confirmation text).
+  const activeSmsField = useRef<{ el: HTMLTextAreaElement; set: (v: string) => void } | null>(null);
+  const insertSmsToken = (token: string) => {
+    markInteracted();
+    const active = activeSmsField.current;
+    if (!active) {
+      setConfirmationTemplate((v) => (v ? `${v} ${token}` : token));
+      return;
+    }
+    const { el, set } = active;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    set(el.value.slice(0, start) + token + el.value.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
   // "Instant AI Receptionist" generator: industry input + progress/error state.
   // Industry is a generation input only (not persisted) — the drafted script it
   // produces is what gets saved (into `about`).
@@ -789,20 +810,22 @@ export default function Settings() {
 
             <SendTestText />
 
-            {/* Available variables */}
+            {/* Available variables — tap to drop one into the text you're editing. */}
             <div className="rounded-xl bg-muted/50 p-3">
-              <p className="text-xs font-medium text-foreground">
-                Insert these — they fill in automatically:
+              <p className="text-xs font-semibold text-foreground">
+                Tap to insert — these fill in automatically for each customer:
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {SMS_VARIABLES.map((v) => (
-                  <code
+                  <button
+                    type="button"
                     key={v.token}
-                    title={v.label}
-                    className="rounded-md bg-background px-1.5 py-0.5 text-xs text-primary shadow-soft"
+                    title={`Insert ${v.label}`}
+                    onClick={() => insertSmsToken(v.token)}
+                    className="rounded-md bg-background px-2 py-1 text-xs font-semibold text-primary shadow-soft transition-colors hover:bg-primary/10 active:scale-95"
                   >
                     {v.token}
-                  </code>
+                  </button>
                 ))}
               </div>
             </div>
@@ -814,6 +837,7 @@ export default function Settings() {
               value={confirmationTemplate}
               onChange={setConfirmationTemplate}
               clinicName={clinicName}
+              onFocusField={(p) => (activeSmsField.current = p)}
             />
             <SmsTemplateField
               id="reminder"
@@ -822,6 +846,7 @@ export default function Settings() {
               value={reminderTemplate}
               onChange={setReminderTemplate}
               clinicName={clinicName}
+              onFocusField={(p) => (activeSmsField.current = p)}
             />
           </div>
         </Card>
@@ -1471,6 +1496,7 @@ function SmsTemplateField({
   value,
   onChange,
   clinicName,
+  onFocusField,
 }: {
   id: string;
   label: string;
@@ -1478,6 +1504,7 @@ function SmsTemplateField({
   value: string;
   onChange: (v: string) => void;
   clinicName: string;
+  onFocusField?: (payload: { el: HTMLTextAreaElement; set: (v: string) => void }) => void;
 }) {
   const preview = renderTemplate(value, sampleVars(clinicName));
   return (
@@ -1488,7 +1515,9 @@ function SmsTemplateField({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => onFocusField?.({ el: e.currentTarget, set: onChange })}
         rows={3}
+        className="text-base font-medium leading-relaxed text-foreground"
       />
       <div className="mt-2">
         <p className="mb-1 text-xs font-medium text-muted-foreground">Preview</p>

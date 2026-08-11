@@ -576,8 +576,10 @@ async function sendConfirmation(parsed) {
   const appt = parsed.appointment;
   const clinicName = await clinicName_(parsed);
   const template = process.env.SMS_CONFIRMATION_TEMPLATE || DEFAULT_CONFIRMATION_TEMPLATE;
+  const customerName = appt.patientName || parsed.callerName || "there";
   const body = renderTemplate(template, {
-    patient_name: appt.patientName || parsed.callerName || "there",
+    customer_name: customerName,
+    patient_name: customerName, // back-compat with pre-rename saved templates
     clinic_name: clinicName,
     service: appt.type || "your appointment",
     appointment_time: appt.whenText || "the scheduled time",

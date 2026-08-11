@@ -57,8 +57,12 @@ export function renderTemplate(template, vars) {
   );
 }
 
+// Templates use {{customer_name}}. The older {{patient_name}} token still works
+// because every send site (retell-webhook, send-reminders) supplies BOTH keys —
+// so a customer who saved a {{patient_name}} template before the rename keeps
+// working.
 export const DEFAULT_CONFIRMATION_TEMPLATE =
-  "Hi {{patient_name}}, this is {{clinic_name}}. Your {{service}} appointment is confirmed for {{appointment_time}} with {{provider}}. Reply STOP to opt out.";
+  "Hi {{customer_name}}, this is {{clinic_name}}. Your {{service}} appointment is confirmed for {{appointment_time}} with {{provider}}. Reply STOP to opt out.";
 
 export const DEFAULT_REMINDER_TEMPLATE =
-  "Hi {{patient_name}}, a friendly reminder from {{clinic_name}}: your {{service}} appointment is tomorrow at {{appointment_time}} with {{provider}}. See you then!";
+  "Hi {{customer_name}}, a friendly reminder from {{clinic_name}}: your {{service}} appointment is tomorrow at {{appointment_time}} with {{provider}}. See you then!";
