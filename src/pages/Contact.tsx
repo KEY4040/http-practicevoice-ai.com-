@@ -44,7 +44,9 @@ export default function Contact() {
       if (res.status === 404 || res.ok) setStatus("sent");
       else setStatus("error");
     } catch {
-      setStatus("sent"); // no backend reachable — don't punish the visitor
+      // A real network failure — the lead never reached us, so DON'T claim
+      // success (that would silently lose it). Show the email fallback instead.
+      setStatus("error");
     }
   }
 
@@ -122,7 +124,7 @@ export default function Contact() {
                       id="name"
                       value={form.name}
                       onChange={(e) => update("name", e.target.value)}
-                      placeholder="Dr. Jane Smith"
+                      placeholder="Jane Smith"
                       required
                     />
                   </div>

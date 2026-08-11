@@ -120,7 +120,7 @@ export default function Signup() {
           <Label htmlFor="name">Full name</Label>
           <Input
             id="name"
-            placeholder="Dr. Jane Smith"
+            placeholder="Jane Smith"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -132,7 +132,7 @@ export default function Signup() {
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@yourpractice.com"
+            placeholder="you@yourbusiness.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
