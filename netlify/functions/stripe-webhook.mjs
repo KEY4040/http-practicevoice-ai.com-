@@ -82,6 +82,30 @@ async function alertOrphanPayment(session) {
   await sendEmail({ to, subject: "⚠️ Orphaned Stripe payment — action needed", text: body });
 }
 
+/**
+ * Premium includes voice cloning at no extra charge. When a customer's plan is
+ * premium, flag their clinic voice_clone_paid=true — the SAME flag the one-time
+ * $59.99 purchase sets — so the whole clone flow (Settings UI + clone-voice
+ * function) unlocks with no separate payment. Maps customer -> user -> clinic
+ * like teardownForCustomer. Best-effort; never throws into the webhook.
+ */
+async function grantVoiceCloneForCustomer(customerId) {
+  if (!customerId) return;
+  try {
+    const subs = await sbSelect(
+      "subscriptions",
+      `select=user_id&stripe_customer_id=eq.${encodeURIComponent(customerId)}&limit=1`
+    );
+    const uid = subs[0]?.user_id;
+    if (!uid) return;
+    await sbUpdate("clinics", `owner_id=eq.${encodeURIComponent(uid)}`, {
+      voice_clone_paid: true,
+    });
+  } catch (e) {
+    console.error("[stripe-webhook] grant voice clone failed (non-fatal):", e.message);
+  }
+}
+
 export default async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
 
@@ -207,6 +231,9 @@ export default async (req) => {
         // so it stops costing money. (This is the "shuts off after 14 days".)
         if (["canceled", "unpaid", "incomplete_expired"].includes(status)) {
           await teardownForCustomer(customer);
+        } else if (plan === "premium") {
+          // Premium includes voice cloning — unlock it for this customer.
+          await grantVoiceCloneForCustomer(customer);
         }
         break;
       }
