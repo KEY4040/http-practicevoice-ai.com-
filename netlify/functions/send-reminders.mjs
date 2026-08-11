@@ -210,8 +210,10 @@ async function reDriveConfirmations(nowMs) {
         { confirmation_sent: true }
       );
       if (!claimed.length) continue; // already claimed/sent elsewhere
+      const nm = a.patient_name || "there";
       const body = renderTemplate(template, {
-        patient_name: a.patient_name || "there",
+        customer_name: nm,
+        patient_name: nm, // back-compat with pre-rename saved templates
         clinic_name: a.clinics?.name || "our office",
         service: a.type || "your appointment",
         appointment_time: formatWhen(a.scheduled_for),
@@ -290,8 +292,10 @@ export default async () => {
     }
     if (!claimed.length) continue; // already claimed/sent by another run
 
+    const nm = appt.patient_name || "there";
     const body = renderTemplate(template, {
-      patient_name: appt.patient_name || "there",
+      customer_name: nm,
+      patient_name: nm, // back-compat with pre-rename saved templates
       clinic_name: appt.clinics?.name || "our office",
       service: appt.type || "your appointment",
       appointment_time: formatWhen(appt.scheduled_for),
