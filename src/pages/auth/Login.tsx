@@ -101,6 +101,18 @@ export default function Login() {
           Start for $9.99
         </Link>
       </p>
+
+      {/* Easy-to-find cancellation. You must be signed in to cancel (so we know
+          whose subscription it is), so this points to the in-dashboard button. */}
+      <div className="mt-6 rounded-xl border border-border bg-muted/40 p-3 text-center">
+        <p className="text-xs text-muted-foreground">
+          Need to cancel your subscription?
+        </p>
+        <p className="mt-1 text-sm font-medium text-foreground">
+          Log in above, then open Settings →{" "}
+          <span className="font-semibold text-destructive">Cancel subscription</span>
+        </p>
+      </div>
     </AuthLayout>
   );
 }

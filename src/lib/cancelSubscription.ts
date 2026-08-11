@@ -1,7 +1,7 @@
 /**
- * Client helper for canceling the subscription and deleting the account. POSTs
- * to the `cancel-account` Netlify Function with the signed-in user's token; the
- * function cancels Stripe, tears down Retell, and deletes the account.
+ * Client helper to cancel the signed-in owner's subscription. POSTs to the
+ * `cancel-subscription` Netlify Function with their access token. Billing stops
+ * immediately; the account and its setup are kept (they can resubscribe later).
  */
 import { getSupabase } from "./supabase";
 
@@ -10,7 +10,7 @@ export interface CancelResult {
   message?: string;
 }
 
-export async function cancelAccount(): Promise<CancelResult> {
+export async function cancelSubscription(): Promise<CancelResult> {
   try {
     const supabase = await getSupabase();
     if (!supabase) return { status: "not_signed_in", message: "Please sign in again." };
@@ -18,7 +18,7 @@ export async function cancelAccount(): Promise<CancelResult> {
     const token = data.session?.access_token;
     if (!token) return { status: "not_signed_in", message: "Please sign in again." };
 
-    const res = await fetch("/.netlify/functions/cancel-account", {
+    const res = await fetch("/.netlify/functions/cancel-subscription", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
