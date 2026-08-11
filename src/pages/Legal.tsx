@@ -24,12 +24,12 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
     title: "Privacy Policy",
     updated: "Last updated: July 9, 2026",
     intro:
-      "PracticeVoice AI, a service of The Best Buys LLC (“we”, “us”), provides an AI voice receptionist for healthcare and legal practices. This policy explains what we collect and how we use it.",
+      "PracticeVoice AI, a service of The Best Buys LLC (“we”, “us”), provides an AI voice receptionist for businesses of every kind. This policy explains what we collect and how we use it.",
     sections: [
       {
         heading: "Information we collect",
         body: [
-          "Account information you provide (name, email, practice details).",
+          "Account information you provide (name, email, business details).",
           "Call data processed on your behalf: caller phone numbers, call audio, transcripts, and appointment details.",
           "Usage data such as pages viewed and features used, to improve the product.",
         ],
@@ -53,7 +53,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
         heading: "Data sharing",
         body: [
           "We share data only with subprocessors required to run the service (e.g. voice, telephony, and cloud hosting providers), each under contractual data-protection obligations.",
-          "We do not sell your data or your patients' data.",
+          "We do not sell your data or your customers' data.",
         ],
       },
       {
@@ -67,7 +67,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
       {
         heading: "Your choices",
         body: [
-          "You can access, export, or delete your practice's data from Settings or by contacting us.",
+          "You can access, export, or delete your business's data from Settings or by contacting us.",
           "Contact practicevoiceai@yahoo.com with any privacy request.",
         ],
       },
@@ -83,7 +83,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
         heading: "The service",
         body: [
           "PracticeVoice AI provides software that answers calls, schedules appointments, and sends messages on your behalf.",
-          "You are responsible for the accuracy of the practice information, hours, and services you configure.",
+          "You are responsible for the accuracy of the business information, hours, and services you configure.",
         ],
       },
       {
@@ -143,7 +143,7 @@ const DOCS: Record<"privacy" | "terms" | "hipaa", LegalDoc> = {
       {
         heading: "Access controls",
         body: [
-          "Row-level security ensures each practice can only access its own calls, appointments, and settings.",
+          "Row-level security ensures each business can only access its own calls, appointments, and settings.",
           "Authentication is handled through a secure identity provider with password and session protections.",
         ],
       },

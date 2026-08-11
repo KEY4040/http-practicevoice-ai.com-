@@ -262,7 +262,7 @@ const steps = [
   {
     Icon: CalendarCheck,
     title: "Set your hours & services",
-    body: "Tell Ava your providers, services, and hours in Settings — she books the right slot and texts a confirmation.",
+    body: "Tell your receptionist your team, services, and hours in Settings — it books the right slot and texts a confirmation.",
   },
   {
     Icon: MessageSquareText,

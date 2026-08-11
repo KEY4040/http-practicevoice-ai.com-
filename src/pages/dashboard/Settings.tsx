@@ -470,10 +470,11 @@ export default function Settings() {
                 <Calendar className="size-6" />
               </span>
               <div>
-                <p className="font-semibold">Google Calendar sync</p>
+                <p className="font-semibold">Google Calendar two-way sync</p>
                 <p className="text-sm text-muted-foreground">
-                  Two-way calendar sync is coming soon. For now, Ava books using
-                  the hours and services you set below.
+                  Your AI already books appointments into the calendar you
+                  connect below. Direct two-way Google Calendar sync is coming
+                  soon.
                 </p>
               </div>
             </div>

@@ -41,10 +41,10 @@ export function AuthLayout({
         <div className="absolute -bottom-32 -left-16 size-80 rounded-full bg-accent/10" />
         <div className="relative flex h-full flex-col justify-center px-14 text-primary-foreground">
           <span className="mb-5 inline-flex w-fit items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-            Onboarding our founding practices
+            Onboarding our founding businesses
           </span>
           <p className="max-w-md text-2xl font-semibold leading-snug">
-            Never send another patient to voicemail. Your AI receptionist
+            Never send another caller to voicemail. Your AI receptionist
             answers every call, books the appointment, and shows you the revenue
             it brings in.
           </p>
