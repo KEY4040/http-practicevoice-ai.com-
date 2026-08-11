@@ -4,7 +4,7 @@ import {
   Building2,
   Phone,
   Clock,
-  Stethoscope,
+  ClipboardList,
   Calendar,
   Check,
   Plus,
@@ -54,7 +54,7 @@ import { cn } from "@/lib/utils";
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function Settings() {
-  useDocumentMeta({ title: "Clinic Setup", noindex: true });
+  useDocumentMeta({ title: "Business Setup", noindex: true });
   // The owner's account email — where booking alerts are sent automatically.
   const { user } = useAuth();
   const userEmail = user?.email ?? null;
@@ -337,9 +337,9 @@ export default function Settings() {
     <DashboardLayout>
       <form onSubmit={onSave} className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clinic Setup</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Business Setup</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Tell your AI receptionist about your practice. This takes under 5
+            Tell your AI receptionist about your business. This takes under 5
             minutes.
           </p>
         </div>
@@ -483,18 +483,18 @@ export default function Settings() {
           </div>
         </Card>
 
-        {/* Practice details */}
+        {/* Business details */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="size-4 text-primary" />
-              Practice details
+              Business details
             </CardTitle>
             <CardDescription>The basics your receptionist introduces.</CardDescription>
           </CardHeader>
           <div className="grid gap-4 px-6 pb-6 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="clinic">Clinic name</Label>
+              <Label htmlFor="clinic">Business name</Label>
               <Input
                 id="clinic"
                 value={clinicName}
@@ -502,11 +502,11 @@ export default function Settings() {
                   markInteracted();
                   setClinicName(e.target.value);
                 }}
-                placeholder="e.g. Bayview Dental"
+                placeholder="e.g. Rivera & Co. Realty"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="phone">Practice phone number</Label>
+              <Label htmlFor="phone">Business phone number</Label>
               <div className="relative">
                 <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -595,7 +595,7 @@ export default function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Stethoscope className="size-4 text-primary" />
+              <ClipboardList className="size-4 text-primary" />
               Services offered
             </CardTitle>
             <CardDescription>
@@ -706,7 +706,7 @@ export default function Settings() {
               <Mic className="size-4 text-primary" />
               Receptionist voice
             </CardTitle>
-            <CardDescription>Choose the tone that fits your practice.</CardDescription>
+            <CardDescription>Choose the tone that fits your business.</CardDescription>
           </CardHeader>
           <fieldset className="px-6 pb-6">
             <legend className="sr-only">Receptionist voice</legend>
@@ -1083,7 +1083,7 @@ function SendTestText() {
       <p className="text-sm font-medium">Send yourself a test text</p>
       <p className="mt-0.5 text-xs text-muted-foreground">
         Check that texting works. For safety we can only text your own business
-        number — so enter the same number as your <strong>Practice phone
+        number — so enter the same number as your <strong>Business phone
         number</strong> above (it must be a phone that can receive texts).
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
