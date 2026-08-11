@@ -580,10 +580,10 @@ export default function Settings() {
                   setAbout(e.target.value);
                 }}
                 rows={12}
-                className="min-h-[16rem]"
+                className="min-h-[16rem] text-base font-medium leading-relaxed text-foreground"
                 placeholder="What you do, what you sell, prices, common questions, anything the AI should know when it answers. Example: We sell rubber feet, grommets, and washers. Free shipping over $50. Minimum order 20 pieces."
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm font-medium text-muted-foreground">
                 The more you tell it, the better it answers. This becomes your
                 AI's script.
               </p>
