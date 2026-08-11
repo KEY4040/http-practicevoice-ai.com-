@@ -88,6 +88,26 @@ export async function getAuthUserEmail(userId) {
   }
 }
 
+/**
+ * Permanently delete an auth user (admin API). Because clinics.owner_id and
+ * subscriptions.user_id are ON DELETE CASCADE, this also removes the user's
+ * clinic, calls, appointments, and subscription row in one shot. Returns true on
+ * success. Used by account cancellation.
+ */
+export async function deleteAuthUser(userId) {
+  if (!hasSupabase() || !userId) return false;
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, "");
+    const res = await fetch(
+      `${base}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
+      withTimeout({ method: "DELETE", headers: baseHeaders() })
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** PATCH rows matching `query` (raw PostgREST filter). Returns updated rows. */
 export async function sbUpdate(table, query, patch) {
   if (!hasSupabase()) return [];

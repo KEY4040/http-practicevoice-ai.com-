@@ -45,3 +45,33 @@ export function verifyStripeSignature(rawBody, sigHeader, secret, toleranceSec =
 function readNow() {
   return Date.now();
 }
+
+/** True when a Stripe SECRET key is configured (needed to call the Stripe API). */
+export function hasStripeSecret() {
+  return Boolean(process.env.STRIPE_SECRET_KEY);
+}
+
+/**
+ * Cancel a subscription IMMEDIATELY via the Stripe API (DELETE /v1/subscriptions/
+ * {id}) so billing stops right away. Requires STRIPE_SECRET_KEY. Returns
+ * { ok: true } on success (or if the sub is already gone / not found — the goal
+ * "no longer billing" is met either way), { ok: false, error } otherwise.
+ */
+export async function cancelStripeSubscription(subscriptionId) {
+  if (!subscriptionId) return { ok: true, note: "no_subscription" };
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return { ok: false, error: "no_secret_key" };
+  try {
+    const res = await fetch(
+      `https://api.stripe.com/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000) }
+    );
+    if (res.ok) return { ok: true };
+    // 404 = the subscription no longer exists at Stripe -> already not billing.
+    if (res.status === 404) return { ok: true, note: "already_gone" };
+    const text = await res.text().catch(() => "");
+    return { ok: false, error: `stripe_${res.status}`, detail: text.slice(0, 200) };
+  } catch (e) {
+    return { ok: false, error: "stripe_request_failed", detail: (e && e.message) || String(e) };
+  }
+}

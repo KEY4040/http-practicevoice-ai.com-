@@ -48,6 +48,7 @@ import { activateAiLine, type ActivateResult } from "@/lib/provision";
 import { BestRepLibrary } from "@/components/dashboard/BestRepLibrary";
 import type { BestRepPrompt } from "@/data/bestRepPrompts";
 import { VoiceCloneCard } from "@/components/dashboard/VoiceCloneCard";
+import { CancelAccountCard } from "@/components/dashboard/CancelAccountCard";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -1068,6 +1069,11 @@ export default function Settings() {
           </Button>
         </div>
       </form>
+
+      {/* Danger zone — cancel subscription & delete account (outside the form). */}
+      <div className="mx-auto mt-6 max-w-3xl">
+        <CancelAccountCard />
+      </div>
     </DashboardLayout>
   );
 }
