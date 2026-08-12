@@ -74,7 +74,7 @@ export const PLANS: Plan[] = [
       "Flat price — no surprise overage bills",
       "Everything in Basic, plus:",
       "Revenue dashboard — see what calls earn you",
-      "Calendar sync — Google & Outlook (coming soon)",
+      "Calendar sync — Google & Outlook, two-way",
       "Automatic text reminders before appointments",
       "Captures the staff member the caller asks for",
       "Flags urgent calls so you can follow up fast",

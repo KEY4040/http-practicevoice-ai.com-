@@ -24,7 +24,7 @@ const FEATURES = [
   { Icon: TrendingUp, title: "Revenue dashboard", body: "See the real dollars every answered call brought in — not just 'minutes'.", soon: false },
   { Icon: Languages, title: "Speaks their language", body: "Answers in English, Spanish, and more — automatically, no setup.", soon: false },
   { Icon: Clock, title: "Live the same day", body: "Forward your number, set your hours, and you're answering calls today.", soon: false },
-  { Icon: CalendarClock, title: "Two-way calendar sync", body: "Sync straight into Google Calendar so bookings land on your real schedule.", soon: true },
+  { Icon: CalendarClock, title: "Two-way calendar sync", body: "Bookings sync into your Google Calendar or Outlook — both ways — so your real schedule always matches.", soon: false },
   { Icon: Mail, title: "Email lead alerts", body: "Get new leads emailed to you, alongside the instant text alert.", soon: true },
 ];
 
@@ -49,7 +49,7 @@ export function FeatureHub() {
           <source srcSet="/showcase-features.webp" type="image/webp" />
           <img
             src="/showcase-features.jpg"
-            alt="PracticeVoice AI, the AI front desk for any business: AI answers, books appointments, sends texts, same-day go-live, multilingual, revenue dashboard, VIP pass-through, and calendar sync coming soon — HIPAA-ready, secure and reliable."
+            alt="PracticeVoice AI, the AI front desk for any business: AI answers, books appointments, sends texts, same-day go-live, multilingual, revenue dashboard, VIP pass-through, and two-way calendar sync — HIPAA-ready, secure and reliable."
             loading="lazy"
             width={1792}
             height={1008}

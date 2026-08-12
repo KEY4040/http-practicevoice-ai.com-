@@ -484,25 +484,24 @@ export default function Settings() {
           </div>
         </Card>
 
-        {/* Calendar connect — coming soon (not yet available; shown honestly) */}
+        {/* Google Calendar / Outlook — supported today through the Cal.com connection below */}
         <Card className="border-border bg-muted/30 p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <span className="grid size-12 place-items-center rounded-xl bg-muted text-muted-foreground">
+              <span className="grid size-12 place-items-center rounded-xl bg-accent/10 text-accent-hover">
                 <Calendar className="size-6" />
               </span>
               <div>
-                <p className="font-semibold">Google Calendar two-way sync</p>
+                <p className="font-semibold">Google Calendar &amp; Outlook — supported</p>
                 <p className="text-sm text-muted-foreground">
-                  Your AI already books appointments into the calendar you
-                  connect below. Direct two-way Google Calendar sync is coming
-                  soon.
+                  Your AI books straight into your Google Calendar or Outlook.
+                  Connect your calendar below, then link Google (or Outlook)
+                  inside it — bookings and busy times sync both ways, so you're
+                  never double-booked.
                 </p>
               </div>
             </div>
-            <Button type="button" variant="outline" disabled>
-              Coming soon
-            </Button>
+            <Badge variant="success" className="shrink-0">Included</Badge>
           </div>
         </Card>
 
