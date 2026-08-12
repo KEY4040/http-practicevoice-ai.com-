@@ -1360,7 +1360,7 @@ function CalendarConnect({
           done={hasKey || calConnected}
           icon={<KeyRound className="size-3.5 text-muted-foreground" />}
           title="Paste your connection key"
-          subtitle="In Cal.com: Settings → Developer → API Keys → Add. Copy it here. We keep it private and never show it again."
+          subtitle="Inside Cal.com, tap Settings → Developer → API Keys → Add — those are just Cal.com's own menu buttons, no coding needed. Copy the key it gives you and paste it here. We keep it private and never show it again."
         >
           <Input
             id="cal-key"
