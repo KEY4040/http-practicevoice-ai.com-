@@ -249,7 +249,7 @@ export const VERTICALS: Record<Vertical["slug"], Vertical> = {
       },
       {
         q: "Can it book into my dispatch or scheduling software?",
-        a: "Today it books into the hours, service areas, and job types you configure in PracticeVoice and texts the customer a confirmation. Direct sync with outside scheduling tools (starting with Google Calendar) is on the way.",
+        a: "It books into the hours, service areas, and job types you configure in PracticeVoice, texts the customer a confirmation, and syncs the booking two-way into your Google Calendar or Outlook so your schedule stays current. Direct hooks into industry dispatch platforms (like ServiceTitan or Housecall Pro) aren't there yet.",
       },
       {
         q: "Will it replace my office staff?",
