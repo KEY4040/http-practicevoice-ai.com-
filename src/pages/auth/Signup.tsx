@@ -178,6 +178,12 @@ export default function Signup() {
           Log in
         </Link>
       </p>
+      <p className="mt-2 text-center text-xs text-muted-foreground">
+        Want to cancel a subscription?{" "}
+        <Link to="/login" className="font-semibold text-destructive hover:underline">
+          Log in to cancel
+        </Link>
+      </p>
 
       <p className="mt-4 text-center text-xs text-muted-foreground">
         By continuing you agree to our{" "}
