@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Check, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/marketing/Logo";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,10 @@ export default function Billing() {
   const { user, signOut } = useAuth();
   const { state } = useSubscription();
   const expired = state === "expired";
+  // Trial / active / beta users reached this screen from a working dashboard,
+  // so give them a way straight back — never a lone "Sign out" that looks like
+  // the only exit. Only a truly expired account has no dashboard to return to.
+  const hasAccess = !expired;
 
   function choose(plan: Plan) {
     // Carry the user id (client_reference_id) + email so the stripe-webhook can
@@ -32,12 +36,21 @@ export default function Billing() {
     <div className="min-h-screen bg-muted/30">
       <header className="flex items-center justify-between px-6 py-5">
         <Logo />
-        <button
-          onClick={() => signOut()}
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          Sign out
-        </button>
+        {hasAccess ? (
+          <Link
+            to="/dashboard"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            ← Back to dashboard
+          </Link>
+        ) : (
+          <button
+            onClick={() => signOut()}
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Sign out
+          </button>
+        )}
       </header>
 
       <main className="mx-auto max-w-5xl px-6 pb-20">
@@ -53,7 +66,7 @@ export default function Billing() {
           <p className="mt-3 text-balance text-muted-foreground">
             {expired
               ? "Your calls, appointments, and data are safe — choose a plan to pick right back up. Cancel anytime."
-              : "Pick a plan to get started — it's $9.99 for your 14-day trial, then your plan, and you can cancel anytime."}
+              : "Pick a plan to get started — $9.99 for your first 14 days, then your plan. Cancel anytime, and your setup stays exactly as you left it."}
           </p>
         </div>
 
