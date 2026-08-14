@@ -88,16 +88,16 @@ function SidebarInner({
     : accessState === "trial"
       ? {
           title: `Trial · ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left`,
-          body: "Choose a plan before it ends to keep your receptionist running.",
-          cta: "Choose a plan",
+          body: "You're on your free trial. Pick your plan before it ends — you keep all your setup.",
+          cta: "See plans",
           to: "/billing",
         }
       : accessState === "active"
         ? {
             title: "Plan active",
-            body: "Thanks for being a customer. Manage or change your plan anytime.",
+            body: "You're all set. Manage or cancel your plan in Settings.",
             cta: "Manage plan",
-            to: "/pricing",
+            to: `${base}/settings`,
           }
         : {
             title: "Free beta",
@@ -134,7 +134,7 @@ function SidebarInner({
           className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <LifeBuoy className="size-[18px]" />
-          Support
+          Email support
         </a>
 
         {demo ? (
@@ -278,7 +278,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               to="/billing"
               className="font-semibold text-accent-hover underline underline-offset-2 hover:no-underline"
             >
-              Choose a plan →
+              See plans →
             </Link>
           </div>
         )}
