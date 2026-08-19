@@ -13,6 +13,8 @@ import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ResetPassword from "@/pages/auth/ResetPassword";
 import Legal from "@/pages/Legal";
 import Vertical from "@/pages/Vertical";
 import Comparison from "@/pages/Comparison";
@@ -81,6 +83,8 @@ export default function App() {
             {/* Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Public demo — the real dashboard with sample data, no login. */}
             <Route

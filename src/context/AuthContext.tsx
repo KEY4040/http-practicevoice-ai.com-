@@ -35,6 +35,11 @@ interface AuthContextValue {
     name: string
   ) => Promise<{ needsConfirmation: boolean; userId?: string; email?: string }>;
   signOut: () => Promise<void>;
+  /** Send a password-reset email with a link back to /reset-password. Resolves
+   *  even for unknown emails (Supabase does not reveal whether an account exists). */
+  requestPasswordReset: (email: string) => Promise<void>;
+  /** Set a new password for the recovery session established by the email link. */
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -205,6 +210,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // computer never sees / re-saves the previous account's config.
         localStorage.removeItem("pv_clinic_settings");
         setUser(null);
+      },
+      async requestPasswordReset(email) {
+        if (isSupabaseConfigured) {
+          const supabase = await getSupabase();
+          if (!supabase) throw new Error(MISCONFIGURED_MESSAGE);
+          const redirectTo = `${window.location.origin}/reset-password`;
+          const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+          if (error) throw error;
+        }
+        // Demo / unconfigured: no-op. The UI still shows the same neutral
+        // confirmation so we never reveal whether an address has an account.
+      },
+      async updatePassword(newPassword) {
+        if (isSupabaseConfigured) {
+          const supabase = await getSupabase();
+          if (!supabase) throw new Error(MISCONFIGURED_MESSAGE);
+          // The recovery link from the email establishes a session; updateUser
+          // then sets the new password on it.
+          const { error } = await supabase.auth.updateUser({ password: newPassword });
+          if (error) throw error;
+        } else if (isDemoMode) {
+          // no-op in demo
+        } else {
+          throw new Error(MISCONFIGURED_MESSAGE);
+        }
       },
     };
   }, [user, loading]);
