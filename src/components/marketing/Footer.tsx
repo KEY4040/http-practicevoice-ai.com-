@@ -11,6 +11,7 @@ const columns = [
       { label: "Blog", href: "/blog" },
       { label: "vs Ruby", href: "/vs/ruby" },
       { label: "vs an answering service", href: "/vs/answering-service" },
+      { label: "vs Smith.ai", href: "/vs/smith-ai" },
     ],
   },
   {

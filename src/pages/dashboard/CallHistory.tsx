@@ -174,7 +174,7 @@ export default function CallHistory() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <EmptyState />}
+          {filtered.length === 0 && <EmptyState noCallsYet={calls.length === 0} />}
         </Card>
 
         {/* Mobile list */}
@@ -204,7 +204,7 @@ export default function CallHistory() {
           ))}
           {filtered.length === 0 && (
             <Card>
-              <EmptyState />
+              <EmptyState noCallsYet={calls.length === 0} />
             </Card>
           )}
         </div>
@@ -215,15 +215,19 @@ export default function CallHistory() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ noCallsYet = false }: { noCallsYet?: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
       <span className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
         <Phone className="size-5" />
       </span>
-      <p className="text-sm font-medium">No calls match your search</p>
+      <p className="text-sm font-medium">
+        {noCallsYet ? "No calls yet" : "No calls match your search"}
+      </p>
       <p className="text-xs text-muted-foreground">
-        Try a different keyword or filter.
+        {noCallsYet
+          ? "When your AI answers its first call, it'll show up here."
+          : "Try a different keyword or filter."}
       </p>
     </div>
   );
