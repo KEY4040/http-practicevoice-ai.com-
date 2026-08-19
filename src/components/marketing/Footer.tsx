@@ -37,6 +37,7 @@ const columns = [
       { label: "Start for $9.99", href: "/signup" },
       { label: "Book a demo", href: "/contact" },
       { label: "Call us: (857) 597-5086", href: "tel:+18575975086" },
+      { label: "★ Leave a review", href: "https://g.page/r/CSdU3A0l3EWBEBM/review" },
     ],
   },
 ];
@@ -63,6 +64,7 @@ export function Footer() {
                 // actually scrolls / navigates (React Router won't scroll to a
                 // hash on its own).
                 const isRoute = l.href.startsWith("/") && !l.href.includes("#");
+                const isExternal = l.href.startsWith("http");
                 const className =
                   "inline-block py-0.5 text-sm text-muted-foreground transition-colors hover:text-foreground";
                 return (
@@ -72,7 +74,11 @@ export function Footer() {
                         {l.label}
                       </Link>
                     ) : (
-                      <a href={l.href} className={className}>
+                      <a
+                        href={l.href}
+                        className={className}
+                        {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                      >
                         {l.label}
                       </a>
                     )}
