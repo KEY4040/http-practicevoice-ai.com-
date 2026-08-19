@@ -462,9 +462,14 @@ async function main() {
 
 /** Build sitemap.xml from the data files (replaces the hand-kept static one). */
 async function writeSitemap() {
-  const today = new Date().toISOString().slice(0, 10);
-  const url = (path: string, priority: string, changefreq: string, lastmod = today) =>
-    `  <url>\n    <loc>${abs(path)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+  // Only emit <lastmod> when we have a TRUTHFUL content date (blog posts carry a
+  // real isoDate). Stamping today's date on every page each build teaches
+  // crawlers to distrust the signal, so pages without a real date omit it
+  // entirely — a missing lastmod is fine; a false one is worse than none.
+  const url = (path: string, priority: string, changefreq: string, lastmod?: string) => {
+    const lm = lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : "";
+    return `  <url>\n    <loc>${abs(path)}</loc>${lm}\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+  };
 
   const urls: string[] = [
     url("/", "1.0", "weekly"),
