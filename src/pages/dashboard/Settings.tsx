@@ -48,6 +48,7 @@ import { activateAiLine, type ActivateResult } from "@/lib/provision";
 import { BestRepLibrary } from "@/components/dashboard/BestRepLibrary";
 import type { BestRepPrompt } from "@/data/bestRepPrompts";
 import { VoiceCloneCard } from "@/components/dashboard/VoiceCloneCard";
+import { BillingPortalCard } from "@/components/dashboard/BillingPortalCard";
 import { CancelSubscriptionCard } from "@/components/dashboard/CancelSubscriptionCard";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -1069,8 +1070,9 @@ export default function Settings() {
         </div>
       </form>
 
-      {/* Cancel subscription (outside the form — keeps the account/setup). */}
-      <div className="mx-auto mt-6 max-w-3xl">
+      {/* Billing self-serve + cancel (outside the form — keep the account/setup). */}
+      <div className="mx-auto mt-6 max-w-3xl space-y-4">
+        <BillingPortalCard />
         <CancelSubscriptionCard />
       </div>
     </DashboardLayout>

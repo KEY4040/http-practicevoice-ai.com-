@@ -18,8 +18,8 @@
  * `client_reference_id=<supabase user id>` to the Payment Link, which arrives on
  * checkout.session.completed and keys the subscription row.
  */
-import { hasSupabase, sbSelect, sbInsert, sbUpdate } from "../shared/supabase.mjs";
-import { verifyStripeSignature } from "../shared/stripe.mjs";
+import { hasSupabase, sbSelect, sbInsert, sbUpdate, getAuthUserEmail } from "../shared/supabase.mjs";
+import { verifyStripeSignature, fetchStripeSubscriptionPrice } from "../shared/stripe.mjs";
 import { planKeyFromPrice } from "../shared/entitlement.mjs";
 import { hasRetell, teardownRetell } from "../shared/retell-api.mjs";
 import { sendEmail } from "../shared/email.mjs";
@@ -106,6 +106,69 @@ async function grantVoiceCloneForCustomer(customerId) {
   }
 }
 
+/**
+ * A renewal charge failed (invoice.payment_failed). Stripe will keep retrying
+ * for its dunning window, then finally cancel — but the customer must be TOLD,
+ * or they silently lose service. Email the customer a one-tap link to fix their
+ * card (Stripe's hosted invoice page), and alert the owner. Best-effort; the
+ * subscription's own status (past_due) is set by the customer.subscription.updated
+ * event, and drives the in-app "update your card" banner.
+ */
+async function notifyPaymentFailed(customerId, invoice) {
+  if (!customerId) return;
+  try {
+    const subs = await sbSelect(
+      "subscriptions",
+      `select=user_id&stripe_customer_id=eq.${encodeURIComponent(customerId)}&limit=1`
+    );
+    const uid = subs[0]?.user_id;
+    const customerEmail = invoice?.customer_email || (uid ? await getAuthUserEmail(uid) : null);
+    // Stripe's hosted invoice page lets them pay the failed invoice directly.
+    const payUrl = invoice?.hosted_invoice_url || "https://practicevoice-ai.com/dashboard/settings";
+    const amount =
+      typeof invoice?.amount_due === "number"
+        ? `$${(invoice.amount_due / 100).toFixed(2)}`
+        : "your subscription";
+
+    if (customerEmail) {
+      await sendEmail({
+        to: customerEmail,
+        subject: "Your PracticeVoice AI payment didn't go through",
+        text: [
+          "Hi,",
+          "",
+          `We tried to charge ${amount} for your PracticeVoice AI plan, but the payment didn't go through — usually an expired or declined card.`,
+          "",
+          "To keep your AI receptionist answering calls, please update your payment method here:",
+          payUrl,
+          "",
+          "We'll retry automatically over the next few days, but updating your card now is the fastest fix. Your setup and settings are untouched.",
+          "",
+          "— PracticeVoice AI",
+        ].join("\n"),
+      });
+    }
+
+    const owner = process.env.OWNER_ALERT_EMAIL;
+    if (owner) {
+      await sendEmail({
+        to: owner,
+        subject: "⚠️ A customer's payment failed",
+        text: [
+          "A renewal payment failed and the customer was emailed to update their card.",
+          "",
+          `Customer email: ${customerEmail || "(unknown)"}`,
+          `Amount: ${amount}`,
+          `Stripe customer: ${customerId}`,
+          `Invoice: ${invoice?.id || "(none)"}`,
+        ].join("\n"),
+      });
+    }
+  } catch (e) {
+    console.error("[stripe-webhook] payment-failed notify failed (non-fatal):", e.message);
+  }
+}
+
 export default async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
 
@@ -183,21 +246,28 @@ export default async (req) => {
           : obj.payment_status === "paid"
             ? "active"
             : "trialing";
-        await sbInsert(
-          "subscriptions",
-          {
-            user_id: userId,
-            status,
-            stripe_customer_id: obj.customer ?? null,
-            stripe_subscription_id: obj.subscription ?? null,
-            // If a former tester account converts to a real paid plan, clear the
-            // time-box so the hard-expiry check never locks the paying customer out.
-            access_expires_at: null,
-            tester_days: null,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        );
+        // Backfill the plan key now, straight from Stripe, so an out-of-order
+        // customer.subscription.* delivery can never leave a Professional/Premium
+        // customer capped at the Basic allowance. Best-effort: only include plan
+        // when resolved, so we never null out a plan a later event already wrote.
+        let plan = null;
+        if (obj.subscription) {
+          const price = await fetchStripeSubscriptionPrice(obj.subscription);
+          if (price) plan = planKeyFromPrice(price);
+        }
+        const subRow = {
+          user_id: userId,
+          status,
+          stripe_customer_id: obj.customer ?? null,
+          stripe_subscription_id: obj.subscription ?? null,
+          // If a former tester account converts to a real paid plan, clear the
+          // time-box so the hard-expiry check never locks the paying customer out.
+          access_expires_at: null,
+          tester_days: null,
+          updated_at: new Date().toISOString(),
+        };
+        if (plan) subRow.plan = plan;
+        await sbInsert("subscriptions", subRow, { onConflict: "user_id" });
         break;
       }
       case "customer.subscription.created":
@@ -235,6 +305,15 @@ export default async (req) => {
           // Premium includes voice cloning — unlock it for this customer.
           await grantVoiceCloneForCustomer(customer);
         }
+        break;
+      }
+      case "invoice.payment_failed": {
+        // A renewal charge failed. Tell the customer (with a one-tap pay link)
+        // and alert the owner. Access continues through Stripe's dunning/retry
+        // window; the past_due status (set by subscription.updated) drives the
+        // in-app "update your card" banner, and a final failure flows through the
+        // canceled/unpaid path above, which reclaims the number.
+        await notifyPaymentFailed(obj.customer, obj);
         break;
       }
       default:

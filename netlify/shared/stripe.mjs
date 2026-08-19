@@ -52,6 +52,58 @@ export function hasStripeSecret() {
 }
 
 /**
+ * Retrieve a subscription's active price object from Stripe (best-effort).
+ * Used to backfill the plan key at checkout so a Professional/Premium customer
+ * is never left capped at Basic if Stripe delivers events out of order. Returns
+ * the price object (map it with planKeyFromPrice) or null. Needs STRIPE_SECRET_KEY.
+ */
+export async function fetchStripeSubscriptionPrice(subscriptionId) {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || !subscriptionId) return null;
+  try {
+    const res = await fetch(
+      `https://api.stripe.com/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
+      { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10000) }
+    );
+    if (!res.ok) return null;
+    const sub = await res.json();
+    return sub?.items?.data?.[0]?.price ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Create a Stripe Billing Portal session so a customer can self-serve: update
+ * their card, change plan, and download invoices. Requires STRIPE_SECRET_KEY
+ * AND the Billing Portal to be enabled once in the Stripe dashboard
+ * (Settings → Billing → Customer portal). Returns { ok, url } or { ok:false, error }.
+ */
+export async function createBillingPortalSession(customerId, returnUrl) {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return { ok: false, error: "no_secret_key" };
+  if (!customerId) return { ok: false, error: "no_customer" };
+  try {
+    const body = new URLSearchParams({ customer: customerId });
+    if (returnUrl) body.set("return_url", returnUrl);
+    const res = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+      signal: AbortSignal.timeout(15000),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data?.url) return { ok: true, url: data.url };
+    return { ok: false, error: `stripe_${res.status}`, detail: (data?.error?.message || "").slice(0, 200) };
+  } catch (e) {
+    return { ok: false, error: "stripe_request_failed", detail: (e && e.message) || String(e) };
+  }
+}
+
+/**
  * Cancel a subscription IMMEDIATELY via the Stripe API (DELETE /v1/subscriptions/
  * {id}) so billing stops right away. Requires STRIPE_SECRET_KEY. Returns
  * { ok: true } on success (or if the sub is already gone / not found — the goal
