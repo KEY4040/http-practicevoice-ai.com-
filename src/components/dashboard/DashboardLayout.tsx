@@ -267,6 +267,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
+        {/* Payment-failed warning — the last renewal charge didn't go through.
+            Access continues during Stripe's retry window, but nudge them to fix
+            the card in Settings (Manage billing) before service stops. */}
+        {!demo && access.pastDue && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-destructive/30 bg-destructive/10 px-4 py-2.5 text-center text-sm">
+            <span className="font-medium text-destructive">
+              ⚠️ Your last payment didn't go through — update your card to keep your line active.
+            </span>
+            <Link
+              to={`${base}/settings`}
+              className="font-semibold text-destructive underline underline-offset-2 hover:no-underline"
+            >
+              Update card →
+            </Link>
+          </div>
+        )}
+
         {/* Free-trial countdown (reverse trial, when billing is enforced) */}
         {!demo && access.state === "trial" && (
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-accent/10 px-4 py-2.5 text-center text-sm">

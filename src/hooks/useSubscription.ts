@@ -29,6 +29,9 @@ interface SubscriptionState {
   /** Days left in the free trial (only meaningful when state === "trial"). */
   trialDaysLeft: number;
   plan: string | null;
+  /** True when the latest renewal charge failed (Stripe status past_due) — the
+   *  customer still has access during dunning, but needs to update their card. */
+  pastDue: boolean;
 }
 
 /**
@@ -50,6 +53,7 @@ export function useSubscription(): SubscriptionState {
     state: "open",
     trialDaysLeft: 0,
     plan: null,
+    pastDue: false,
   });
 
   useEffect(() => {
@@ -74,26 +78,33 @@ export function useSubscription(): SubscriptionState {
         }
 
         if (hasActiveAccess(sub)) {
-          setState({ loading: false, active: true, state: "active", trialDaysLeft: 0, plan: sub?.plan ?? null });
+          setState({
+            loading: false,
+            active: true,
+            state: "active",
+            trialDaysLeft: 0,
+            plan: sub?.plan ?? null,
+            pastDue: sub?.status === "past_due",
+          });
           return;
         }
 
         // A time-boxed account whose window has passed is EXPIRED — it must not
         // fall back into the 14-day reverse-trial (that would defeat the timer).
         if (sub?.access_expires_at || sub?.tester_days) {
-          setState({ loading: false, active: false, state: "expired", trialDaysLeft: 0, plan: null });
+          setState({ loading: false, active: false, state: "expired", trialDaysLeft: 0, plan: null, pastDue: false });
           return;
         }
 
         const daysLeft = trialDaysLeft(userData.user?.created_at);
         if (daysLeft > 0) {
-          setState({ loading: false, active: true, state: "trial", trialDaysLeft: daysLeft, plan: null });
+          setState({ loading: false, active: true, state: "trial", trialDaysLeft: daysLeft, plan: null, pastDue: false });
         } else {
-          setState({ loading: false, active: false, state: "expired", trialDaysLeft: 0, plan: null });
+          setState({ loading: false, active: false, state: "expired", trialDaysLeft: 0, plan: null, pastDue: false });
         }
       } catch {
         // Fail open — never lock someone out on an error.
-        if (alive) setState({ loading: false, active: true, state: "open", trialDaysLeft: 0, plan: null });
+        if (alive) setState({ loading: false, active: true, state: "open", trialDaysLeft: 0, plan: null, pastDue: false });
       }
     })();
     return () => {
